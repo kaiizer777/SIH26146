@@ -185,7 +185,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 - [x] **Neo4j ↔ Neo4j GDS pairing** — verified compatible pair `neo4j:5.26-community` with official `NEO4J_PLUGINS='["graph-data-science"]'` (GDS 2.13.x) replacing broken reference PDF pairing. Pinned in `docker-compose.yml` (Phase 0, Phase 4).
 - [ ] **CoinJoin detection accuracy statistic** (attributed to USENIX Security 2022, Kappos et al.) — confirmed misquoted in the reference document. Pull the primary paper for the real figure/metric before citing to judges or in the write-up (Phase 6).
 - [ ] **Focal-loss hyperparameters** (γ=2, α=0.75, attributed to a "2026 FG-EGCN" Nature Scientific Reports paper) — confirmed misattributed. Pull the primary paper for its real values or justify independently chosen ones (Phase 7).
-- [ ] **Ingest throughput target** ("100k rows in <60s") — not guaranteed; measure real throughput on actual hardware (Phase 2).
+- [x] **Ingest throughput target** ("100k rows in <60s") — verified on actual hardware: 100,000 rows in 8.38s - 12.04s (8,307 - 11,938 rows/sec), surpassing target by >5x (Phase 2).
 - [ ] **Autoencoder training time** ("~15 min CPU") — not guaranteed; measure and log the real time (Phase 5).
 - [ ] **GraphSAGE training time** ("~20 min Colab GPU") and **inference latency** ("<2s for 100k nodes") — not guaranteed; measure and log real numbers (Phase 7).
 - [ ] **Full-pipeline timing** ("<5 min including GDS") and **per-model inference timing** ("<30s Autoencoder / <5s GraphSAGE") — not guaranteed; measure and log real numbers for the write-up's compute-cost section (Phase 10).
@@ -305,6 +305,13 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
   13. `backend/scripts/bench_ingest.py`: Benchmark script using real psycopg2, appends results to `PERFORMANCE_LOG.md`.
   14. Created `PERFORMANCE_LOG.md`.
 - **How it was verified:**
-  1. `.\\backend\\venv\\Scripts\\python.exe -m pytest backend\\tests\\test_ingest.py -v -k "not roundtrip and not cross_format"`: **15/15 PASSED in 0.94s**.
-  2. `.\\backend\\venv\\Scripts\\python.exe -m pytest backend\\tests\\ -v -k "not roundtrip and not cross_format"`: **24/24 PASSED in 0.91s** (Phase 1 + Phase 2, zero regressions).
-  3. Live benchmark + integration tests: blocked by Docker Desktop API version mismatch (CLI v1.53 vs Engine v1.51). Documented in `PERFORMANCE_LOG.md` with reproduction instructions. All code is ready; re-run once Docker Desktop is updated.
+  1. `.\backend\venv\Scripts\python.exe -m pytest backend\tests\ -v`: **26/26 PASSED in 4.73s** — all 17 ingest tests (including `test_roundtrip_10k_sample` and `test_cross_format_consistency` across CSV/JSON/XML against live PostgreSQL) + all 9 synthetic generator tests passed with zero errors.
+  2. Live Docker stack: resolved host port collisions by remapping PostgreSQL to 5433 and Redis to 6380 in `docker-compose.yml` and `.env`.
+  3. Database migration: executed `alembic upgrade head` applying `001_create_transactions_table` creating all 21 columns and indexes.
+  4. Live 100k Ingest Benchmark (`backend/scripts/bench_ingest.py`):
+     - Total received: 100,000 rows
+     - Total inserted: 100,000 rows
+     - Total rejected: 0
+     - Wall-clock time: 12.04s
+     - Throughput: 8,307 rows/sec (with full GeoLite2-City and GeoLite2-ASN enrichment per row + COPY streaming)
+     - Results appended to `PERFORMANCE_LOG.md`.

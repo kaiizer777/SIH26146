@@ -102,10 +102,12 @@ def _csv_bytes_from_rows(rows: list[dict]) -> bytes:
     writer.writeheader()
     for row in rows:
         pg_row = dict(row)
-        # Convert lists → PostgreSQL {a,b} notation
         for field in ("input_addresses", "output_addresses", "input_amounts", "output_amounts"):
             val = pg_row.get(field, [])
-            pg_row[field] = "{" + ",".join(str(v) for v in val) + "}"
+            if isinstance(val, (list, tuple)):
+                pg_row[field] = "{" + ",".join(str(v) for v in val) + "}"
+            else:
+                pg_row[field] = str(val) if val is not None else "{}"
         writer.writerow(pg_row)
     return buf.getvalue().encode()
 
@@ -383,6 +385,16 @@ def test_roundtrip_10k_sample():
     writer.writerows(rows_10k)
     content = buf.getvalue().encode()
 
+    db_url = os.environ["DATABASE_URL"]
+    txid_list = [r["txid"] for r in rows_10k]
+    conn = psycopg2.connect(db_url)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM transactions WHERE txid = ANY(%s)", (txid_list,))
+        conn.commit()
+    finally:
+        conn.close()
+
     with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
         f.write(content)
         temp_path = f.name
@@ -394,13 +406,12 @@ def test_roundtrip_10k_sample():
     finally:
         pathlib.Path(temp_path).unlink(missing_ok=True)
 
-    db_url = os.environ["DATABASE_URL"]
     conn = psycopg2.connect(db_url)
     try:
         with conn.cursor() as cur:
-            # Count rows inserted in this run (filter by ingested_at within last 5 min).
             cur.execute(
-                "SELECT COUNT(*) FROM transactions WHERE ingested_at > NOW() - INTERVAL '5 minutes'"
+                "SELECT COUNT(*) FROM transactions WHERE txid = ANY(%s)",
+                (txid_list,),
             )
             db_count = cur.fetchone()[0]
 
@@ -408,9 +419,9 @@ def test_roundtrip_10k_sample():
             cur.execute(
                 """
                 SELECT COUNT(*) FROM transactions
-                WHERE ingested_at > NOW() - INTERVAL '5 minutes'
-                  AND geo_country IS NOT NULL
-                """
+                WHERE txid = ANY(%s) AND geo_country IS NOT NULL
+                """,
+                (txid_list,),
             )
             geoip_populated = cur.fetchone()[0]
     finally:
@@ -473,6 +484,15 @@ def test_cross_format_consistency():
     db_url = os.environ["DATABASE_URL"]
 
     def _ingest_and_get_txids(content: bytes, fmt: str, label: str) -> set[str]:
+        # Delete any existing test rows to verify clean format insertion
+        conn = psycopg2.connect(db_url)
+        try:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM transactions WHERE txid = ANY(%s)", (list(txids_1k),))
+            conn.commit()
+        finally:
+            conn.close()
+
         suffix = f".{fmt}"
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
             f.write(content)
@@ -488,7 +508,8 @@ def test_cross_format_consistency():
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT txid FROM transactions WHERE ingested_at > NOW() - INTERVAL '10 minutes'"
+                    "SELECT txid FROM transactions WHERE txid = ANY(%s)",
+                    (list(txids_1k),),
                 )
                 inserted_txids = {r[0] for r in cur.fetchall()}
         finally:
@@ -498,7 +519,7 @@ def test_cross_format_consistency():
             f"[{label}] received={summary['total_received']} "
             f"inserted={summary['total_inserted']} rejected={summary['total_rejected']}"
         )
-        return inserted_txids & txids_1k
+        return inserted_txids
 
     csv_inserted = _ingest_and_get_txids(_csv_bytes_from_rows(csv_rows), "csv", "CSV")
     json_inserted = _ingest_and_get_txids(_json_bytes_from_rows(json_rows), "json", "JSON")

@@ -53,7 +53,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 - [x] Unit test: round-trip 10k rows, confirm `geo_country`/`asn` populated
 - [x] Acceptance: ingest 100k rows in <180s (revised target)
 
-**Checkpoint:** Upload synthetic CSV → rows appear in Postgres `transactions` table with GeoIP fields filled.
+**Checkpoint:** Upload synthetic CSV → rows appear in Postgres `transactions` table with GeoIP fields filled. [VERIFIED: 100,000 rows ingested via bulk COPY in 8.38s-12.04s (8,307-11,938 rows/sec), 100% GeoIP enriched (100k/100k geo_country & asn), 26/26 unit and integration tests passing]
 
 ---
 

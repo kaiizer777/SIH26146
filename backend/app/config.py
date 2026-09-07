@@ -9,8 +9,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # Resolve project root so path defaults work regardless of CWD.
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]  # backend/app/config.py → backend/
-_DATA_ROOT = _PROJECT_ROOT.parent / "data"  # SIH26146/data/
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]  # backend/app/config.py -> SIH26146/
+_DATA_ROOT = _PROJECT_ROOT / "data"  # SIH26146/data/
 
 
 class Settings(BaseSettings):
