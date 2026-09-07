@@ -1,0 +1,222 @@
+[
+  {
+    "cluster_id": 14,
+    "member_count": 1751,
+    "sample_addresses": [
+      "32a9d93928e0ac428a4f558feed437d76a",
+      "bc1q2cfccf1efdce4c2245274fb0e645aa762d5410",
+      "3f776f60645876bdea2ea431f666415741",
+      "bc1q44f42323a823486c99379a5611aede9eb45b68",
+      "bc1q856e347869b63adbe8bf829ca43843a13142b9"
+    ]
+  },
+  {
+    "cluster_id": 9,
+    "member_count": 629,
+    "sample_addresses": [
+      "bc1q15fd711722704653d96d46c03c5139729739c8",
+      "bc1q9fb8efa64debb6e4469e18403f24b68bb2cc66",
+      "1b2af20d0806af18fbcdc60a16c181ee36",
+      "bc1p3b7cb1e41f368f51b9535f96415ad681242cb4d6",
+      "39e4d3edd2eea4c526fe36d9e868dcd140"
+    ]
+  },
+  {
+    "cluster_id": 38,
+    "member_count": 536,
+    "sample_addresses": [
+      "bc1pbe1b19607aed3360c1bfd8753d55a81aff309873",
+      "bc1p41332afc046e613616d7cb393416cc07be8a90cc",
+      "bc1p3550a9c5456d1ac0fb16926720c539207c17cf77",
+      "bc1q99734ed9b16f75421881a41144f95ef45df31d",
+      "bc1q85ecf60a8dae26daa3a6982769a2b591454112"
+    ]
+  },
+  {
+    "cluster_id": 29,
+    "member_count": 455,
+    "sample_addresses": [
+      "3f36e07f4080227a9bf883133ed7249077",
+      "bc1q50a22afd8f3857b02680917fe81140915385f2",
+      "1d0471e050e596de8a392c08d4753ff253",
+      "1495369a1102041299a1fb09e96e20716f",
+      "bc1q150e3f9380ba15516df605b90d2c45d621d87f"
+    ]
+  },
+  {
+    "cluster_id": 1755,
+    "member_count": 442,
+    "sample_addresses": [
+      "1b054d2c9a02da1a309672aae3cf32bb88",
+      "bc1qdcac7ab1bc58b9e37bf660a1d430a5894bab13",
+      "360352da1c4e24bc7ba7299c137ea0602d",
+      "bc1q3d6444db7b3410fa79e29ff3ccab8c8f4b060e",
+      "15802f36171585e43eebddb8fc83db3b52"
+    ]
+  },
+  {
+    "cluster_id": 268,
+    "member_count": 428,
+    "sample_addresses": [
+      "bc1q3abb3677ab068c970463dfe55342398676b397",
+      "1066b145c5990e10deefdd9466a94a2d03",
+      "11f1e0d0abaf134c5e8d0f5e8b73b803fc",
+      "bc1pb8097e02ffe12956831126ce5929fef6cb1abebd",
+      "3739e3d8008b82303f720f50e71dbb7212"
+    ]
+  },
+  {
+    "cluster_id": 3742,
+    "member_count": 424,
+    "sample_addresses": [
+      "bc1q6b477de0f8e920043b34b695411d29f92cef75",
+      "3e3edba37e04f214631f2cddab8618867e",
+      "3b0e6be4222ce9e91716525c1e95ce9647",
+      "bc1p9189c27e45c5929cd3196c823dc391cce639150d",
+      "bc1q421489bc60ce62fb386bb7e1acd087a6606d0b"
+    ]
+  },
+  {
+    "cluster_id": 5623,
+    "member_count": 398,
+    "sample_addresses": [
+      "bc1p5a9a11db1209a83ff0a7c10ca1129dda813d6219",
+      "bc1q31b0dff42d2763059e585767b3cc114bd5a45a",
+      "3ddce11bd18bafb833822847c3a0e5a929",
+      "bc1q599b495b8cdad4ba08a2c2a6f342ab2b2e8c1f",
+      "31bb10a93d75f04bde6e87ef960791ac35"
+    ]
+  },
+  {
+    "cluster_id": 27,
+    "member_count": 395,
+    "sample_addresses": [
+      "bc1q0e45a6c805b643d81ef250eb5652f7fed01511",
+      "bc1q9c2bed417ca060aba630b25561d53934ca2c9a",
+      "bc1q3cdf0041b8ae2cf5891736c3108a827b40741a",
+      "bc1p27aaea45a0ab7b5c4bfb29ac337b7b1ef7e08501",
+      "bc1q7bafd94ab8d3752e939c1d55ee2ddb57fddb72"
+    ]
+  },
+  {
+    "cluster_id": 62,
+    "member_count": 391,
+    "sample_addresses": [
+      "1a448e496ed5e43527518e2fe844ebb441",
+      "bc1qd0fc02345bbd3c07c03db391aaea221efcfea2",
+      "1060eed17fc3656222e55c9227615b1c21",
+      "189a31b20fc1b35c09912297112dd758c3",
+      "bc1qf6ef8adf6e3510a5d2e318babfb00786b2b76c"
+    ]
+  },
+  {
+    "cluster_id": 836,
+    "member_count": 390,
+    "sample_addresses": [
+      "1d0dcf942b3c151e98e22f66d22f2c6070",
+      "34d524bfe4b192e24ab8b23c87a4c38bdc",
+      "1855a6ec2f6b76e838af302195de0675fc",
+      "3bb97d00e15d6d4ed1581ed57e9f0f1e49",
+      "16c218f23120cab412b4fe79ecc1fe1852"
+    ]
+  },
+  {
+    "cluster_id": 99,
+    "member_count": 368,
+    "sample_addresses": [
+      "39baaf9adc77c1bba2caae7220ecdb65de",
+      "bc1pf6d2df3185fe38ecded1dd262892e5d0d6c3acdf",
+      "33439acd6781572fbb076165f66043df3e",
+      "bc1p4f4debce4c41d75f405263556a8660abd7e3dae8",
+      "bc1p33649ed1c9c81a93c20438cae5622e62a5f2542f"
+    ]
+  },
+  {
+    "cluster_id": 182,
+    "member_count": 359,
+    "sample_addresses": [
+      "bc1pd7528b1478bbe5f92e9c48638f7fdaf6f29b440f",
+      "31346b0d0f33987ad066a274c7fb670249",
+      "bc1q4d5a7bcf17ca48db9800ed6121bdfbe8119dd7",
+      "bc1q9e247fd6fdfb8d1976d4ff26ed5f60445939ef",
+      "3fe27029c32e5947806d2e4b99bc55f1ba"
+    ]
+  },
+  {
+    "cluster_id": 202,
+    "member_count": 358,
+    "sample_addresses": [
+      "16221ef3cbddc113acf36e8310759dcc18",
+      "35WNvbprzgfX4gbTg1P46kwfCTxvnzeaTY",
+      "bc1pc37ea1a26a6f3d579ee37a96fea3a3b5758b427c",
+      "bc1q033a7c34618c2cd9f537d263fbebfc965c0b7d",
+      "3c1b7486ba16ee87a2d0fae2271fb95315"
+    ]
+  },
+  {
+    "cluster_id": 43,
+    "member_count": 328,
+    "sample_addresses": [
+      "bc1pa82745c6f4388d31c0ec39fc1c0786ac180933d3",
+      "17Ry7aicA27ShmredqjkmorqkvBiGhuhrd",
+      "bc1p321d996ebe8cc88134cae0af8199970b7af632ad",
+      "32b3ba23912d1f5d443bec672a22077d3b",
+      "bc1q4ce5bb8fe531b023c0a1aa01c56fb00e03876a"
+    ]
+  },
+  {
+    "cluster_id": 539,
+    "member_count": 328,
+    "sample_addresses": [
+      "1e4e5ca1d4370c5b287593dec65a038e32",
+      "bc1qf356fdbd0f3e8f293f43c547e457636420a4a8",
+      "10e85cc38cb2d87528a8a34441cc603d66",
+      "bc1qf9979660da60836ce81002c9b10ed7ba456a2e",
+      "bc1q371585ffb7858da44f210b5dedec3b19bd9a17"
+    ]
+  },
+  {
+    "cluster_id": 606,
+    "member_count": 321,
+    "sample_addresses": [
+      "330e7c43ae60993eb19cd4cf7dc3e8ee7c",
+      "bc1qcc472d7b5a7977931268c9f416610a9120c772",
+      "bc1q5661ccce6823d1c2f260eaaaae1ee306aa2c1b",
+      "1aad7a9b7c7c929c2c8bef4dbc0d45d243",
+      "bc1q331ba083dd14850c98694138802fb1e378ffb4"
+    ]
+  },
+  {
+    "cluster_id": 480,
+    "member_count": 319,
+    "sample_addresses": [
+      "bc1qdf4ef1c9a95188a56395ad3bbebda071d5369d",
+      "bc1qef64f3f5304368b20d50270d4c175558d9cf53",
+      "bc1qc25c758b46d1276f22a78bc4eca3694fbf101c",
+      "bc1p8b1bd9cd5e3ac354ef0593417aa0207b885f1600",
+      "bc1p623ad934357bc99a3db5acdd3280be3423ffd9a9"
+    ]
+  },
+  {
+    "cluster_id": 516,
+    "member_count": 309,
+    "sample_addresses": [
+      "bc1qc3c837f122f960a464ca1e95eef60733421e54",
+      "bc1paa9ceaa920d2ca594cb637d979a5f827393c8451",
+      "3f781c208255cab58b3d82ffeb5119db2e",
+      "bc1qbf4bbface0197285682b371d8169c328ba0e4e",
+      "bc1p6eaeac5e4215dd5003bc8817ea00982cc08d2551"
+    ]
+  },
+  {
+    "cluster_id": 367,
+    "member_count": 308,
+    "sample_addresses": [
+      "35502fd34a42d6743cb54337a4fbd2cc68",
+      "3eac9bcf8814b97e8da98023aec0c6c8e8",
+      "bc1qd02f3942603effd5e6017e3169215547b589c8",
+      "bc1q0ff928b81c680096bdc81c28866728becba568",
+      "bc1pa1349d700c421f6810e83e7901e8106c9cfb2624"
+    ]
+  }
+]

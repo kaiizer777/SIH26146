@@ -89,3 +89,79 @@ All numbers are actual measurements on the dev machine, not estimates from the r
 | Peak memory | 39.41 MB |
 
 > Keyset pagination (chunk=5,000 pg rows), Cypher UNWIND batches capped at 1,000 items each.
+
+## Phase 4 — Entity Clustering (GDS Louvain) — 2026-09-07 19:03 UTC
+
+| Metric | Value |
+|---|---|
+| GDS version | 2.13.12 |
+| Louvain maxLevels | 10 |
+| Louvain tolerance | 0.0001 |
+| Graph projection: nodeCount | 24,673 |
+| Graph projection: relationshipCount | 79,240 |
+| Graph projection time | 0.11s |
+| Louvain communityCount | 9,793 |
+| Louvain modularity | 0.461029 |
+| Louvain ranLevels | 5 |
+| Louvain nodePropertiesWritten | 24,673 |
+| Louvain elapsed | 8.68s |
+| PostgreSQL rows updated | 100,000 |
+| PostgreSQL sync elapsed | 290.83s |
+
+
+## Phase 4 — Entity Clustering (GDS Louvain) — 2026-09-07 19:14 UTC
+
+| Metric | Value |
+|---|---|
+| GDS version | 2.13.12 |
+| Louvain maxLevels | 10 |
+| Louvain tolerance | 0.0001 |
+| Graph projection: nodeCount | 24,673 |
+| Graph projection: relationshipCount | 79,240 |
+| Graph projection time | 0.04s |
+| Louvain communityCount | 9,791 |
+| Louvain modularity | 0.461114 |
+| Louvain ranLevels | 5 |
+| Louvain nodePropertiesWritten | 24,673 |
+| Louvain elapsed | 9.95s |
+| PostgreSQL rows updated | 200,000 |
+| PostgreSQL sync elapsed | 606.62s |
+
+
+## Phase 4 — Entity Clustering (GDS Louvain) — 2026-09-07 19:37 UTC
+
+| Metric | Value |
+|---|---|
+| GDS version | 2.13.12 |
+| Louvain maxLevels | 10 |
+| Louvain tolerance | 0.0001 |
+| Graph projection: nodeCount | 24,673 |
+| Graph projection: relationshipCount | 79,240 |
+| Graph projection time | 1.15s |
+| Louvain communityCount | 9,796 |
+| Louvain modularity | 0.461007 |
+| Louvain ranLevels | 5 |
+| Louvain nodePropertiesWritten | 24,673 |
+| Louvain elapsed | 9.82s |
+| PostgreSQL rows updated | 100,000 |
+| PostgreSQL sync elapsed | 279.6s |
+
+
+## Phase 4 — Entity Clustering (GDS Louvain) — 2026-09-07 19:44 UTC
+
+| Metric | Value |
+|---|---|
+| GDS version | 2.13.12 |
+| Louvain maxLevels | 10 |
+| Louvain tolerance | 0.0001 |
+| Graph projection: nodeCount | 24,673 |
+| Graph projection: relationshipCount | 79,240 |
+| Graph projection time | 0.11s |
+| Louvain communityCount | 9,794 |
+| Louvain modularity | 0.461314 |
+| Louvain ranLevels | 5 |
+| Louvain nodePropertiesWritten | 24,673 |
+| Louvain elapsed | 6.95s |
+| PostgreSQL rows updated | 100,000 |
+| PostgreSQL sync elapsed | 4.33s |
+

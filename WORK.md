@@ -73,13 +73,13 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ## Phase 4 — Entity Clustering (F1, Neo4j GDS Louvain) [Difficulty: Low | Complexity: Medium]
 
-- [ ] **Standalone verification item (do this before writing any GDS Cypher):** confirm in Neo4j GDS's official docs which GDS version is compatible with the installed Neo4j version, and confirm the exact Louvain procedure name/signature for that GDS version (signatures have changed across GDS major releases).
-- [ ] Create the GDS in-memory graph projection scoped to `:Wallet` nodes and `:CO_SPEND` relationships, UNDIRECTED orientation — confirm the exact current projection API syntax against the installed GDS version's docs before writing it.
-- [ ] Run GDS Louvain with `writeProperty: cluster_id`; document the `maxLevels`/`tolerance` parameters actually used — check they're still the recommended defaults for the installed GDS version rather than copying the reference document's values blindly.
-- [ ] Verification: `MATCH (w:Wallet) RETURN w.cluster_id, count(*) ORDER BY count(*) DESC LIMIT 20` — `cluster_id` non-null for every `:Wallet` with a `:CO_SPEND` edge; top-20 sizes are plausible (not one giant cluster, not all singletons).
-- [ ] Write `cluster_id` back from Neo4j to PostgreSQL (join on wallet address in `input_addresses`/`output_addresses`) so Phases 5/7 can read it directly from PostgreSQL.
-- [ ] Verification: PostgreSQL `cluster_id` matches Neo4j `:Wallet.cluster_id` for 10 random spot-checked wallets.
-- [ ] Write and test the "top-20 largest clusters by member count" query (Cypher or SQL) that Phase 9's dashboard will consume — confirm it returns `cluster_id`, `member_count`, and a sample of member addresses.
+- [x] **Standalone verification item (do this before writing any GDS Cypher):** confirm in Neo4j GDS's official docs which GDS version is compatible with the installed Neo4j version, and confirm the exact Louvain procedure name/signature for that GDS version (signatures have changed across GDS major releases).
+- [x] Create the GDS in-memory graph projection scoped to `:Wallet` nodes and `:CO_SPEND` relationships, UNDIRECTED orientation — confirm the exact current projection API syntax against the installed GDS version's docs before writing it.
+- [x] Run GDS Louvain with `writeProperty: cluster_id`; document the `maxLevels`/`tolerance` parameters actually used — check they're still the recommended defaults for the installed GDS version rather than copying the reference document's values blindly.
+- [x] Verification: `MATCH (w:Wallet) RETURN w.cluster_id, count(*) ORDER BY count(*) DESC LIMIT 20` — `cluster_id` non-null for every `:Wallet` with a `:CO_SPEND` edge; top-20 sizes are plausible (not one giant cluster, not all singletons).
+- [x] Write `cluster_id` back from Neo4j to PostgreSQL (join on wallet address in `input_addresses`/`output_addresses`) so Phases 5/7 can read it directly from PostgreSQL.
+- [x] Verification: PostgreSQL `cluster_id` matches Neo4j `:Wallet.cluster_id` for 10 random spot-checked wallets.
+- [x] Write and test the "top-20 largest clusters by member count" query (Cypher or SQL) that Phase 9's dashboard will consume — confirm it returns `cluster_id`, `member_count`, and a sample of member addresses.
 
 ---
 
@@ -340,4 +340,29 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
      - V2: `:Transaction` count = 100,000 (Neo4j) == 100,000 (PostgreSQL)
      - V3: 5/5 random txid spot-checks — SENDS and RECEIVES amounts match to 8 decimal places
      - V4: `:CO_SPEND` count = 39,620 (Neo4j) == 39,620 (Python-computed unique canonical pairs from SQL)
-  3. `backend/venv/Scripts/python -m pytest backend/tests/ -v`: **29 passed, 2 skipped** in 2.52s. All 5 new `test_graph_build.py` tests pass.
+  3. `backend/venv/Scripts/python -m pytest backend/tests/ -v`: **29 passed, 2 skipped** in 2.52s. All 5 new `test_graph_build.py` tests pass.
+
+### 2026-09-08 — Phase 4: Clustering & Community Detection (End-to-End)
+- **What was done:**
+  1. Verified GDS 2.13.12 live against `sih26146-neo4j`; confirmed `gds.graph.project` and `gds.louvain.write` signatures before writing any Cypher.
+  2. Created `backend/scripts/cluster_wallets.py`: projects `:Wallet`+`:CO_SPEND` (UNDIRECTED) into GDS in-memory graph, runs `gds.louvain.write` (maxLevels=10, tolerance=0.0001), verifies all wallets covered, syncs to PostgreSQL via `input_addresses[1]` (deterministic first-sender assignment), saves `data/top20_clusters.json` for Phase 9 dashboard.
+  3. Created `backend/scripts/verify_phase4.py`: standalone V1–V4 checks (CO_SPEND coverage, distribution sanity, PG↔Neo4j spot-check, top-20 query).
+  4. Created `backend/tests/test_phase4_clustering.py`: 5 pytest integration tests.
+  5. Discovered and fixed three correctness issues during implementation: (a) Louvain IDs renumber across runs — solved by always overwriting PG with current Neo4j state; (b) `ANY(input_addresses)` UPDATE is non-deterministic for multi-input transactions — fixed by using `input_addresses[1]`; (c) V3 must sample primary-sender wallets only — fixed by querying distinct `input_addresses[1]` addresses from PG.
+  6. PG sync performance: `input_addresses[1]` = 3.43s vs `ANY()` = 277s (index hit vs full array scan on 100k rows).
+- **How it was verified:**
+  1. `backend/venv/Scripts/python backend/scripts/cluster_wallets.py`: Exit code 0.
+     - 9,794 communities, modularity=0.461314, ranLevels=5
+     - 24,673 / 24,673 wallets have cluster_id written
+     - 100,000 PG rows updated in 3.43s
+  2. `backend/venv/Scripts/python backend/scripts/verify_phase4.py`: All 4 checks PASS.
+     - V1: 0 wallets with CO_SPEND edges missing cluster_id (15,135 total CO_SPEND wallets)
+     - V2a: Largest cluster = 1,751 wallets (7.1%) — well below 50% cap
+     - V2b: 9,794 distinct communities
+     - V2c: 9,538 singletons out of 9,794 (multi-member clusters exist)
+     - V3: 10/10 primary-sender wallet spot-checks — PostgreSQL cluster_id matches Neo4j
+     - V4: Top-20 query returns 20 rows with cluster_id and member_count, all non-empty
+  3. `backend/venv/Scripts/python -m pytest backend/tests/ -v`: **34 passed, 2 skipped** in 3.53s. All 5 new `test_phase4_clustering.py` tests pass. No regressions.
+
+
+

@@ -72,12 +72,12 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 ## Phase 4 — F1: Entity Clustering (Neo4j GDS Louvain) [Difficulty: Low | Complexity: Medium]
 **Goal:** Group wallets into clusters by common ownership.
 
-- [ ] `gds.graph.project` on the `:CO_SPEND` wallet graph
-- [ ] `gds.louvain.write` → writes `cluster_id` back to each `:Wallet`
-- [ ] Sync `cluster_id` back to Postgres for downstream ML features
-- [ ] Dashboard data prep: top-20 largest clusters
+- [x] `gds.graph.project` on the `:CO_SPEND` wallet graph
+- [x] `gds.louvain.write` → writes `cluster_id` back to each `:Wallet`
+- [x] Sync `cluster_id` back to Postgres for downstream ML features
+- [x] Dashboard data prep: top-20 largest clusters
 
-**Checkpoint:** Every wallet has a non-null `cluster_id`; largest clusters look sensible (not one giant blob, not all singletons).
+**Checkpoint:** Every wallet has a non-null `cluster_id`; largest clusters look sensible (not one giant blob, not all singletons). [VERIFIED: GDS 2.13.12, 9,794 communities, modularity=0.461314, ranLevels=5. Largest cluster: 1,751 wallets (7.1%). 9,538 singletons. 100k PG rows synced via input_addresses[1] in 3.43s. V1–V4 all PASS. 5/5 new pytest tests pass. Full suite: 34 passed, 2 skipped.]
 
 ---
 
