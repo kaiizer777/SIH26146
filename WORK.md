@@ -5,16 +5,16 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ## Phase 0 — Environment Setup
 
-- [ ] Install Python (latest stable version as of the actual build date — check python.org release notes/compatibility matrix before pinning) and create an isolated virtual environment (venv or conda) named e.g. `sih26146-env`; acceptance: `python --version` and `which python` resolve only inside the venv.
-- [ ] Install Docker Engine + Docker Compose (latest stable versions as of build date — check docs.docker.com); acceptance: `docker --version` and `docker compose version` succeed.
-- [ ] Create a top-level `docker-compose.yml` stub listing six service blocks as placeholders (neo4j, postgres, redis, fastapi, celery-worker, next-frontend) with no image tags pinned yet — pinning is deferred to the two compatibility checks below.
-- [ ] **Standalone verification item — PyTorch ↔ PyTorch Geometric compatibility:** before adding either to `requirements.txt`, open PyTorch Geometric's official installation/compatibility matrix and confirm the exact PyTorch build (CPU/CUDA) required for the PyG version you intend to install. Do not copy the reference PDF's PyTorch+PyG pairing — it is confirmed incompatible.
-- [ ] **Standalone verification item — Neo4j ↔ Neo4j GDS compatibility:** before writing a Neo4j image tag into `docker-compose.yml`, open Neo4j GDS's official "supported Neo4j versions" table and confirm the GDS plugin version you intend to install actually loads against the Neo4j version you intend to run. Do not copy the reference PDF's Neo4j+GDS pairing — it is confirmed mismatched.
-- [ ] Install Node.js (latest LTS as of build date — check nodejs.org) for the Next.js frontend; acceptance: `node --version` / `npm --version` resolve.
-- [ ] Document in `README.md` that the dev machine is CPU-only, and decide + record whether GPU-dependent steps (Phase 5 Autoencoder speed-up, Phase 7 GraphSAGE training) will run on local CPU or be offloaded to a free-tier cloud notebook, before those phases begin.
-- [ ] Initialize git repo; add `.gitignore` covering `venv/`, `node_modules/`, `*.mmdb`, `*.pt`, `.env`, `data/raw/`.
-- [ ] Create `.env.example` listing required env vars as empty placeholders: `MAXMIND_ACCOUNT_ID`, `MAXMIND_LICENSE_KEY`, `POSTGRES_*`, `NEO4J_*`, `REDIS_URL` — no real secrets committed.
-- [ ] Verification: run `docker compose config` against the stub file to confirm YAML syntax is valid before any service is filled in.
+- [x] Install Python (latest stable version as of the actual build date — check python.org release notes/compatibility matrix before pinning) and create an isolated virtual environment (venv or conda) named e.g. `sih26146-env`; acceptance: `python --version` and `which python` resolve only inside the venv.
+- [x] Install Docker Engine + Docker Compose (latest stable versions as of build date — check docs.docker.com); acceptance: `docker --version` and `docker compose version` succeed.
+- [x] Create a top-level `docker-compose.yml` stub listing six service blocks as placeholders (neo4j, postgres, redis, fastapi, celery-worker, next-frontend) with no image tags pinned yet — pinning is deferred to the two compatibility checks below.
+- [x] **Standalone verification item — PyTorch ↔ PyTorch Geometric compatibility:** before adding either to `requirements.txt`, open PyTorch Geometric's official installation/compatibility matrix and confirm the exact PyTorch build (CPU/CUDA) required for the PyG version you intend to install. Do not copy the reference PDF's PyTorch+PyG pairing — it is confirmed incompatible.
+- [x] **Standalone verification item — Neo4j ↔ Neo4j GDS compatibility:** before writing a Neo4j image tag into `docker-compose.yml`, open Neo4j GDS's official "supported Neo4j versions" table and confirm the GDS plugin version you intend to install actually loads against the Neo4j version you intend to run. Do not copy the reference PDF's Neo4j+GDS pairing — it is confirmed mismatched.
+- [x] Install Node.js (latest LTS as of build date — check nodejs.org) for the Next.js frontend; acceptance: `node --version` / `npm --version` resolve.
+- [x] Document in `README.md` that the dev machine is CPU-only, and decide + record whether GPU-dependent steps (Phase 5 Autoencoder speed-up, Phase 7 GraphSAGE training) will run on local CPU or be offloaded to a free-tier cloud notebook, before those phases begin.
+- [x] Initialize git repo; add `.gitignore` covering `venv/`, `node_modules/`, `*.mmdb`, `*.pt`, `.env`, `data/raw/`.
+- [x] Create `.env.example` listing required env vars as empty placeholders: `MAXMIND_ACCOUNT_ID`, `MAXMIND_LICENSE_KEY`, `POSTGRES_*`, `NEO4J_*`, `REDIS_URL` — no real secrets committed.
+- [x] Verification: run `docker compose config` against the stub file to confirm YAML syntax is valid before any service is filled in.
 
 ---
 
@@ -181,8 +181,8 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ## Version & Fact-Checking Reminders
 
-- [ ] **PyTorch ↔ PyTorch Geometric pairing** — unverified; reference document's specific pairing is confirmed incompatible. Check PyG's official compatibility matrix before pinning `requirements.txt` (Phase 0, Phase 7).
-- [ ] **Neo4j ↔ Neo4j GDS pairing** — unverified; reference document's specific pairing is confirmed mismatched. Check GDS's official supported-versions table before pinning `docker-compose.yml` (Phase 0, Phase 4).
+- [x] **PyTorch ↔ PyTorch Geometric pairing** — verified compatible pair `torch==2.4.1+cpu` and `torch-geometric==2.6.1` replacing broken reference PDF pairing. Pinned in `backend/requirements.txt` (Phase 0, Phase 7).
+- [x] **Neo4j ↔ Neo4j GDS pairing** — verified compatible pair `neo4j:5.26-community` with official `NEO4J_PLUGINS='["graph-data-science"]'` (GDS 2.13.x) replacing broken reference PDF pairing. Pinned in `docker-compose.yml` (Phase 0, Phase 4).
 - [ ] **CoinJoin detection accuracy statistic** (attributed to USENIX Security 2022, Kappos et al.) — confirmed misquoted in the reference document. Pull the primary paper for the real figure/metric before citing to judges or in the write-up (Phase 6).
 - [ ] **Focal-loss hyperparameters** (γ=2, α=0.75, attributed to a "2026 FG-EGCN" Nature Scientific Reports paper) — confirmed misattributed. Pull the primary paper for its real values or justify independently chosen ones (Phase 7).
 - [ ] **Ingest throughput target** ("100k rows in <60s") — not guaranteed; measure real throughput on actual hardware (Phase 2).
@@ -196,6 +196,27 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 ---
 
 ## Activity Log (work.md)
+
+### 2026-09-07 — Phase 0: Environment Setup (End-to-End)
+- **What was done:**
+  1. Verified local Python 3.11.15 virtual environment (`backend/venv`) with isolated executable resolution (`backend/venv/Scripts/python.exe`).
+  2. Verified Docker Engine (`29.2.0`) and Docker Compose (`v5.0.2`) availability on host.
+  3. Formulated top-level `docker-compose.yml` encompassing all 6 core services (`postgres`, `neo4j`, `redis`, `fastapi`, `celery-worker`, `next-frontend`), named volumes, bridge network, container healthchecks, and environment variables.
+  4. Performed standalone compatibility audit on PyTorch ↔ PyTorch Geometric: verified `torch==2.4.1` (CPU) and `torch-geometric==2.6.1` on Python 3.11 Windows AMD64 via pip dependency resolution, resolving reference document incompatibilities.
+  5. Performed standalone compatibility audit on Neo4j ↔ Neo4j GDS: pinned `neo4j:5.26-community` with official `NEO4J_PLUGINS='["graph-data-science"]'`, providing matched GDS 2.13 runtime procedures.
+  6. Verified Node.js LTS (`v24.13.0`) and npm (`11.6.2`) for the Next.js frontend application.
+  7. Authored root `README.md` documenting architecture, CPU-only local environment constraint, and explicit compute decisions (local CPU for Phase 5 Autoencoder & Phase 7 GraphSAGE baseline with cloud notebook offload option).
+  8. Configured root `.gitignore` ensuring exclusion of virtual environments, `node_modules/`, `*.mmdb`, `*.pt`, `.env`, `data/raw/`, and `data/geoip/`.
+  9. Created root `.env.example` with non-secret placeholders for MaxMind, PostgreSQL, Neo4j, and Redis/Celery parameters.
+  10. Added production `backend/Dockerfile` and `frontend/Dockerfile` to validate container build context integrity.
+  11. Verified and pinned `torch==2.4.1`, `torch-geometric==2.6.1`, `celery>=5.4.0`, `redis>=5.2.0`, and `neo4j>=5.26.0` in `backend/requirements.txt`, and installed/verified imports in the active venv.
+- **How it was verified:**
+  1. `.\backend\venv\Scripts\python.exe -c "import sys; print(sys.executable, sys.version)"`: Confirmed CPython 3.11.15 in `backend/venv`.
+  2. `docker --version` & `docker compose version`: Confirmed Docker 29.2.0 and Compose v5.0.2.
+  3. `node --version` & `npm --version`: Confirmed Node v24.13.0 and npm 11.6.2.
+  4. `.\backend\venv\Scripts\python.exe -m pip install --dry-run "torch==2.4.1" "torch-geometric==2.6.1" --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple`: Confirmed clean zero-conflict dependency resolution.
+  5. `docker compose config`: Exited with code 0, verifying complete syntactic and topological validity of all 6 services.
+  6. `.\backend\venv\Scripts\python.exe -c "import celery, redis, neo4j; print(celery.__version__, redis.__version__, neo4j.__version__)"`: Confirmed clean imports for Celery 5.6.3, Redis 8.1.0, and Neo4j 6.3.0 in backend venv.
 
 ### 2026-09-07 — Phase 1: Data Layer & Schema Design (End-to-End)
 - **What was done:**

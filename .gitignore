@@ -20,6 +20,7 @@ __pycache__/
 *.pt
 *.pth
 data/geoip/
+data/raw/
 
 # Node.js / Frontend
 node_modules/

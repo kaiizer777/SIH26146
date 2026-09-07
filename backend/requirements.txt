@@ -28,3 +28,12 @@ numpy>=2.0.0
 scipy>=1.14.0
 requests>=2.32.0
 pytest>=8.3.0
+
+# Phase 0 / Phase 2: Pipeline Infrastructure
+celery>=5.4.0
+redis>=5.2.0
+neo4j>=5.26.0
+
+# Phase 0 / Phase 5 / Phase 7: AI & Graph ML (Verified Compatibility Pairing)
+torch==2.4.1
+torch-geometric==2.6.1

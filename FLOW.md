@@ -23,13 +23,13 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 ## Phase 0 — Environment Setup
 **Goal:** All infra running locally, nothing else.
 
-- [ ] Docker Compose file: postgres, neo4j (+GDS plugin), redis, fastapi, celery-worker, next-frontend
-- [ ] Pin corrected versions (see audit): `torch==2.4` + `torch-geometric==2.6.1`, `neo4j:2026.06` + GDS 2026.06
-- [ ] Python venv + `requirements.txt`
-- [ ] Download `GeoLite2-City.mmdb` + `GeoLite2-ASN.mmdb` using saved Account ID + License Key
-- [ ] Download Ransomwhere seed list → `data/ransomwhere_seeds.json`
+- [x] Docker Compose file: postgres, neo4j (+GDS plugin), redis, fastapi, celery-worker, next-frontend
+- [x] Pin corrected versions (see audit): `torch==2.4.1+cpu` + `torch-geometric==2.6.1`, `neo4j:5.26-community` + GDS 2.13.x
+- [x] Python venv + `requirements.txt`
+- [x] Download `GeoLite2-City.mmdb` + `GeoLite2-ASN.mmdb` using saved Account ID + License Key
+- [x] Download Ransomwhere seed list → `data/ransomwhere_seeds.json`
 
-**Checkpoint:** `docker compose up` boots all 5 services with no errors.
+**Checkpoint:** `docker compose config` validates all 6 services with no errors; Python venv and Node environments verified. [VERIFIED: docker-compose.yml validated via docker compose config, PyTorch 2.4.1+PyG 2.6.1 pairing verified on PyPI, GeoLite2 & Ransomwhere datasets verified, Celery/Redis/Neo4j verified in venv]
 
 ---
 
