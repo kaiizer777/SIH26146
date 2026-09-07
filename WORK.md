@@ -3,7 +3,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 0 — Environment Setup
+## Phase 0 — Environment Setup [Difficulty: Low | Complexity: Medium]
 
 - [x] Install Python (latest stable version as of the actual build date — check python.org release notes/compatibility matrix before pinning) and create an isolated virtual environment (venv or conda) named e.g. `sih26146-env`; acceptance: `python --version` and `which python` resolve only inside the venv.
 - [x] Install Docker Engine + Docker Compose (latest stable versions as of build date — check docs.docker.com); acceptance: `docker --version` and `docker compose version` succeed.
@@ -18,7 +18,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 1 — Data Layer & Schema Design
+## Phase 1 — Data Layer & Schema Design [Difficulty: Medium | Complexity: Medium]
 
 - [x] Design PostgreSQL table `transactions` matching the spec exactly: `id BIGSERIAL PK`, `ingested_at TIMESTAMPTZ`, `ts TIMESTAMPTZ NOT NULL`, `src_ip INET`, `dst_ip INET`, `src_port INTEGER`, `dst_port INTEGER`, `txid CHAR(64) UNIQUE`, `input_addresses TEXT[]`, `output_addresses TEXT[]`, `input_amounts NUMERIC(20,8)[]`, `output_amounts NUMERIC(20,8)[]`, `fee NUMERIC(20,8)`, `script_type TEXT`, `geo_country CHAR(2)`, `asn INTEGER`, `cluster_id INTEGER`, `anomaly_score NUMERIC(6,4)`, `risk_score NUMERIC(6,4)`, `is_flagged BOOLEAN`, `raw_json JSONB`.
 - [x] Write the schema as a versioned migration (e.g. Alembic — latest stable version as of build date, verify against its own docs) rather than a raw `CREATE TABLE` script, so schema changes are trackable.
@@ -38,7 +38,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 2 — Ingest Pipeline
+## Phase 2 — Ingest Pipeline [Difficulty: Medium | Complexity: High]
 
 - [ ] Scaffold FastAPI app structure (`app/main.py`, `app/routers/`, `app/models/`, `app/services/`) with a `GET /health` route returning 200 — no business logic yet.
 - [ ] Define Pydantic models for all minimum input fields (timestamp, src_ip, dst_ip, src_port, dst_port, txid, input_addresses[], output_addresses[], input_amounts[], output_amounts[], fee, script_type, geo_country, asn) matching Phase 1's PostgreSQL schema, with field validators (e.g. txid = 64 hex chars, IPs must parse).
@@ -54,7 +54,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 3 — Graph Build (PostgreSQL → Neo4j)
+## Phase 3 — Graph Build (PostgreSQL → Neo4j) [Difficulty: Medium | Complexity: Medium]
 
 - [ ] Write a batch export script reading `transactions` in chunks (e.g. keyset-paginated, not a single unbounded `SELECT *`).
 - [ ] Implement `:Wallet` node creation via batch `UNWIND` + `MERGE`, deduplicated on `address`.
@@ -71,7 +71,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 4 — Entity Clustering (F1, Neo4j GDS Louvain)
+## Phase 4 — Entity Clustering (F1, Neo4j GDS Louvain) [Difficulty: Low | Complexity: Medium]
 
 - [ ] **Standalone verification item (do this before writing any GDS Cypher):** confirm in Neo4j GDS's official docs which GDS version is compatible with the installed Neo4j version, and confirm the exact Louvain procedure name/signature for that GDS version (signatures have changed across GDS major releases).
 - [ ] Create the GDS in-memory graph projection scoped to `:Wallet` nodes and `:CO_SPEND` relationships, UNDIRECTED orientation — confirm the exact current projection API syntax against the installed GDS version's docs before writing it.
@@ -83,7 +83,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 5 — Anomaly Detection (F2, PyTorch Autoencoder)
+## Phase 5 — Anomaly Detection (F2, PyTorch Autoencoder) [Difficulty: Medium | Complexity: High]
 
 - [ ] Implement the 18-feature extraction pipeline exactly as specified (fee_rate, total_in_btc, total_out_btc, num_inputs, num_outputs, max_output_fraction, output_entropy, equal_outputs_flag, coinjoin_candidate_flag, ip_count, unique_country_count, unique_asn_count, hour_of_day, day_of_week, is_taproot, is_segwit, amt_log, fee_log) as one reusable function used identically for training and inference.
 - [ ] Unit test the extractor against 3–5 hand-constructed transactions with known expected feature values.
@@ -100,7 +100,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 6 — Peeling-Chain / Mixing Detection (F3, Cypher rules)
+## Phase 6 — Peeling-Chain / Mixing Detection (F3, Cypher rules) [Difficulty: Medium | Complexity: Medium]
 
 - [ ] Implement the peeling-chain-hop predicate exactly as specified: exactly 1 input address, exactly 2 output addresses, one output ≤5% of input (change), the larger output ≥80% of input.
 - [ ] Implement the chain-following traversal along `(:Wallet)-[:SENDS]->(:Transaction)-[:RECEIVES]->(:Wallet)` while the predicate continues to hold, tracking hop count.
@@ -115,7 +115,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 7 — Risk Scoring (F4, GraphSAGE via PyTorch Geometric)
+## Phase 7 — Risk Scoring (F4, GraphSAGE via PyTorch Geometric) [Difficulty: High | Complexity: High]
 
 - [ ] Before writing any code: re-confirm the PyTorch + PyTorch Geometric version pairing chosen in Phase 0 is what's actually referenced here — this phase is the real consumer of that dependency, so any mismatch surfaces as an install/import failure if skipped earlier.
 - [ ] Implement GDS PageRank seeded from Ransomwhere wallet addresses (custom teleport weights favoring seed-illicit nodes) to compute an initial `asn_risk_score` feature per wallet before GNN training.
@@ -132,7 +132,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 8 — Explainability Layer (XAI-A / B / C / D)
+## Phase 8 — Explainability Layer (XAI-A / B / C / D) [Difficulty: High | Complexity: High]
 
 - [ ] XAI-A: apply SHAP DeepExplainer to the trained Autoencoder using ~100 normal transactions as background. Before pinning SHAP's version in `requirements.txt`, confirm on SHAP's own docs/PyPI which current version actually supports DeepExplainer for the installed PyTorch version — this API pairing has broken across versions before.
 - [ ] Compute per-feature SHAP values for every transaction flagged in Phase 5; store as JSON keyed by `txid`, one record per flagged transaction with all 18 feature attributions.
@@ -147,7 +147,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 9 — API + Dashboard
+## Phase 9 — API + Dashboard [Difficulty: High | Complexity: High]
 
 - [ ] Implement `GET /alerts?limit=&sort=risk_desc` returning paginated ranked alerts (address/txid, cluster_id, anomaly_score, risk_score, is_mixing, is_flagged); verify sort order and limit are actually respected.
 - [ ] Implement `GET /entity/{address}/explain` returning the XAI-C evidence trail plus XAI-A/XAI-B data for that wallet; verify 404 for an unknown address.
@@ -166,7 +166,7 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 10 — Demo Prep, Wireframes & Scoring Optimization
+## Phase 10 — Demo Prep, Wireframes & Scoring Optimization [Difficulty: Low | Complexity: Medium]
 
 - [ ] Produce the 3-screen UX wireframes (Ingest, Alert Table, Entity Detail) — sketch/export, label each component with the data it shows.
 - [ ] Write the 1-page threat-mapping section: map the 4 named criminal behaviors (ransomware, darknet-market proceeds, extortion, laundering) to the specific detection rule or model output that catches each.

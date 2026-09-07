@@ -20,7 +20,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 0 — Environment Setup
+## Phase 0 — Environment Setup [Difficulty: Low | Complexity: Medium]
 **Goal:** All infra running locally, nothing else.
 
 - [x] Docker Compose file: postgres, neo4j (+GDS plugin), redis, fastapi, celery-worker, next-frontend
@@ -33,7 +33,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 1 — Synthetic Data Generation
+## Phase 1 — Synthetic Data Generation [Difficulty: Medium | Complexity: Medium]
 **Goal:** Have realistic fake data to build against (no real BTC data needed).
 
 - [x] Python script using Faker to generate ~100,000 synthetic transactions
@@ -44,7 +44,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 2 — Ingest Pipeline
+## Phase 2 — Ingest Pipeline [Difficulty: Medium | Complexity: High]
 **Goal:** Bulk file in → normalized rows in Postgres, GeoIP-enriched.
 
 - [ ] `POST /ingest` FastAPI endpoint — multipart file upload
@@ -57,7 +57,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 3 — Graph Build
+## Phase 3 — Graph Build [Difficulty: Medium | Complexity: Medium]
 **Goal:** Mirror Postgres data into Neo4j as a queryable graph.
 
 - [ ] Read Postgres in chunks → batch `UNWIND MERGE` to create `:Wallet`, `:Transaction`, `:IP` nodes
@@ -69,7 +69,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 4 — F1: Entity Clustering (Neo4j GDS Louvain)
+## Phase 4 — F1: Entity Clustering (Neo4j GDS Louvain) [Difficulty: Low | Complexity: Medium]
 **Goal:** Group wallets into clusters by common ownership.
 
 - [ ] `gds.graph.project` on the `:CO_SPEND` wallet graph
@@ -81,7 +81,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 5 — F2: Anomaly Detection (PyTorch Autoencoder)
+## Phase 5 — F2: Anomaly Detection (PyTorch Autoencoder) [Difficulty: Medium | Complexity: High]
 **Goal:** Score every transaction for how "unusual" it is.
 
 - [ ] Build 18-feature vector per transaction (fee_rate, in/out amounts, entropy, IP/country/ASN counts, etc.)
@@ -93,7 +93,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 6 — F3: Peeling-Chain / Mixing Detection (Cypher Rules)
+## Phase 6 — F3: Peeling-Chain / Mixing Detection (Cypher Rules) [Difficulty: Medium | Complexity: Medium]
 **Goal:** Flag laundering-pattern transactions using graph traversal, not ML.
 
 - [ ] Cypher query for peeling-chain criteria (1 input, 2 outputs, ≥5-hop chain, change-output ratio)
@@ -104,7 +104,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 7 — F4: Risk Scoring (GraphSAGE)
+## Phase 7 — F4: Risk Scoring (GraphSAGE) [Difficulty: High | Complexity: High]
 **Goal:** Propagate risk from known-illicit seed wallets across the graph.
 
 - [ ] (Optional but recommended per audit) Run GDS PageRank seeded from Ransomwhere wallets → `asn_risk_score` feature
@@ -116,7 +116,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 8 — Explainability Layer
+## Phase 8 — Explainability Layer [Difficulty: High | Complexity: High]
 **Goal:** Every flagged wallet/transaction has a human-readable "why."
 
 - [ ] SHAP DeepExplainer on the autoencoder → per-feature attribution (waterfall chart data) — **keep model as plain `nn.Module`, don't `torch.compile()` it first**
@@ -128,7 +128,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 9 — FastAPI + Next.js Dashboard
+## Phase 9 — FastAPI + Next.js Dashboard [Difficulty: High | Complexity: High]
 **Goal:** Wire everything into a demo-able UI.
 
 - [ ] API endpoints: `GET /alerts`, `GET /entity/{address}/explain`, `GET /graph/{cluster_id}`, `GET /ingest/status/{task_id}`
@@ -139,7 +139,7 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-## Phase 10 — Demo Prep & Polish
+## Phase 10 — Demo Prep & Polish [Difficulty: Low | Complexity: Medium]
 **Goal:** Ready for judges.
 
 - [ ] Rehearse the 90-second live demo flow (upload → alerts → drill-down → SHAP → graph → evidence) until it's under 2 minutes
