@@ -49,5 +49,9 @@ class Settings(BaseSettings):
     graph_pg_chunk_size: int = 5_000   # rows fetched from PostgreSQL per keyset page
     graph_neo4j_batch_size: int = 1_000  # items per Cypher UNWIND transaction
 
+    # --- Phase 5: Anomaly Detection ---
+    models_dir: str = str(_DATA_ROOT / "models")
+    anomaly_threshold_percentile: float = 95.0  # 95th-pct of non-illicit held-out MSE
+
 
 settings = Settings()

@@ -43,3 +43,8 @@ httpx2>=2.12.0
 # Phase 0 / Phase 5 / Phase 7: AI & Graph ML (Verified Compatibility Pairing)
 torch==2.4.1
 torch-geometric==2.6.1
+
+# Phase 5: Anomaly Detection — feature scaling, persistence, plotting
+scikit-learn>=1.5.0
+joblib>=1.4.0
+matplotlib>=3.9.0

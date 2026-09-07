@@ -165,3 +165,26 @@ All numbers are actual measurements on the dev machine, not estimates from the r
 | PostgreSQL rows updated | 100,000 |
 | PostgreSQL sync elapsed | 4.33s |
 
+
+## Phase 5 — Autoencoder Training & Anomaly Scoring — 2026-09-07 20:03 UTC
+
+| Metric | Value |
+|---|---|
+| PyTorch version | 2.4.1+cpu |
+| Device | CPU |
+| Non-illicit training rows | 76,756 |
+| Non-illicit validation rows | 19,190 |
+| Seed-illicit rows | 4,054 |
+| All rows scored | 100,000 |
+| Epochs trained | 150 |
+| Final train MSE | 0.008056 |
+| Final val MSE | 0.016810 |
+| Threshold (95th pct, val) | 0.034618 |
+| Illicit score > threshold | 4.9% |
+| Non-illicit score > threshold | 5.0% (expected ~5%) |
+| Training wall-clock time | 211.7s |
+| Scoring wall-clock time | 1.0s |
+| Write-back wall-clock time | 3.3s |
+| Model file | C:\Users\bari2\Desktop\SIH26146\data\models\autoencoder_20260907.pt |
+| Scaler file | C:\Users\bari2\Desktop\SIH26146\data\models\scaler_20260907.pkl |
+
