@@ -51,6 +51,9 @@ class Transaction(Base):
     anomaly_score = Column(Numeric(6, 4), nullable=True)
     risk_score = Column(Numeric(6, 4), nullable=True)
     is_flagged = Column(Boolean, default=False, nullable=False)
+    # Phase 6: F3 peeling-chain / mixing detection
+    is_mixing = Column(Boolean, default=False, nullable=False, server_default="false")
+    chain_hops = Column(Integer, nullable=True)  # non-NULL only for peeling chains
     raw_json = Column(JSONB, nullable=True)
 
     __table_args__ = (
@@ -58,6 +61,7 @@ class Transaction(Base):
         Index("idx_transactions_dst_ip", "dst_ip"),
         Index("idx_transactions_cluster_id", "cluster_id"),
         Index("idx_transactions_risk_score", "risk_score"),
+        Index("idx_transactions_is_mixing", "is_mixing"),
         CheckConstraint(
             "script_type IS NULL OR script_type IN ('P2PK', 'P2PKH', 'P2SH', 'P2WPKH', 'P2TR')",
             name="check_script_type",

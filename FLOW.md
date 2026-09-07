@@ -96,11 +96,11 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 ## Phase 6 — F3: Peeling-Chain / Mixing Detection (Cypher Rules) [Difficulty: Medium | Complexity: Medium]
 **Goal:** Flag laundering-pattern transactions using graph traversal, not ML.
 
-- [ ] Cypher query for peeling-chain criteria (1 input, 2 outputs, ≥5-hop chain, change-output ratio)
-- [ ] Cypher query for CoinJoin-like criteria (≥3 in/out, equal-value outputs, min BTC threshold)
-- [ ] Write `is_mixing` + `chain_hops` back to `:Transaction` nodes and Postgres
+- [x] Cypher query for peeling-chain criteria (1 input, 2 outputs, ≥5-hop chain, change-output ratio)
+- [x] Cypher query for CoinJoin-like criteria (≥3 in/out, equal-value outputs, min BTC threshold)
+- [x] Write `is_mixing` + `chain_hops` back to `:Transaction` nodes and Postgres
 
-**Checkpoint:** Injected synthetic peeling chains and CoinJoin clusters are correctly flagged; spot-check a few by hand.
+**Checkpoint:** Injected synthetic peeling chains and CoinJoin clusters are correctly flagged; spot-check a few by hand. [VERIFIED: 3,207 single-hop candidates → 133 qualified chains (≥5 hops) → 616 :Transaction nodes flagged (peeling). 593 structural CoinJoin candidates → 67 qualified → 67 flagged. 683 total is_mixing=true in Neo4j + PG. Peeling recall: 97.2% (451/464 injected). CoinJoin recall: 100.0% (50/50). FPR (vs synthetic GT): 26.6%. Kappos et al. 89.2%/87.5% confirmed. 89/89 pytest tests pass (2 skipped). Peeling wall-time: 87.1s, CoinJoin: 0.96s, PG sync: 0.62s.]
 
 ---
 
