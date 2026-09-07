@@ -56,18 +56,18 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ## Phase 3 — Graph Build (PostgreSQL → Neo4j) [Difficulty: Medium | Complexity: Medium]
 
-- [ ] Write a batch export script reading `transactions` in chunks (e.g. keyset-paginated, not a single unbounded `SELECT *`).
-- [ ] Implement `:Wallet` node creation via batch `UNWIND` + `MERGE`, deduplicated on `address`.
-- [ ] Implement `:Transaction` node creation via batch `UNWIND` + `MERGE` keyed on `txid`, setting `ts`, `total_in`, `total_out`, `fee`.
-- [ ] Implement `:IP` node creation via batch `UNWIND` + `MERGE` keyed on `address`, setting `country`/`asn` from the enriched columns.
-- [ ] Implement `:SENDS`/`:RECEIVES` edge creation from `input_addresses[]`/`output_addresses[]` and their amount arrays.
-- [ ] Implement `:OBSERVED` edge creation linking `:IP` to `:Transaction` using `ts` and `dst_port`.
-- [ ] Implement `:CO_SPEND` edge creation: for every transaction with >1 input address, emit an edge between every pairwise combination of that transaction's input addresses (feeds Phase 4).
-- [ ] Add a transaction-size cap on all `UNWIND`+`MERGE` writes (e.g. 1,000 rows/tx) to avoid memory pressure on the CPU-only machine.
-- [ ] Verification 1: `MATCH (w:Wallet) RETURN count(w)` equals the distinct-address count computed independently via SQL.
-- [ ] Verification 2: `MATCH (t:Transaction) RETURN count(t)` equals the `transactions` row count.
-- [ ] Verification 3: spot-check 5 known `txid`s — Neo4j `:SENDS`/`:RECEIVES` amounts exactly match the PostgreSQL amount arrays for those txids.
-- [ ] Verification 4: `MATCH ()-[r:CO_SPEND]->() RETURN count(r)` matches the expected combinatorial count for a handful of multi-input transactions, and the directed/undirected convention actually implemented is documented.
+- [x] Write a batch export script reading `transactions` in chunks (e.g. keyset-paginated, not a single unbounded `SELECT *`).
+- [x] Implement `:Wallet` node creation via batch `UNWIND` + `MERGE`, deduplicated on `address`.
+- [x] Implement `:Transaction` node creation via batch `UNWIND` + `MERGE` keyed on `txid`, setting `ts`, `total_in`, `total_out`, `fee`.
+- [x] Implement `:IP` node creation via batch `UNWIND` + `MERGE` keyed on `address`, setting `country`/`asn` from the enriched columns.
+- [x] Implement `:SENDS`/`:RECEIVES` edge creation from `input_addresses[]`/`output_addresses[]` and their amount arrays.
+- [x] Implement `:OBSERVED` edge creation linking `:IP` to `:Transaction` using `ts` and `dst_port`.
+- [x] Implement `:CO_SPEND` edge creation: for every transaction with >1 input address, emit an edge between every pairwise combination of that transaction's input addresses (feeds Phase 4).
+- [x] Add a transaction-size cap on all `UNWIND`+`MERGE` writes (e.g. 1,000 rows/tx) to avoid memory pressure on the CPU-only machine.
+- [x] Verification 1: `MATCH (w:Wallet) RETURN count(w)` equals the distinct-address count computed independently via SQL.
+- [x] Verification 2: `MATCH (t:Transaction) RETURN count(t)` equals the `transactions` row count.
+- [x] Verification 3: spot-check 5 known `txid`s — Neo4j `:SENDS`/`:RECEIVES` amounts exactly match the PostgreSQL amount arrays for those txids.
+- [x] Verification 4: `MATCH ()-[r:CO_SPEND]->() RETURN count(r)` matches the expected combinatorial count for a handful of multi-input transactions, and the directed/undirected convention actually implemented is documented.
 
 ---
 
@@ -314,4 +314,30 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
      - Total rejected: 0
      - Wall-clock time: 12.04s
      - Throughput: 8,307 rows/sec (with full GeoLite2-City and GeoLite2-ASN enrichment per row + COPY streaming)
-     - Results appended to `PERFORMANCE_LOG.md`.
+     - Results appended to `PERFORMANCE_LOG.md`.
+
+---
+
+### 2026-09-08 — Phase 3: Graph Build — PostgreSQL → Neo4j (End-to-End)
+- **What was done:**
+  1. Extended `backend/app/config.py` with `neo4j_uri`, `neo4j_user`, `neo4j_password` fields sourced from `.env` via `pydantic-settings`, plus `graph_pg_chunk_size` (5,000) and `graph_neo4j_batch_size` (1,000) tuning knobs.
+  2. Created `backend/app/services/graph_service.py`: thread-safe `GraphService` class with context-manager driver lifecycle, `run_schema_init()` (idempotent, reads `neo4j_init.cypher`), `verify_constraints()`, `batch_write()` (enforces 1,000-item cap via `session.execute_write()`), and `count_query()` helper.
+  3. Created `backend/scripts/build_graph.py`: streams 100,000 rows from PostgreSQL using keyset pagination (`WHERE id > %s ORDER BY id ASC LIMIT 5000`), writes five categories of Cypher `UNWIND $batch AS row` transactions capped at 1,000 items each: node upserts (`:Wallet`, `:Transaction`, `:IP`), `:SENDS`, `:RECEIVES`, `:OBSERVED`, and canonical `:CO_SPEND` edges (`itertools.combinations`, `addr1 < addr2` enforced, self-loops skipped). Prints per-chunk progress and appends metrics to `PERFORMANCE_LOG.md`.
+  4. Created `backend/scripts/verify_phase3.py`: standalone verification script running all 4 mandatory checks (V1–V4) against live Neo4j + PostgreSQL, exits 0 on all pass.
+  5. Created `backend/tests/test_graph_build.py`: 5 pytest integration tests (`test_constraints_exist`, `test_wallet_count_matches_sql`, `test_transaction_count_matches_sql`, `test_spot_check_txid_amounts`, `test_cospend_count_matches_computed`), all skipping gracefully if services unreachable.
+  6. Fixed `docker-compose.yml` Neo4j healthcheck from `curl` (not present in `neo4j:5.26-community`) to `wget`, which is available in the base image.
+- **How it was verified:**
+  1. `backend/venv/Scripts/python backend/scripts/build_graph.py`: Exit code 0. All 20 chunks processed.
+     - Rows read: 100,000
+     - `:Transaction` nodes: 100,000
+     - `:SENDS` edges: 138,000
+     - `:RECEIVES` edges: 188,342
+     - `:OBSERVED` edges: 100,000
+     - `:CO_SPEND` edges (canonical, written): 45,516 attempted (39,620 unique canonical pairs deduplicated via MERGE)
+     - Wall time: 200.21s | Peak memory: 39.41 MB
+  2. `backend/venv/Scripts/python backend/scripts/verify_phase3.py`: All 4 checks PASS.
+     - V1: `:Wallet` count = 24,673 (Neo4j) == 24,673 (SQL distinct addresses)
+     - V2: `:Transaction` count = 100,000 (Neo4j) == 100,000 (PostgreSQL)
+     - V3: 5/5 random txid spot-checks — SENDS and RECEIVES amounts match to 8 decimal places
+     - V4: `:CO_SPEND` count = 39,620 (Neo4j) == 39,620 (Python-computed unique canonical pairs from SQL)
+  3. `backend/venv/Scripts/python -m pytest backend/tests/ -v`: **29 passed, 2 skipped** in 2.52s. All 5 new `test_graph_build.py` tests pass.

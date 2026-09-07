@@ -60,12 +60,12 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 ## Phase 3 — Graph Build [Difficulty: Medium | Complexity: Medium]
 **Goal:** Mirror Postgres data into Neo4j as a queryable graph.
 
-- [ ] Read Postgres in chunks → batch `UNWIND MERGE` to create `:Wallet`, `:Transaction`, `:IP` nodes
-- [ ] Create `:SENDS`, `:RECEIVES`, `:OBSERVED` edges from input/output address arrays
-- [ ] Create `:CO_SPEND` edges (CIOH heuristic — pairs of input addresses per multi-input tx)
-- [ ] Verify node/edge counts match expected unique address count
+- [x] Read Postgres in chunks → batch `UNWIND MERGE` to create `:Wallet`, `:Transaction`, `:IP` nodes
+- [x] Create `:SENDS`, `:RECEIVES`, `:OBSERVED` edges from input/output address arrays
+- [x] Create `:CO_SPEND` edges (CIOH heuristic — pairs of input addresses per multi-input tx)
+- [x] Verify node/edge counts match expected unique address count
 
-**Checkpoint:** `MATCH (w:Wallet) RETURN count(w)` in Neo4j Browser returns a sane number; graph is visually inspectable.
+**Checkpoint:** `MATCH (w:Wallet) RETURN count(w)` in Neo4j Browser returns a sane number; graph is visually inspectable. [VERIFIED: 24,673 :Wallet nodes, 100,000 :Transaction nodes, 138,000 :SENDS, 188,342 :RECEIVES, 100,000 :OBSERVED, 39,620 :CO_SPEND edges. All 4 verification checks pass (V1–V4). 29/29 pytest tests pass. Wall time: 200.21s, peak memory: 39.41 MB.]
 
 ---
 

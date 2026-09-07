@@ -73,3 +73,19 @@ All numbers are actual measurements on the dev machine, not estimates from the r
 > Note: This is a measured result on the actual dev machine, not an estimate.
 > Duplicates from previous benchmark runs are silently skipped by the UNIQUE
 > constraint on `txid` — rejected count may include them on re-runs.
+
+## Phase 3 Graph Build Benchmark — 2026-09-07 18:40 UTC
+
+| Metric | Value |
+|--------|-------|
+| PostgreSQL rows read | 100,000 |
+| Transaction nodes written | 100,000 |
+| SENDS edges written | 138,000 |
+| RECEIVES edges written | 188,342 |
+| OBSERVED edges written | 100,000 |
+| CO_SPEND edges written | 45,516 |
+| Wall-clock time | 200.21s |
+| Throughput | 499 rows/s |
+| Peak memory | 39.41 MB |
+
+> Keyset pagination (chunk=5,000 pg rows), Cypher UNWIND batches capped at 1,000 items each.

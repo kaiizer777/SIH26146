@@ -37,8 +37,17 @@ class Settings(BaseSettings):
     # --- Upload landing zone ---
     upload_dir: str = str(_DATA_ROOT / "uploads")
 
+    # --- Neo4j ---
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "password123"
+
     # --- Ingest tuning ---
     ingest_batch_size: int = 5_000
+
+    # --- Graph build tuning ---
+    graph_pg_chunk_size: int = 5_000   # rows fetched from PostgreSQL per keyset page
+    graph_neo4j_batch_size: int = 1_000  # items per Cypher UNWIND transaction
 
 
 settings = Settings()
