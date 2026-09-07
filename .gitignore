@@ -1,0 +1,35 @@
+# Environments & Virtualenvs
+venv/
+.venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+
+# Data & Large binary files
+*.mmdb
+*.tar.gz
+*.pt
+*.pth
+data/geoip/
+
+# Node.js / Frontend
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
