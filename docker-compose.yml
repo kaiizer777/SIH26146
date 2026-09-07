@@ -106,7 +106,7 @@ services:
       dockerfile: Dockerfile
     container_name: sih26146-celery
     restart: unless-stopped
-    command: celery -A app.core.celery_app worker --loglevel=info
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       POSTGRES_USER: ${POSTGRES_USER:-sih_user}

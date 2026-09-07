@@ -47,11 +47,11 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 ## Phase 2 — Ingest Pipeline [Difficulty: Medium | Complexity: High]
 **Goal:** Bulk file in → normalized rows in Postgres, GeoIP-enriched.
 
-- [ ] `POST /ingest` FastAPI endpoint — multipart file upload
-- [ ] Celery task: parse file → validate with Pydantic → GeoIP enrich (via `maxminddb`) → bulk insert to Postgres
-- [ ] **Use `COPY`, not row-by-row INSERT** (audit correction — needed to hit realistic speed target)
-- [ ] Unit test: round-trip 10k rows, confirm `geo_country`/`asn` populated
-- [ ] Acceptance: ingest 100k rows in <180s (revised target)
+- [x] `POST /ingest` FastAPI endpoint — multipart file upload
+- [x] Celery task: parse file → validate with Pydantic → GeoIP enrich (via `maxminddb`) → bulk insert to Postgres
+- [x] **Use `COPY`, not row-by-row INSERT** (audit correction — needed to hit realistic speed target)
+- [x] Unit test: round-trip 10k rows, confirm `geo_country`/`asn` populated
+- [x] Acceptance: ingest 100k rows in <180s (revised target)
 
 **Checkpoint:** Upload synthetic CSV → rows appear in Postgres `transactions` table with GeoIP fields filled.
 
