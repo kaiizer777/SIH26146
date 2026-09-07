@@ -236,4 +236,52 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
   2. `.\backend\venv\Scripts\python backend\scripts\verify_geoip.py`: 5/5 known IP lookups verified for country and ASN against downloaded `.mmdb` databases.
   3. `.\backend\venv\Scripts\python backend\scripts\download_ransomwhere.py`: Verified 11,186 records, valid fields (`address`, `family`, `balance`, `transactions`), and $1,018,573,922.46 USD tracked value.
   4. `.\backend\venv\Scripts\pytest backend\tests\test_synthetic_generator.py -v`: 9/9 unit tests passed in 0.36s testing statistical properties on $n=1,000$ samples.
+  4. `.\backend\venv\Scripts\pytest backend\tests\test_synthetic_generator.py -v`: 9/9 unit tests passed in 0.36s testing statistical properties on $n=1,000$ samples.
   5. `.\backend\venv\Scripts\python backend\scripts\generate_synthetic_data.py --count 100000`: Generated 100,000 transactions with 4,054 illicit transactions (4.05%), 25 peeling chains, 50 CoinJoin clusters, and validated CSV, JSON, XML export outputs.
+
+---
+
+## Phase 0 & Phase 1 — Full Infrastructure & Code Audit
+
+- **Date:** 2026-09-07
+- **Scope:** Strict zero-compromise audit of all Phase 0 and Phase 1 implementation against AGENTS.md, FLOW.md, and Master Reference Document contracts.
+- **Audit Commands Run:**
+  - `docker compose config` — exit code 0, all 6 services verified
+  - `.\backend\venv\Scripts\python -m alembic -c backend\alembic.ini upgrade head --sql` — clean DDL, all constraints and indexes emitted correctly
+  - `.\backend\venv\Scripts\pytest backend\tests -v` — 9/9 PASSED (pre-fix and post-fix)
+  - `.\backend\venv\Scripts\python backend\scripts\verify_geoip.py` — 5/5 IP lookups PASSED
+  - `python -c "import csv; ..."` — CSV: 100,000 rows, 14 columns verified
+
+### Findings & Fixes Applied
+
+| # | Severity | Location | Finding | Fix Applied |
+|---|---|---|---|---|
+| 1 | MUST-FIX | `docker-compose.yml` neo4j healthcheck | Used `wget` which is not guaranteed present in neo4j:5.26 image; would cause `service_healthy` never to resolve | Replaced with `curl -sf http://localhost:7474`; bumped `start_period` to 60s to give GDS plugin load time |
+| 2 | MUST-FIX | `docker-compose.yml` next-frontend env | `NEXT_PUBLIC_API_URL=http://localhost:8000` resolves to nothing inside container network for SSR calls | Added `INTERNAL_API_URL=http://fastapi:8000` for server-side route usage |
+| 3 | MUST-FIX | `backend/alembic.ini` | `sqlalchemy.url` pointed to wrong user (`postgres`), wrong password (`postgres`), wrong DB (`sih26146`) — bare `alembic` invocations without DATABASE_URL env would fail | Corrected to `sih_user:sih_password@localhost:5432/sih_bitcoin` matching `.env.example` defaults |
+| 4 | MUST-FIX | `backend/app/models/transaction.py` | `txid`, `cluster_id`, `risk_score` had redundant `index=True` on columns that already have explicit `Index()`/`UniqueConstraint` in `__table_args__` — would emit duplicate indexes if `alembic revision --autogenerate` is ever run | Removed `index=True` from all three columns; explicit `Index()` declarations in `__table_args__` are the single source of truth |
+| 5 | SHOULD-FIX | `backend/tests/test_synthetic_generator.py` L109 | `src_port` lower bound asserted as `>= 1024` but generator uses `randint(1025, 65535)` (correct ephemeral floor) — test was one too loose | Tightened assertion to `>= 1025` |
+| 6 | SHOULD-FIX | `backend/tests/test_synthetic_generator.py` L136-137 | Peeling chain change-output tolerance asserted as `<= 6%` but spec and generator both enforce `<= 5%` — test was dishonestly permissive | Tightened to `<= 5.1%` (0.1% float rounding headroom only) |
+| 7 | SHOULD-FIX | `.gitignore` | Generated synthetic datasets (31-92MB each) and ransomwhere seeds (7.7MB) were not gitignored — large binary/data blobs committed unnecessarily | Added `data/synthetic_transactions.*`, `data/synthetic_data.csv`, `data/ransomwhere_seeds.json` to `.gitignore` |
+| 8 | NITPICK | `data/synthetic_data.csv` | Duplicate of `data/synthetic_transactions.csv` (identical 33MB file); was leftover from earlier generator run | Deleted `data/synthetic_data.csv` |
+
+### What Was Verified After Fixes
+- `docker compose config` — exit code 0; neo4j healthcheck shows `curl -sf http://localhost:7474`; INTERNAL_API_URL present in next-frontend
+- `pytest backend/tests -v` — 9/9 PASSED with tightened assertions
+- `alembic upgrade head --sql` — clean DDL output unchanged (model fixes are ORM-only, migration DDL was already correct)
+- GeoIP 5/5 PASSED (no change needed)
+
+### Items Confirmed Clean (no fix needed)
+- `docker-compose.yml`: postgres `pg_isready` healthcheck — correct; redis `redis-cli ping` — correct; all 6 service healthchecks pass `docker compose config`; network `sih_network` bridge — correct; volume names — correct; all `depends_on` conditions — correct
+- `backend/Dockerfile`: `python:3.11-slim`, `gcc`, `libpq-dev`, `curl` build deps — correct; `COPY requirements.txt` before `COPY .` for layer caching — correct; `CMD uvicorn` — correct
+- `frontend/Dockerfile`: `node:20-alpine`, `npm ci`, `NEXT_TELEMETRY_DISABLED=1`, `npm run build`, `npm start` — correct
+- `backend/requirements.txt`: `torch==2.4.1` + `torch-geometric==2.6.1` pairing — verified compatible per PyG matrix; all other deps appropriately pinned or constrained
+- `.env.example`: zero committed secrets; all service vars have empty or default-safe placeholders — correct
+- `backend/alembic/versions/001_create_transactions_table.py`: DDL verified via `--sql`; all spec columns present; CHECK constraints correct; all 4 indexes created in `upgrade()` and dropped in `downgrade()` — correct
+- `backend/scripts/neo4j_init.cypher`: All 3 uniqueness constraints use `IF NOT EXISTS`; 6 performance indexes; relationship property spec documented — correct
+- `backend/scripts/generate_synthetic_data.py`: All 8 realism constraints implemented; 9/9 tests pass; 100k row output verified
+- `backend/scripts/verify_geoip.py`: 5/5 lookups PASSED
+- `data/geoip/`: Both `.mmdb` files present (GeoLite2-City 62MB, GeoLite2-ASN 11.5MB)
+- `NOTES.md`: Zenodo DOI `10.5281/zenodo.6512122` cited correctly; Kappos et al. accuracy corrected to 89.2%/87.5%
+- `DATA_SOURCES.md`: All 4 data sources documented with provenance, acquisition date, schema fields
+- `README.md`: CPU-only dev documented; Phase 5 and Phase 7 compute strategy documented

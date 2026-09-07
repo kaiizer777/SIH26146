@@ -106,7 +106,7 @@ def test_generate_network_events(rng):
     for ev in events:
         assert ip_regex.match(ev["src_ip"])
         assert ip_regex.match(ev["dst_ip"])
-        assert 1024 <= ev["src_port"] <= 65535
+        assert 1025 <= ev["src_port"] <= 65535
         assert ev["dst_port"] == 8333
         assert len(ev["geo_country"]) == 2
         assert ev["geo_country"].isupper()
@@ -133,8 +133,8 @@ def test_embed_peeling_chains(rng):
         fee = tx["fee"]
         assert fee >= 0
 
-        # Change output <= 5% of available input
-        assert small_amt <= tot_in * 0.06
+        # Change output <= 5% of available input (0.001 BTC float rounding tolerance)
+        assert small_amt <= tot_in * 0.051
         # Peel output >= 80% of available input
         assert peel_amt >= tot_in * 0.80
 

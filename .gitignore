@@ -21,6 +21,13 @@ __pycache__/
 *.pth
 data/geoip/
 data/raw/
+# Generated synthetic datasets — reproducible via generate_synthetic_data.py
+data/synthetic_transactions.csv
+data/synthetic_transactions.json
+data/synthetic_transactions.xml
+data/synthetic_data.csv
+# Ransomwhere seeds — downloaded at runtime via download_ransomwhere.py
+data/ransomwhere_seeds.json
 
 # Node.js / Frontend
 node_modules/
