@@ -202,23 +202,27 @@ export default function EntityDrawer({
 
   return (
     <>
-      {/* Backdrop for mobile */}
+      {/* Ambient backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-slate-900/10 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-[2px] transition-opacity duration-200"
           onClick={onClose}
         />
       )}
 
-      {/* Drawer */}
+      {/* Centered Forensic Dossier Card */}
       <aside
         className={clsx(
-          "fixed right-0 top-12 bottom-0 z-40 w-[440px] flex flex-col bg-white border-l border-slate-200 shadow-drawer",
-          "transition-transform duration-200 ease-in-out",
-          isOpen ? "translate-x-0" : "translate-x-full",
+          "fixed z-50 left-1/2 top-14 bottom-4 -translate-x-1/2 w-[92vw] lg:w-[60vw] max-w-5xl",
+          "flex flex-col bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden",
+          "transition-all duration-200 ease-out",
+          isOpen
+            ? "opacity-100 scale-100 pointer-events-auto"
+            : "opacity-0 scale-95 pointer-events-none",
         )}
         aria-label="Entity forensic dossier"
-        role="complementary"
+        role="dialog"
+        aria-modal="true"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
@@ -340,7 +344,7 @@ export default function EntityDrawer({
               </div>
 
               {/* Score Breakdown */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {[
                   {
                     label: "Anomaly Component",
