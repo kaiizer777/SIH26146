@@ -326,7 +326,25 @@ Severity colors must be vivid enough to communicate urgency instantly without bl
 
 ---
 
-# SECTION 6: VERSION & FACT-CHECKING REMINDERS
+# SECTION 6: PHASE 11 — LIVE POST-INGEST ONLINE INFERENCE & GRAPH SYNC PIPELINE
+
+## Phase 11 — Live Post-Ingest Online Inference & Graph Sync [Difficulty: Medium | Complexity: Medium]
+**Goal:** Automatically sync newly uploaded transaction batches into the live Neo4j graph and execute inline ML feature extraction & Autoencoder anomaly scoring in Celery, dynamically updating the in-memory alert store and frontend UI in real time.
+
+### 11.1 Online Graph & ML Processing Tasks
+- [ ] **Task 1: Neo4j Batch Node & Edge Sync in Celery**
+  - In `backend/app/tasks/ingest.py`, after PostgreSQL `COPY` completes, execute unnested batch Cypher queries to merge new `:Wallet`, `:Transaction`, and `:IP` nodes alongside `:SENDS`, `:RECEIVES`, and `:CO_SPEND` edges directly into Neo4j.
+- [ ] **Task 2: Inline Anomaly Scoring & Rule Check**
+  - Extract 18-dim feature vectors for the new batch and run inference with the saved `autoencoder.pt` model on CPU.
+  - Run heuristic rule checks (peeling chain candidates, equal outputs, seed address overlap).
+- [ ] **Task 3: Dynamic In-Memory Store (`xai_store`) Mutation**
+  - Compute composite risk scores and append newly flagged entity records directly to `xai_store._composite` and `_evidence` in FastAPI without requiring a server reboot.
+- [ ] **Task 4: End-to-End Live UI Alert Population**
+  - Verify that uploading a new batch via the frontend `IngestModal` completes and immediately causes newly flagged high-risk entities and their graph topologies to appear in `AlertTable` and `GraphCanvas` upon `refresh()`.
+
+---
+
+# SECTION 7: VERSION & FACT-CHECKING REMINDERS
 
 - [x] **PyTorch ↔ PyTorch Geometric pairing**: Verified compatible pair `torch==2.4.1+cpu` and `torch-geometric==2.6.1`. Pinned in `backend/requirements.txt` (Phase 0, Phase 7).
 - [x] **Neo4j ↔ Neo4j GDS pairing**: Verified compatible pair `neo4j:5.26-community` with official `NEO4J_PLUGINS='["graph-data-science"]'` (GDS 2.13.x). Pinned in `docker-compose.yml` (Phase 0, Phase 4).
@@ -337,3 +355,4 @@ Severity colors must be vivid enough to communicate urgency instantly without bl
 - [x] **GraphSAGE training & inference**: Verified on hardware: training 12.2s CPU, inference 25.4ms for 24,673 nodes (Phase 7).
 - [x] **XAI-D calibration**: Composite score formula: `clip(0.35·anomaly + 0.45·risk + 0.15·rules + 0.05·mixing, 0, 1)`. Verdict distribution on 17,020 wallets: CRITICAL=103 (0.6%), HIGH=78 (0.5%), MEDIUM=3,377 (19.8%), LOW=13,462 (79.1%). All 103 CRITICAL wallets have non-empty triggered rules. The "87%/72%" placeholder is completely purged (Phase 8).
 - [ ] **Full-pipeline end-to-end timing**: Measure and record real wall-clock latency for Phase 10 performance reporting.
+

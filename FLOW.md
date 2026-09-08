@@ -151,6 +151,18 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
+## Phase 11 — Live Post-Ingest Online Inference & Graph Sync [Difficulty: Medium | Complexity: Medium]
+**Goal:** Auto-sync newly uploaded batch files into the live Neo4j graph and execute inline ML feature extraction & Autoencoder anomaly scoring in Celery to dynamically refresh alerts in real time.
+
+- [ ] Task 1: Batch Neo4j node/edge Cypher sync inside `process_ingest_file` task
+- [ ] Task 2: Inline 18-feature extraction + Autoencoder MSE inference + rule checks on new batch
+- [ ] Task 3: In-memory `xai_store` dynamic mutation / alert feed update
+- [ ] Task 4: UI verification (upload batch → modal hits 100% → table & graph immediately populate with new alerts)
+
+**Checkpoint:** Upload a 10,000-row synthetic CSV via UI → alert table immediately displays newly scored high-risk entities with full D3 graph render.
+
+---
+
 ## Fixes to Apply From the Audit (don't skip these)
 | Where | Fix |
 |---|---|
