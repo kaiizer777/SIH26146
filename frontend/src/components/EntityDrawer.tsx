@@ -377,49 +377,53 @@ export default function EntityDrawer({
 
               {/* Evidence Accordions */}
               <div className="flex flex-col gap-2.5">
-                {/* Cluster Co-Spending */}
-                <Accordion
-                  title="Cluster Co-Spending Analysis"
-                  icon={<Network className="w-4 h-4" />}
-                  defaultOpen={true}
-                >
-                  <Row label="Cluster ID" value={data.evidence_trail.cluster_id ?? "—"} mono />
-                  <Row label="Cluster Size" value={data.evidence_trail.cluster_size?.toLocaleString() ?? "—"} mono />
-                  <Row
-                    label="Anomaly Rank"
-                    value={
-                      data.evidence_trail.anomaly_rank_percentile != null
-                        ? `${data.evidence_trail.anomaly_rank_percentile.toFixed(2)}th percentile`
-                        : "—"
-                    }
-                    mono
-                  />
-                </Accordion>
+                {/* Co-Spending & Autoencoder (side-by-side 50% width row) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start">
+                  {/* Cluster Co-Spending */}
+                  <Accordion
+                    title="Cluster Co-Spending Analysis"
+                    icon={<Network className="w-4 h-4" />}
+                    defaultOpen={true}
+                  >
+                    <Row label="Cluster ID" value={data.evidence_trail.cluster_id ?? "—"} mono />
+                    <Row label="Cluster Size" value={data.evidence_trail.cluster_size?.toLocaleString() ?? "—"} mono />
+                    <Row
+                      label="Anomaly Rank"
+                      value={
+                        data.evidence_trail.anomaly_rank_percentile != null
+                          ? `${data.evidence_trail.anomaly_rank_percentile.toFixed(2)}th percentile`
+                          : "—"
+                      }
+                      mono
+                    />
+                  </Accordion>
 
-                {/* Autoencoder Reconstruction */}
-                <Accordion
-                  title="Autoencoder Reconstruction"
-                  icon={<Activity className="w-4 h-4" />}
-                >
-                  <Row
-                    label="Anomaly Score (MSE)"
-                    value={
-                      data.evidence_trail.anomaly_score != null
-                        ? data.evidence_trail.anomaly_score.toFixed(6)
-                        : "—"
-                    }
-                    mono
-                  />
-                  <Row
-                    label="Percentile Rank"
-                    value={
-                      data.evidence_trail.anomaly_rank_percentile != null
-                        ? `${data.evidence_trail.anomaly_rank_percentile.toFixed(1)}%`
-                        : "—"
-                    }
-                    mono
-                  />
-                </Accordion>
+                  {/* Autoencoder Reconstruction */}
+                  <Accordion
+                    title="Autoencoder Reconstruction"
+                    icon={<Activity className="w-4 h-4" />}
+                    defaultOpen={true}
+                  >
+                    <Row
+                      label="Anomaly Score (MSE)"
+                      value={
+                        data.evidence_trail.anomaly_score != null
+                          ? data.evidence_trail.anomaly_score.toFixed(6)
+                          : "—"
+                      }
+                      mono
+                    />
+                    <Row
+                      label="Percentile Rank"
+                      value={
+                        data.evidence_trail.anomaly_rank_percentile != null
+                          ? `${data.evidence_trail.anomaly_rank_percentile.toFixed(1)}%`
+                          : "—"
+                      }
+                      mono
+                    />
+                  </Accordion>
+                </div>
 
                 {/* Mixing & Laundering */}
                 <Accordion
