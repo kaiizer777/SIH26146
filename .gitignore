@@ -17,7 +17,6 @@ __pycache__/
 # Data & Large binary files
 *.mmdb
 *.tar.gz
-*.pt
 *.pth
 data/geoip/
 data/raw/
