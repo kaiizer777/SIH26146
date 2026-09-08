@@ -1,5 +1,5 @@
-# WORK.md — SIH26146 Build Checklist
-AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning document only — no code, no scaffolding. Every dependency version below is deliberately unpinned; see "Version & Fact-Checking Reminders" at the end.
+# WORK-1.md — SIH26146 Completed Build Archive (Phases 0–8)
+AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Historical record and verification log for completed foundational phases (Phases 0 through 8). For Phase 9 (API + Frontend Dashboard) and Phase 10 (Demo Prep & Scoring), see `WORK-2.md`.
 
 ---
 
@@ -147,35 +147,15 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ---
 
-## Phase 9 — API + Dashboard [Difficulty: High | Complexity: High]
+## Phases 9 & 10 — Transitioned to WORK-2.md
 
-- [ ] Implement `GET /alerts?limit=&sort=risk_desc` returning paginated ranked alerts (address/txid, cluster_id, anomaly_score, risk_score, is_mixing, is_flagged); verify sort order and limit are actually respected.
-- [ ] Implement `GET /entity/{address}/explain` returning the XAI-C evidence trail plus XAI-A/XAI-B data for that wallet; verify 404 for an unknown address.
-- [ ] Implement `GET /graph/{cluster_id}` returning the subgraph (nodes+edges) for a cluster, scoped to a documented size limit so the frontend doesn't attempt an unbounded render.
-- [ ] Confirm `GET /ingest/status/{task_id}` (from Phase 2) is wired into the same FastAPI app instance as these new routes.
-- [ ] Add JWT auth middleware (a static dev key is acceptable) and CORS restricted to the known frontend origin; verify unauthenticated requests to protected routes return 401.
-- [ ] Add SHA-256 hashing of wallet addresses before they're written to application logs (DB rows keep plaintext); verify by grepping log output for a known test address and confirming it never appears in plaintext.
-- [ ] Scaffold the Next.js app (App Router) with three views: Alert Table, Force-Graph panel, Entity Detail (SHAP waterfall + evidence trail).
-- [ ] Implement the Alert Table consuming `GET /alerts` (rank, address, cluster, anomaly_score, risk_score, mixing flag); verify row click navigates to entity detail.
-- [ ] Implement the Force-Graph panel (pick D3-force or Sigma.js, document the choice) consuming `GET /graph/{cluster_id}`, with the GNNExplainer subgraph mask visually highlighted on a flagged wallet's view.
-- [ ] Implement the SHAP waterfall chart component consuming Phase 8's XAI-A JSON.
-- [ ] Implement the collapsible evidence-trail panel rendering the XAI-C JSON as human-readable rows.
-- [ ] Implement the plain-English per-alert summary generator (template string, no LLM) populated entirely from real computed values (cluster size from Phase 4, chain_hops from Phase 6, anomaly_score + percentile from Phase 5) — no hardcoded example text.
-- [ ] Add SSE (or documented polling fallback) for live alert push to the Alert Table as new ingest batches complete.
-- [ ] End-to-end UI verification: upload a fresh CSV via the dashboard, wait for processing, confirm new alerts appear without manual refresh (or per the documented mechanism), click through to entity detail, and confirm force-graph + SHAP chart + evidence panel all render non-empty data.
-
----
-
-## Phase 10 — Demo Prep, Wireframes & Scoring Optimization [Difficulty: Low | Complexity: Medium]
-
-- [ ] Produce the 3-screen UX wireframes (Ingest, Alert Table, Entity Detail) — sketch/export, label each component with the data it shows.
-- [ ] Write the 1-page threat-mapping section: map the 4 named criminal behaviors (ransomware, darknet-market proceeds, extortion, laundering) to the specific detection rule or model output that catches each.
-- [ ] Write the technical write-up (approach, model choices + rationale, explainability method); quote the official problem-statement paragraph and map each required deliverable to the section/demo view that satisfies it.
-- [ ] Write the 3-stage roadmap narrative (hackathon prototype → agency pilot → production federation); confirm any external product/pricing claims are current before citing them — do not copy the reference document's specific figures unverified.
-- [ ] Compute the compute-cost/timing section from real logged numbers in `PERFORMANCE_LOG.md` (Phases 2, 5, 7) — not from the reference document's estimates.
-- [ ] Rehearse the live demo script end-to-end (upload → ingest completes → ranked alerts → click top alert → SHAP waterfall → force-graph highlight → evidence trail with Ransomwhere family name); time the run-through and iterate.
-- [ ] Run the full 5-criteria smoke test (Problem Understanding, Novelty, Technical Feasibility, Usability/UX, Scale of Impact) against the finished system — for each, confirm the corresponding artifact is actually present and demoable, not just planned.
-- [ ] Final packaging: confirm `docker compose up` brings up all six services cleanly on a fresh clone with no local machine state required; run a full demo with network access disabled after initial setup to confirm the offline/air-gapped claim holds.
+> [!NOTE]
+> Phase 9 (API + Frontend Dashboard) and Phase 10 (Demo Prep, Wireframes & Scoring Optimization) have been decoupled from this historical backend archive and expanded into [WORK-2.md](WORK-2.md).
+> 
+> [WORK-2.md](WORK-2.md) contains:
+> 1. Comprehensive, production-grade UI/UX Design System & Anti-Slop Directive (strict Light Theme, high-density intelligence design, monochrome-first palette, D3 force graph & SHAP visual specs).
+> 2. Full Phase 9 implementation tasks and verification checkpoints.
+> 3. Full Phase 10 demo preparation, threat mapping, and final packaging tasks.
 
 ---
 

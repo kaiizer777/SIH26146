@@ -17,6 +17,6 @@ AI-powered offline system to monitor Bitcoin transaction traffic and flag money-
 ## Task Completion Rule
 When a task/checkpoint is genuinely done and verified:
 - Mark it `[x]` in **`flow.md`** under the relevant phase.
-- Log it in **`work.md`** with: date, what was done, how it was verified. Create `work.md` if it doesn't exist yet.
+- Log it in **`WORK-2.md`** (or `WORK-1.md` for historical Phase 0-8 items) with: date, what was done, how it was verified.
 
 Never mark something done that hasn't been actually tested/verified.
