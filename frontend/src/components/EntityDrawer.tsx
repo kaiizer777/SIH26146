@@ -224,7 +224,7 @@ export default function EntityDrawer({
       <aside
         className={clsx(
           "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] lg:w-[60vw] h-[98vh] max-w-5xl",
-          "flex flex-col bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden",
+          "flex flex-col bg-white rounded-sm border border-slate-200 shadow-2xl overflow-hidden",
           "transition-all duration-200 ease-out",
           isOpen
             ? "opacity-100 scale-100 pointer-events-auto"
