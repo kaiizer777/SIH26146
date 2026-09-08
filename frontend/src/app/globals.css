@@ -1,26 +1,162 @@
 @import "tailwindcss";
 
+/* =========================================================
+   SIH26146 — NTRO AML Surveillance System
+   Light-Theme Design System Tokens
+   ========================================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Canvas & Surface */
+  --background: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-header: #f1f5f9;
+
+  /* Borders */
+  --border-hairline: #e2e8f0;
+  --border-active: #cbd5e1;
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+
+  /* Focus */
+  --focus-ring: #0284c7;
+
+  /* Foreground alias */
+  --foreground: #0f172a;
+
+  /* Severity: CRITICAL */
+  --critical-text: #b91c1c;
+  --critical-bg: #fef2f2;
+  --critical-border: #fecaca;
+  --critical-indicator: #dc2626;
+
+  /* Severity: HIGH */
+  --high-text: #c2410c;
+  --high-bg: #fff7ed;
+  --high-border: #fed7aa;
+  --high-indicator: #ea580c;
+
+  /* Severity: MEDIUM */
+  --medium-text: #a16207;
+  --medium-bg: #fefce8;
+  --medium-border: #fef08a;
+  --medium-indicator: #ca8a04;
+
+  /* Severity: LOW */
+  --low-text: #15803d;
+  --low-bg: #f0fdf4;
+  --low-border: #bbf7d0;
+  --low-indicator: #16a34a;
+
+  /* Tactical Accent */
+  --accent-text: #0369a1;
+  --accent-bg: #f0f9ff;
+  --accent-border: #bae6fd;
+  --accent-fill: #0284c7;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Force light mode — no dark theme */
+html {
+  color-scheme: light only;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-inter, "system-ui"), -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+/* =========================================================
+   Cryptographic Data Utility
+   All Bitcoin addresses, TXIDs, amounts, IPs, timestamps
+   MUST use this class for font-mono tabular-nums rendering.
+   ========================================================= */
+
+.crypto-mono {
+  font-family: var(--font-jetbrains-mono, "JetBrains Mono"), "Fira Code", ui-monospace, monospace;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+   Elevation & Shadow System
+   ========================================================= */
+
+.shadow-card {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-drawer {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+/* =========================================================
+   Severity Pill Utilities
+   ========================================================= */
+
+.pill-critical {
+  color: var(--critical-text);
+  background: var(--critical-bg);
+  border: 1px solid var(--critical-border);
+}
+
+.pill-high {
+  color: var(--high-text);
+  background: var(--high-bg);
+  border: 1px solid var(--high-border);
+}
+
+.pill-medium {
+  color: var(--medium-text);
+  background: var(--medium-bg);
+  border: 1px solid var(--medium-border);
+}
+
+.pill-low {
+  color: var(--low-text);
+  background: var(--low-bg);
+  border: 1px solid var(--low-border);
+}
+
+/* =========================================================
+   Dot-matrix background pattern (D3 graph canvas)
+   ========================================================= */
+
+.dot-matrix-bg {
+  background-color: #f8fafc;
+  background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+}
+
+/* =========================================================
+   Scrollbars — slim, unobtrusive
+   ========================================================= */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface-header);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-active);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* =========================================================
+   Focus ring standard
+   ========================================================= */
+
+*:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

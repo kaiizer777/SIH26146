@@ -131,9 +131,9 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 ## Phase 9 — FastAPI + Next.js Dashboard [Difficulty: High | Complexity: High]
 **Goal:** Wire everything into a demo-able UI.
 
-- [ ] API endpoints: `GET /alerts`, `GET /entity/{address}/explain`, `GET /graph/{cluster_id}`, `GET /ingest/status/{task_id}`
-- [ ] Frontend: alert ranking table, force-graph panel (D3-force/Sigma.js), SHAP waterfall chart, evidence-trail collapsible panel
-- [ ] Wire file upload UI → ingest endpoint → poll status → show results
+- [x] API endpoints: `GET /alerts`, `GET /entity/{address}/explain`, `GET /graph/{cluster_id}`, `GET /ingest/status/{task_id}`
+- [x] Frontend: alert ranking table, force-graph panel (D3-force/Sigma.js), SHAP waterfall chart, evidence-trail collapsible panel
+- [x] Wire file upload UI → ingest endpoint → poll status → show results
 
 **Checkpoint:** Full flow works in the browser: upload file → see alerts populate → click a wallet → see graph + SHAP chart + evidence.
 

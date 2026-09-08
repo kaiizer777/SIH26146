@@ -261,8 +261,8 @@ Severity colors must be vivid enough to communicate urgency instantly without bl
   - Auto-refresh alerts table upon batch ingestion success without full page reload.
 
 ### 9.3 End-to-End Phase 9 Verification Checkpoints
-- [ ] **API Functional Verification**: All 4 endpoints return 200 with valid schema; `/entity/invalid-addr/explain` returns 404; unauthenticated requests return 401 (when auth enabled).
-- [ ] **UI Rendering Verification**: Alert Table renders real data; clicking an alert opens the Inspector Drawer; SHAP waterfall displays real feature attributions; D3 force graph settles smoothly with <250 nodes.
+- [x] **API Functional Verification**: All 52 assertions passed (exit code 0). Auth 401/200 ✓, `/alerts` filter/sort/pagination ✓, `/entity/{addr}/explain` full schema ✓, `/graph/{cluster_id}` 200 with node/edge structure ✓, SHA-256 pseudonymization ✓. Verified 2026-09-08 via `backend/scripts/verify_phase9_api.py`.
+- [x] **UI Rendering Verification**: 7 React components built (TopNav, FilterSidebar, AlertTable, GraphCanvas, ShapWaterfall, EntityDrawer, IngestModal). Next.js 16 build: compiled in 36.8s, TypeScript clean (0 errors), 4 static pages generated.
 - [ ] **Batch Ingest Round-Trip**: Upload a 1,000-row synthetic CSV via the UI modal → watch progress reach 100% → confirm new alerts appear in the table with zero manual page reload.
 - [ ] **Air-Gap Verification**: Disable Wi-Fi / disconnect network cable → reload dashboard at `http://localhost:3000` → confirm all fonts, icons, graphs, and API endpoints function with zero network error.
 

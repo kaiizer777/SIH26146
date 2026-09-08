@@ -40,6 +40,9 @@ python-multipart>=0.0.9
 httpx>=0.27.0
 httpx2>=2.12.0
 
+# Phase 9: Async PostgreSQL driver (required by SQLAlchemy postgresql+asyncpg://)
+asyncpg>=0.29.0
+
 # Phase 0 / Phase 5 / Phase 7: AI & Graph ML (Verified Compatibility Pairing)
 torch==2.4.1
 torch-geometric==2.6.1

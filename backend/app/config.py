@@ -77,5 +77,12 @@ class Settings(BaseSettings):
     # Top-K wallets to run GNNExplainer on
     gnn_explainer_top_k: int = 500
 
+    # --- Phase 9: API Security ---
+    # Static bearer token for dev/offline-demo use. Set via .env for production.
+    api_dev_token: str = "dev-token-ntro-2026"
+
+    # --- Neo4j database name ---
+    neo4j_database: str = "neo4j"
+
 
 settings = Settings()
