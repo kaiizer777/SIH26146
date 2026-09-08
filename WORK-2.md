@@ -2,7 +2,7 @@
 **Project:** AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic  
 **Agency / Context:** NTRO (National Technical Research Organisation) — High-Stakes Financial & Intelligence Forensics  
 **Theme Mandate:** **STRICT LIGHT THEME** (Monochrome-First, Tactical Severity Palette, Precision Data Density)  
-**Status:** Phase 0–8 Completed (Archived in `WORK-1.md`). This document governs Phases 9 and 10.
+**Status:** Phase 0–8 Completed (Archived in `WORK-1.md`). Phase 9 API/UI implementation complete pending Phase 9.5 fixes. This document governs Phases 9, 9.5, 10, and 11 (optional).
 
 ---
 
@@ -264,8 +264,26 @@ Severity colors must be vivid enough to communicate urgency instantly without bl
 - [x] **API Functional Verification**: All 52 assertions passed (exit code 0). Auth 401/200 ✓, `/alerts` filter/sort/pagination ✓, `/entity/{addr}/explain` full schema ✓, `/graph/{cluster_id}` 200 with node/edge structure ✓, SHA-256 pseudonymization ✓. Verified 2026-09-08 via `backend/scripts/verify_phase9_api.py`.
 - [x] **UI Rendering Verification**: 7 React components built (TopNav, FilterSidebar, AlertTable, GraphCanvas, ShapWaterfall, EntityDrawer, IngestModal). Next.js 16 build: compiled in 36.8s, TypeScript clean (0 errors), 4 static pages generated.
   - *SHAP Waterfall Enhancement (2026-09-08)*: Enlarged chart dimensions (`ROW_HEIGHT=30`, `LEFT_LABEL_W=260`, `BAR_AREA_W=440`, `PADDING_V=16`, `PADDING_H=24`), expanded bar height to 20px with `rx=3` rounded corners, increased feature label typography to 13px (500 weight) with extended truncation threshold (34 chars) avoiding label cutoff, 11.5px monospace attribution value labels, 11px monospace benign/illicit axis headers, and high-density responsive container with enlarged legend pills (`w-4 h-2.5`). Clean production build verified in 13.3s.
+
+---
+
+# SECTION 4.5: PHASE 9.5 — CRITICAL PRE-DEMO FIXES [Difficulty: Medium | Complexity: Medium]
+**Goal:** Close the last integration/verification gaps and fix the two known scoring-pipeline defects before starting Phase 10 documentation work. Target: complete within 1 day.
+
 - [ ] **Batch Ingest Round-Trip**: Upload a 1,000-row synthetic CSV via the UI modal → watch progress reach 100% → confirm new alerts appear in the table with zero manual page reload.
 - [ ] **Air-Gap Verification**: Disable Wi-Fi / disconnect network cable → reload dashboard at `http://localhost:3000` → confirm all fonts, icons, graphs, and API endpoints function with zero network error.
+- [ ] **Fix `seed_wallet_proximity` Zeroing Bug**
+  - Persist the Phase 7 GDS Personalized PageRank score as an actual property on `:Wallet` nodes in Neo4j (not just used transiently as a training feature).
+  - Re-sync this value into PostgreSQL and into `data/xai/evidence_trails.json` so `/entity/{address}/explain` returns a real non-zero `seed_wallet_proximity` for wallets near Ransomwhere seeds.
+  - Acceptance: spot-check 5 wallets known to be within 2 hops of a seed address — confirm `seed_wallet_proximity` is non-zero and higher than a random control wallet.
+- [ ] **Fix GNNExplainer Empty-Subgraph Problem for Top-Risk Wallets**
+  - Diagnose why all top-500 wallets by risk score are isolated nodes in the CO_SPEND projection.
+  - Either (a) increase synthetic CO_SPEND density specifically around seed-adjacent/high-risk wallets in the dataset generator, or (b) build a documented fallback: select 3-5 specific CRITICAL/HIGH wallets for the live demo that are confirmed to have non-trivial connected subgraphs, and hardcode these as the demo's "inspect this wallet" walkthrough targets.
+  - Acceptance: at least 3 CRITICAL-tier wallets have a GNNExplainer subgraph with 2+ connected nodes and a non-empty edge importance mask, verified by direct inspection of `gnn_subgraphs.json`.
+- [ ] **Measure Full-Pipeline End-to-End Wall-Clock Timing**
+  - Run one clean, timed pass: file upload via UI → Celery ingest → GeoIP enrich → Postgres COPY → alert visible in Master Alert Grid, with a stopwatch or logged timestamps at each boundary.
+  - Log the real number in `PERFORMANCE_LOG.md` under a new "End-to-End Pipeline Latency (Measured)" heading. Do not estimate — this must be an actual timed run.
+  - Acceptance: single wall-clock number recorded, plus a breakdown of which stage consumed the most time.
 
 ---
 
@@ -273,6 +291,13 @@ Severity colors must be vivid enough to communicate urgency instantly without bl
 
 ## Phase 10 — Demo Prep, Wireframes & Scoring Optimization [Difficulty: Low | Complexity: Medium]
 **Goal:** Prepare high-impact hackathon artifacts, rehearse the live demo script, and audit the system against the 5 official SIH scoring criteria.
+
+### Priority Order (do in this sequence):
+1. 10.1 Threat-Mapping Matrix (highest priority — required for screening PPT)
+2. 10.3 Demo Script + Rehearsal (required for both screening video and finale)
+3. 10.4 Scoring Criteria Audit (self-check before submission)
+4. 10.2 Technical Documentation (finale-prep depth, lower urgency for screening)
+5. 10.1 Wireframes (nice-to-have polish, do last if time permits)
 
 ### 10.1 UI Wireframes & Architecture Artifacts
 - [ ] **Produce 3-Screen UX Wireframes (Light Mode)**:
@@ -327,10 +352,11 @@ Severity colors must be vivid enough to communicate urgency instantly without bl
 
 ---
 
-# SECTION 6: PHASE 11 — LIVE POST-INGEST ONLINE INFERENCE & GRAPH SYNC PIPELINE
+# SECTION 6: PHASE 11 — LIVE POST-INGEST ONLINE INFERENCE & GRAPH SYNC PIPELINE ⚠️ STRETCH GOAL — NOT REQUIRED FOR DEMO
 
 ## Phase 11 — Live Post-Ingest Online Inference & Graph Sync [Difficulty: Medium | Complexity: Medium]
 **Goal:** Automatically sync newly uploaded transaction batches into the live Neo4j graph and execute inline ML feature extraction & Autoencoder anomaly scoring in Celery, dynamically updating the in-memory alert store and frontend UI in real time.
+**Status: Optional. Attempt only after Phase 10 is fully complete and only if time remains before the finale. A static, reliable system beats a live-sync feature that risks breaking mid-demo.**
 
 ### 11.1 Online Graph & ML Processing Tasks
 - [ ] **Task 1: Neo4j Batch Node & Edge Sync in Celery**
@@ -355,5 +381,4 @@ Severity colors must be vivid enough to communicate urgency instantly without bl
 - [x] **Autoencoder training time**: Verified on hardware: 211.7s (3.53 min) on CPU, surpassing estimate by >4x speed (Phase 5).
 - [x] **GraphSAGE training & inference**: Verified on hardware: training 12.2s CPU, inference 25.4ms for 24,673 nodes (Phase 7).
 - [x] **XAI-D calibration**: Composite score formula: `clip(0.35·anomaly + 0.45·risk + 0.15·rules + 0.05·mixing, 0, 1)`. Verdict distribution on 17,020 wallets: CRITICAL=103 (0.6%), HIGH=78 (0.5%), MEDIUM=3,377 (19.8%), LOW=13,462 (79.1%). All 103 CRITICAL wallets have non-empty triggered rules. The "87%/72%" placeholder is completely purged (Phase 8).
-- [ ] **Full-pipeline end-to-end timing**: Measure and record real wall-clock latency for Phase 10 performance reporting.
-
+- [ ] **Full-pipeline end-to-end timing**: MOVED to Section 4.5 (Phase 9.5), item 5. See there for acceptance criteria.
