@@ -53,5 +53,20 @@ class Settings(BaseSettings):
     models_dir: str = str(_DATA_ROOT / "models")
     anomaly_threshold_percentile: float = 95.0  # 95th-pct of non-illicit held-out MSE
 
+    # --- Phase 7: GraphSAGE Risk Scoring ---
+    # Architecture dims — 3-layer SAGEConv: in → 64 → 32 → 16 → scalar
+    graphsage_hidden_dim_1: int = 64
+    graphsage_hidden_dim_2: int = 32
+    graphsage_embedding_dim: int = 16
+    graphsage_dropout: float = 0.2
+    # Focal loss: γ from Lin et al. ICCV 2017; α = neg/pos ratio clamped to this ceiling
+    graphsage_focal_gamma: float = 2.0
+    graphsage_focal_alpha_max: float = 20.0  # prevents gradient explosion on extreme imbalance
+    # Inference: wallet flagged if risk_score >= this threshold
+    risk_score_flag_threshold: float = 0.5
+    # Output artifact paths for Phase 8 XAI consumption
+    wallet_index_map_path: str = str(_DATA_ROOT / "wallet_index_map.json")
+    wallet_risk_scores_path: str = str(_DATA_ROOT / "wallet_risk_scores.json")
+
 
 settings = Settings()

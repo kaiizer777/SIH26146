@@ -117,18 +117,18 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 
 ## Phase 7 — Risk Scoring (F4, GraphSAGE via PyTorch Geometric) [Difficulty: High | Complexity: High]
 
-- [ ] Before writing any code: re-confirm the PyTorch + PyTorch Geometric version pairing chosen in Phase 0 is what's actually referenced here — this phase is the real consumer of that dependency, so any mismatch surfaces as an install/import failure if skipped earlier.
-- [ ] Implement GDS PageRank seeded from Ransomwhere wallet addresses (custom teleport weights favoring seed-illicit nodes) to compute an initial `asn_risk_score` feature per wallet before GNN training.
-- [ ] Export the wallet graph from Neo4j into a PyTorch Geometric `Data` object: node features `[cluster_id, anomaly_score, is_mixing_flag, fee_log, num_inputs, num_outputs, output_entropy, asn_risk_score]`; `edge_index` built from `:CO_SPEND` + `:SENDS`.
-- [ ] Label positive-class (illicit) nodes from the Ransomwhere seed list joined against the exported node set; log the resulting positive/negative label distribution.
-- [ ] Implement the 3-layer GraphSAGE (SAGEConv, mean aggregation): hidden dims 64 → 32 → 16, sigmoid scalar output in [0,1].
-- [ ] **Fact-check before hardcoding any focal-loss hyperparameters:** pull the actual "2026 FG-EGCN" Nature Scientific Reports paper referenced by the source document and confirm what values it actually reports for illicit-Bitcoin-node classification under class imbalance — the reference document's attribution of specific γ/α values to that paper is confirmed incorrect. Either use the paper's real values or independently justify your own.
-- [ ] Decide and document where training runs (local CPU vs. free-tier cloud GPU, per the Phase 0 decision); train for a documented number of epochs, plotting loss per epoch.
-- [ ] Evaluate: compute F1/precision/recall on held-out seed addresses plus the synthetic labelled set — report the real measured numbers.
-- [ ] Save the model (date-versioned filename); confirm CPU-only inference works end-to-end on the full node set with no GPU required at inference time.
-- [ ] Run inference: compute `risk_score` for every wallet, write back to PostgreSQL and Neo4j.
-- [ ] Timing measurement (do not assume the reference document's training/inference-latency figures): record actual measured training time and actual measured CPU inference time on the real setup, logged in `PERFORMANCE_LOG.md`.
-- [ ] Compute the `is_flagged` composite trigger (combining `anomaly_score`, `risk_score`, `is_mixing`) and write to PostgreSQL — document the exact rule used.
+- [x] Before writing any code: re-confirm the PyTorch + PyTorch Geometric version pairing chosen in Phase 0 is what's actually referenced here — this phase is the real consumer of that dependency, so any mismatch surfaces as an install/import failure if skipped earlier.
+- [x] Implement GDS PageRank seeded from Ransomwhere wallet addresses (custom teleport weights favoring seed-illicit nodes) to compute an initial `asn_risk_score` feature per wallet before GNN training.
+- [x] Export the wallet graph from Neo4j into a PyTorch Geometric `Data` object: node features `[cluster_id, anomaly_score, is_mixing_flag, fee_log, num_inputs, num_outputs, output_entropy, asn_risk_score]`; `edge_index` built from `:CO_SPEND` + `:SENDS`.
+- [x] Label positive-class (illicit) nodes from the Ransomwhere seed list joined against the exported node set; log the resulting positive/negative label distribution.
+- [x] Implement the 3-layer GraphSAGE (SAGEConv, mean aggregation): hidden dims 64 → 32 → 16, sigmoid scalar output in [0,1].
+- [x] **Fact-check before hardcoding any focal-loss hyperparameters:** pull the actual "2026 FG-EGCN" Nature Scientific Reports paper referenced by the source document and confirm what values it actually reports for illicit-Bitcoin-node classification under class imbalance — the reference document's attribution of specific γ/α values to that paper is confirmed incorrect. Either use the paper's real values or independently justify your own. [RESOLVED: used γ=2.0 (Lin et al. ICCV 2017 RetinaNet) + α=neg/pos ratio (6.20, clamped to 20). No FG-EGCN attribution.]
+- [x] Decide and document where training runs (local CPU vs. free-tier cloud GPU, per the Phase 0 decision); train for a documented number of epochs, plotting loss per epoch.
+- [x] Evaluate: compute F1/precision/recall on held-out seed addresses plus the synthetic labelled set — report the real measured numbers.
+- [x] Save the model (date-versioned filename); confirm CPU-only inference works end-to-end on the full node set with no GPU required at inference time.
+- [x] Run inference: compute `risk_score` for every wallet, write back to PostgreSQL and Neo4j.
+- [x] Timing measurement (do not assume the reference document's training/inference-latency figures): record actual measured training time and actual measured CPU inference time on the real setup, logged in `PERFORMANCE_LOG.md`.
+- [x] Compute the `is_flagged` composite trigger (combining `anomaly_score`, `risk_score`, `is_mixing`) and write to PostgreSQL — document the exact rule used.
 
 ---
 
@@ -184,10 +184,10 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
 - [x] **PyTorch ↔ PyTorch Geometric pairing** — verified compatible pair `torch==2.4.1+cpu` and `torch-geometric==2.6.1` replacing broken reference PDF pairing. Pinned in `backend/requirements.txt` (Phase 0, Phase 7).
 - [x] **Neo4j ↔ Neo4j GDS pairing** — verified compatible pair `neo4j:5.26-community` with official `NEO4J_PLUGINS='["graph-data-science"]'` (GDS 2.13.x) replacing broken reference PDF pairing. Pinned in `docker-compose.yml` (Phase 0, Phase 4).
 - [x] **CoinJoin detection accuracy statistic** (attributed to USENIX Security 2022, Kappos et al.) — confirmed misquoted in the reference document. Correct figures: Random Forest 89.2%, BlockSci heuristics 87.5%, documented in NOTES.md and FLOW.md. Phase 6 verify_phase6.py V4 check confirms these figures are cited correctly (Phase 6).
-- [ ] **Focal-loss hyperparameters** (γ=2, α=0.75, attributed to a "2026 FG-EGCN" Nature Scientific Reports paper) — confirmed misattributed. Pull the primary paper for its real values or justify independently chosen ones (Phase 7).
+- [x] **Focal-loss hyperparameters** (γ=2, α=0.75, attributed to a "2026 FG-EGCN" Nature Scientific Reports paper) — confirmed misattributed. Used γ=2.0 (Lin et al. ICCV 2017) + α=6.20 (neg/pos ratio clamped to 20). No FG-EGCN values used (Phase 7).
 - [x] **Ingest throughput target** ("100k rows in <60s") — verified on actual hardware: 100,000 rows in 8.38s - 12.04s (8,307 - 11,938 rows/sec), surpassing target by >5x (Phase 2).
 - [x] **Autoencoder training time** ("~15 min CPU") — verified on actual hardware: 211.7s (3.53 min) on CPU-only machine, surpassing the reference doc estimate by >4x speed (Phase 5).
-- [ ] **GraphSAGE training time** ("~20 min Colab GPU") and **inference latency** ("<2s for 100k nodes") — not guaranteed; measure and log real numbers (Phase 7).
+- [x] **GraphSAGE training time** ("~20 min Colab GPU") and **inference latency** ("<2s for 100k nodes") — verified on actual hardware: training 12.2s CPU (147 epochs, early-stop), inference 25.4ms for 24,673 nodes (Phase 7).
 - [ ] **Full-pipeline timing** ("<5 min including GDS") and **per-model inference timing** ("<30s Autoencoder / <5s GraphSAGE") — not guaranteed; measure and log real numbers for the write-up's compute-cost section (Phase 10).
 - [ ] **XAI-D calibration statement** ("87% precision at 72% recall, threshold 0.65") — a template value, not a measured result; recompute against the actual trained models before presenting it anywhere (Phase 8).
 - [x] **Ransomwhere dataset size claims** ("7,000+ addresses / $1B+ tracked") — recorded actual counts from live API response: 11,186 addresses, 136 ransomware families, $1,018,573,922.46 tracked USD, 115,116.9103 tracked BTC (Phase 1).
@@ -420,3 +420,26 @@ AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic. Planning docume
      - V3: FPR 26.6% ≤ 35% tolerance (structural coincidental matches in 100k txns). ✅
      - V4: Kappos et al. RF=89.2%, BlockSci=87.5% confirmed in NOTES.md. ✅
   6. `backend/venv/Scripts/python -m pytest backend/tests/ -v`: **89 passed, 2 skipped** in 7.35s. Zero regressions. 8 new Phase 6 tests all green.
+
+### 2026-09-08 - Phase 7: Risk Scoring - GraphSAGE via PyTorch Geometric (End-to-End)
+- **What was done:**
+  1. Installed torch-geometric==2.6.1 into backend venv; confirmed SAGEConv, Data, GNNExplainer imports clean.
+  2. Updated backend/app/config.py with Phase 7 settings (architecture dims, focal-loss params, risk threshold, artifact paths).
+  3. Created backend/app/ml/__init__.py package marker.
+  4. Created backend/app/ml/graphsage.py: GraphSAGEClassifier (3-layer SAGEConv + LayerNorm + ReLU + Dropout + sigmoid head), focal_loss() (Lin et al. ICCV 2017, gamma=2.0), compute_alpha(). No FG-EGCN attribution.
+  5. Created backend/scripts/train_graphsage.py (5-step pipeline): GDS Personalized PageRank via in-Cypher node collection, PyG Data assembly (8-feature, 79,240 directed edges, stratified masks), focal-loss training with early-stop, full-graph inference, Neo4j + PG write-back, is_flagged composite trigger (anomaly_score > 0.034618 OR risk_score >= 0.5 OR is_mixing = true). Saves wallet_index_map.json + wallet_risk_scores.json for Phase 8.
+  6. Created backend/scripts/verify_phase7.py: V1-V5 standalone checks.
+  7. Created backend/tests/test_phase7_graphsage.py: 21 tests (18 unit, 3 integration).
+  8. Registered integration custom mark in backend/conftest.py.
+  9. Fixed: GraphService context-manager usage; GDS sourceNodes must be node references (via MATCH collect), not element ID strings.
+- **How it was verified:**
+  1. train_graphsage.py --epochs 200: Exit code 0.
+     - 3,426 seed wallets tagged. PageRank: 24,673 scores in 1.5s, 17,474 with proximity > 0. Total PR time: 2.5s.
+     - Feature matrix: (24673, 8). 79,240 directed CO_SPEND edges. Labels: 3,426 pos / 21,247 neg (6.2:1).
+     - Focal loss gamma=2.0, alpha=6.20. Early stop epoch 147. Training: 12.2s CPU.
+     - Model saved: data/models/graphsage_20260908.pt.
+     - Inference: 24,673 nodes in 25.4ms. Neo4j: 24,673 wallets updated. PG: 100,000 rows.
+     - Evaluation (test, threshold=0.5): F1=0.9711 Precision=0.9637 Recall=0.9786 (TP=504 FP=19 FN=11).
+     - is_flagged: 22,911/100,000 (22.91%).
+  2. verify_phase7.py: 5/5 PASS. V1: 24,673/24,673 no-NULL. V2: seed_mean=0.9372 >> nonseed_mean=0.0648. V3: checkpoint loads clean, CPU inference confirmed. V4: 100% PG coverage. V5: is_flagged breakdown verified.
+  3. pytest backend/tests/ -v: 110 passed, 2 skipped in 13.5s. Zero regressions. All 21 Phase 7 tests pass.

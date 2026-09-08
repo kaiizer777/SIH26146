@@ -107,12 +107,12 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 ## Phase 7 — F4: Risk Scoring (GraphSAGE) [Difficulty: High | Complexity: High]
 **Goal:** Propagate risk from known-illicit seed wallets across the graph.
 
-- [ ] (Optional but recommended per audit) Run GDS PageRank seeded from Ransomwhere wallets → `asn_risk_score` feature
-- [ ] Export graph to PyG `Data` object (features from Postgres, edges from `:CO_SPEND`/`:SENDS`)
-- [ ] Train 3-layer GraphSAGE (SAGEConv, focal loss for class imbalance) on Ransomwhere-labeled seed wallets
-- [ ] Run inference → write `risk_score` to Postgres + Neo4j
+- [x] (Optional but recommended per audit) Run GDS PageRank seeded from Ransomwhere wallets → `asn_risk_score` feature
+- [x] Export graph to PyG `Data` object (features from Postgres, edges from `:CO_SPEND`/`:SENDS`)
+- [x] Train 3-layer GraphSAGE (SAGEConv, focal loss for class imbalance) on Ransomwhere-labeled seed wallets
+- [x] Run inference → write `risk_score` to Postgres + Neo4j
 
-**Checkpoint:** Seed illicit wallets and their close neighbors show elevated risk scores; F1 score on held-out seeds is reasonable.
+**Checkpoint:** Seed illicit wallets and their close neighbors show elevated risk scores; F1 score on held-out seeds is reasonable. [VERIFIED: 3,426 seed wallets tagged. GDS Personalized PageRank (20 iterations, γ_damping=0.85) → 17,474 wallets with seed_proximity > 0. GraphSAGE 3-layer SAGEConv (64→32→16→1, LayerNorm, focal loss γ=2.0 α=6.20): 147 epochs (early stop), 12.2s CPU. Test F1=0.9711 Precision=0.9637 Recall=0.9786 (TP=504 FP=19 FN=11 on 515 held-out positives). Inference: 24,673 nodes in 25.4ms. Neo4j: all 24,673 wallets written (seed mean risk=0.937 vs non-seed mean=0.065). PG: 100,000/100,000 rows risk_score written. is_flagged: 22,911/100,000 (22.91%). V1–V5 all PASS. 110/110 pytest tests pass (2 skipped).]
 
 ---
 

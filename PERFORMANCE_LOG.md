@@ -188,3 +188,22 @@ All numbers are actual measurements on the dev machine, not estimates from the r
 | Model file | C:\Users\bari2\Desktop\SIH26146\data\models\autoencoder_20260907.pt |
 | Scaler file | C:\Users\bari2\Desktop\SIH26146\data\models\scaler_20260907.pkl |
 
+
+### Phase 7 — GraphSAGE Risk Scoring (20260908)
+| Metric | Value |
+|---|---|
+| Nodes (wallets) | 24,673 |
+| Edges (CO_SPEND, undirected×2) | 79,240 |
+| Positive labels (Ransomwhere seed) | 3,426 |
+| Negative labels | 21,247 |
+| Imbalance ratio | 6.2:1 |
+| Focal loss γ | 2.0 (Lin et al. ICCV 2017) |
+| Focal loss α | 6.20 (neg/pos ratio, clamped to 20.0) |
+| Epochs run | 147 |
+| Training time (CPU) | 12.2s (0.2 min) |
+| Inference time (CPU, full graph) | 0.025s |
+| Test F1 | 0.9711 |
+| Test Precision | 0.9637 |
+| Test Recall | 0.9786 |
+| Test TP / FP / FN | 504 / 19 / 11 |
+| is_flagged transactions | 22,911 / 100,000 (22.91%) |
