@@ -213,7 +213,7 @@ export default function EntityDrawer({
       {/* Centered Forensic Dossier Card */}
       <aside
         className={clsx(
-          "fixed z-50 left-1/2 top-14 bottom-4 -translate-x-1/2 w-[92vw] lg:w-[60vw] max-w-5xl",
+          "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] lg:w-[60vw] h-[85vh] max-w-5xl",
           "flex flex-col bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden",
           "transition-all duration-200 ease-out",
           isOpen
