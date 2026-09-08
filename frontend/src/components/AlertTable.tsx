@@ -300,13 +300,13 @@ export default function AlertTable({
 
                       {/* Anomaly Score */}
                       <td className="py-2 px-3 whitespace-nowrap">
-                        <span className="crypto-mono text-slate-700">
+                        <span className="crypto-mono text-xs text-slate-800">
                           {item.anomaly_score != null
                             ? item.anomaly_score.toFixed(4)
                             : "—"}
                         </span>
                         {item.anomaly_rank_percentile != null && (
-                          <span className="ml-1 crypto-mono text-[10px] text-slate-400">
+                          <span className="ml-1 crypto-mono text-[10px] text-slate-600">
                             {item.anomaly_rank_percentile.toFixed(1)}%
                           </span>
                         )}
@@ -315,47 +315,47 @@ export default function AlertTable({
                       {/* Cluster ID */}
                       <td className="py-2 px-3">
                         {item.cluster_id != null ? (
-                          <span className="crypto-mono text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                          <span className="crypto-mono text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-medium">
                             #{item.cluster_id}
                           </span>
                         ) : (
-                          <span className="text-slate-300">—</span>
+                          <span className="text-slate-500">—</span>
                         )}
                       </td>
 
                       {/* Mixing Flag */}
                       <td className="py-2 px-3 whitespace-nowrap">
                         {item.is_peeling_chain ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-200">
-                            <Layers className="w-2.5 h-2.5" />
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-orange-100/70 text-orange-900 border border-orange-300">
+                            <Layers className="w-3 h-3 text-orange-800" />
                             {item.chain_hops ?? "?"}‑hop
                           </span>
                         ) : item.is_mixing ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
-                            <Zap className="w-2.5 h-2.5" />
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100/70 text-amber-900 border border-amber-300">
+                            <Zap className="w-3 h-3 text-amber-800" />
                             CoinJoin
                           </span>
                         ) : (
-                          <span className="text-slate-300 text-[10px]">—</span>
+                          <span className="text-slate-500 text-xs">—</span>
                         )}
                       </td>
 
                       {/* Seed */}
                       <td className="py-2 px-3 whitespace-nowrap">
                         {item.is_seed ? (
-                          <span className="crypto-mono text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 font-medium">
+                          <span className="crypto-mono text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-900 border border-red-300 font-semibold">
                             {item.seed_family
                               ? item.seed_family.slice(0, 18)
                               : "SEED"}
                           </span>
                         ) : (
-                          <span className="text-slate-300 text-[10px]">Clean</span>
+                          <span className="crypto-mono text-xs text-slate-800">Clean</span>
                         )}
                       </td>
 
                       {/* Timestamp */}
                       <td className="py-2 px-3 whitespace-nowrap">
-                        <span className="crypto-mono text-[10px] text-slate-400">
+                        <span className="crypto-mono text-xs text-slate-800">
                           {item.ts
                             ? item.ts.replace("T", " ").slice(0, 16) + " UTC"
                             : "—"}
