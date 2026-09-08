@@ -86,8 +86,8 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path
-        # Skip auth for exempt paths
-        if any(path.startswith(p) for p in _AUTH_SKIP_PREFIXES):
+        # Skip auth for exempt paths and all CORS preflights
+        if request.method == "OPTIONS" or any(path.startswith(p) for p in _AUTH_SKIP_PREFIXES):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization", "")
