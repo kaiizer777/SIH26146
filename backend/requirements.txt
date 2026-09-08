@@ -48,3 +48,9 @@ torch-geometric==2.6.1
 scikit-learn>=1.5.0
 joblib>=1.4.0
 matplotlib>=3.9.0
+
+# Phase 8: Explainability Layer (XAI-A/B/C/D)
+# GradientExplainer is used instead of DeepExplainer: safer on torch 2.4.1
+# (DeepExplainer has known instability with in-place ops and modern PyTorch autograd)
+# Installs 0.51.0 on Python 3.11.15 — verified via dry-run 2026-09-08
+shap>=0.46.0

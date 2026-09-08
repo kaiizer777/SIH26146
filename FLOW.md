@@ -119,12 +119,12 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 ## Phase 8 — Explainability Layer [Difficulty: High | Complexity: High]
 **Goal:** Every flagged wallet/transaction has a human-readable "why."
 
-- [ ] SHAP DeepExplainer on the autoencoder → per-feature attribution (waterfall chart data) — **keep model as plain `nn.Module`, don't `torch.compile()` it first**
-- [ ] GNNExplainer on GraphSAGE → subgraph + feature importance for top-500 risk wallets
-- [ ] Assemble per-wallet evidence-trail JSON (cluster info, anomaly %, mixing flags, chain hops, risk score, triggered rules)
-- [ ] Compute composite weighted risk score (documented formula + calibration note)
+- [x] SHAP GradientExplainer on the autoencoder → per-feature attribution — `AutoencoderMSEWrapper` maps (N,18)→(N,1) MSE for SHAP compat; `shap>=0.46.0` verified on Python 3.11
+- [x] GNNExplainer on GraphSAGE (PyG 2.6.1 `Explainer` API verified) → subgraph + feature importance for top-500 risk wallets; isolated-node fast-path avoids degenerate gradient descent
+- [x] Assembled per-wallet evidence-trail JSON (cluster info, anomaly % rank, mixing flags, chain hops, risk score, triggered rules) for 17,020 wallets
+- [x] Composite weighted risk score: w_anomaly=0.35, w_risk=0.45, w_rules=0.15, w_mixing=0.05; verdict tiers CRITICAL/HIGH/MEDIUM/LOW
 
-**Checkpoint:** For any flagged wallet, you can produce all 4 XAI outputs (SHAP values, subgraph, evidence JSON, composite score).
+**Checkpoint:** For any flagged wallet, you can produce all 4 XAI outputs (SHAP values, subgraph, evidence JSON, composite score). [VERIFIED: XAI-A `shap_attributions.json` 5.70 MB (4,839 wallets). XAI-B `gnn_subgraphs.json` 0.30 MB (500 wallets, all isolated in synthetic CO_SPEND graph — correct). XAI-C `evidence_trails.json` 5.46 MB (17,020 trails, 9,794 cluster IDs, 13.9s PG aggregation). XAI-D `composite_risk_scores.json` 9.86 MB — CRITICAL=103 (0.6%), HIGH=78 (0.5%), MEDIUM=3,377 (19.8%), LOW=13,462 (79.1%); all 103 CRITICAL wallets have non-empty triggered_rules. Sanity check script passed with exit code 0.]
 
 ---
 

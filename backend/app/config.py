@@ -68,5 +68,14 @@ class Settings(BaseSettings):
     wallet_index_map_path: str = str(_DATA_ROOT / "wallet_index_map.json")
     wallet_risk_scores_path: str = str(_DATA_ROOT / "wallet_risk_scores.json")
 
+    # --- Phase 8: Explainability Layer ---
+    xai_dir: str = str(_DATA_ROOT / "xai")
+    shap_attributions_path: str = str(_DATA_ROOT / "xai" / "shap_attributions.json")
+    gnn_subgraphs_path: str = str(_DATA_ROOT / "xai" / "gnn_subgraphs.json")
+    evidence_trails_path: str = str(_DATA_ROOT / "xai" / "evidence_trails.json")
+    composite_risk_scores_path: str = str(_DATA_ROOT / "xai" / "composite_risk_scores.json")
+    # Top-K wallets to run GNNExplainer on
+    gnn_explainer_top_k: int = 500
+
 
 settings = Settings()
