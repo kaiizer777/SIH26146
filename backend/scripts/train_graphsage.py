@@ -730,6 +730,66 @@ def write_risk_scores_to_neo4j(
     print(f"  Neo4j write-back: {total_written:,} wallets updated in {time.time()-t0:.1f}s.")
 
 
+def write_pagerank_to_neo4j(
+    svc: GraphService,
+    seed_prox: Dict[str, float],
+) -> int:
+    """Persist GDS Personalized PageRank scores as w.seed_proximity on :Wallet nodes.
+
+    This is the MISSING step that caused seed_wallet_proximity to be all-zero
+    in evidence_trails.json: build_evidence_trails.py reads w.seed_proximity
+    from Neo4j (via load_seed_proximities), but train_graphsage.py only ever
+    used the in-memory dict as a training feature — never wrote it back.
+
+    Writes only wallets with score > 0 (the rest default to 0 in Cypher's
+    coalesce). Also clears any stale seed_proximity on nodes not in this run's
+    result set (handles graph re-runs cleanly).
+
+    Returns the number of :Wallet nodes updated.
+    """
+    if not seed_prox:
+        print("  WARNING: seed_prox dict is empty — skipping seed_proximity write-back.")
+        return 0
+
+    print(f"\n  Writing seed_proximity to Neo4j ({len(seed_prox):,} scored wallets) ...")
+    t0 = time.time()
+    total_written = 0
+
+    # First, clear stale seed_proximity on all wallets (idempotent across re-runs)
+    with svc.driver.session() as s:
+        s.run(
+            "MATCH (w:Wallet) WHERE w.seed_proximity IS NOT NULL "
+            "REMOVE w.seed_proximity"
+        )
+
+    # Write non-zero scores in batches
+    non_zero = {addr: score for addr, score in seed_prox.items() if score > 0.0}
+    items = list(non_zero.items())
+    for i in range(0, len(items), NEO4J_BATCH):
+        batch = [
+            {"address": addr, "sp": float(score)}
+            for addr, score in items[i : i + NEO4J_BATCH]
+        ]
+        with svc.driver.session() as s:
+            result = s.run(
+                """
+                UNWIND $batch AS row
+                MATCH (w:Wallet {address: row.address})
+                SET w.seed_proximity = row.sp
+                RETURN count(w) AS cnt
+                """,
+                batch=batch,
+            )
+            total_written += result.single()["cnt"]
+
+    elapsed = time.time() - t0
+    print(
+        f"  seed_proximity write-back: {total_written:,} wallets written "
+        f"({len(non_zero):,} non-zero scores) in {elapsed:.1f}s."
+    )
+    return total_written
+
+
 # ---------------------------------------------------------------------------
 # Step 4: Write-back to PostgreSQL
 # ---------------------------------------------------------------------------
@@ -967,8 +1027,12 @@ def main(epochs: int = DEFAULT_EPOCHS) -> None:
             json.dump(risk_map, f, separators=(",", ":"))
         print(f"  Wallet risk scores saved -> {_RISK_SCORES_FILE} ({N:,} entries).")
 
-        # Write to Neo4j
+        # Write risk_score to Neo4j
         write_risk_scores_to_neo4j(svc, all_addrs, risk_scores)
+
+        # Write seed_proximity to Neo4j — this was the missing step causing
+        # seed_wallet_proximity=0.0 in evidence_trails.json (Phase 9.5 fix).
+        write_pagerank_to_neo4j(svc, seed_prox)
 
         # Write to PostgreSQL
         rows_risk, rows_flagged = write_risk_scores_to_postgres(conn, all_addrs, risk_scores)

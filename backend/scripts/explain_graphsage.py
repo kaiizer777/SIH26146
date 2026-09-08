@@ -303,12 +303,31 @@ def rebuild_pyg_data(
     scaler.fit(feature_matrix[non_seed_idx] if len(non_seed_idx) > 0 else feature_matrix)
     feature_matrix = scaler.transform(feature_matrix).astype(np.float32)
 
-    # CO_SPEND edges — cap at 500k pairs to avoid memory/time blowout on large graphs
+    # Build Wallet→Wallet edges via the 2-hop transaction path:
+    #   (Wallet)-[:SENDS]->(Transaction)-[:RECEIVES]->(Wallet)
+    # The graph schema uses Transaction as an intermediate node; there are no
+    # direct Wallet→Wallet edges for SENDS/RECEIVES. CO_SPEND is direct but
+    # top-risk (Ransomwhere) wallets never appear as co-signers.
     _EDGE_LIMIT = 500_000
-    print(f"  Fetching CO_SPEND edges from Neo4j (LIMIT {_EDGE_LIMIT:,}) ...", flush=True)
+    print(f"  Projecting Wallet→Wallet edges via Tx intermediary (LIMIT {_EDGE_LIMIT:,}) ...", flush=True)
     t0 = time.time()
     edges_src: List[int] = []
     edges_dst: List[int] = []
+    with svc.driver.session() as s:
+        result = s.run(
+            "MATCH (a:Wallet)-[:SENDS]->(t:Transaction)-[:RECEIVES]->(b:Wallet) "
+            f"RETURN a.address AS src, b.address AS dst LIMIT {_EDGE_LIMIT}"
+        )
+        for rec in result:
+            si = index_map.get(rec["src"])
+            di = index_map.get(rec["dst"])
+            if si is None or di is None or si == di:
+                continue
+            edges_src.append(si)
+            edges_dst.append(di)
+            edges_src.append(di)  # undirected for GNN message passing
+            edges_dst.append(si)
+    # Also add direct CO_SPEND edges (common-input-ownership clusters)
     with svc.driver.session() as s:
         result = s.run(
             "MATCH (a:Wallet)-[:CO_SPEND]->(b:Wallet) "
@@ -324,7 +343,8 @@ def rebuild_pyg_data(
             edges_src.append(di)
             edges_dst.append(si)
     edge_index = torch.tensor([edges_src, edges_dst], dtype=torch.long)
-    print(f"  {len(edges_src) // 2:,} CO_SPEND pairs fetched in {time.time()-t0:.1f}s.", flush=True)
+    n_tx_pairs = len(edges_src) // 2
+    print(f"  {n_tx_pairs:,} Wallet→Wallet pairs projected in {time.time()-t0:.1f}s.", flush=True)
 
     data = Data(
         x=torch.tensor(feature_matrix),
@@ -397,16 +417,38 @@ def run_gnn_explainer(
         has_edges = bool(incident_check.any())
 
         if not has_edges:
+            # Isolated from projected edge set — fetch payer wallets directly
+            # from Neo4j using the 2-hop incoming path: who sent funds to this
+            # address? This is the most forensically meaningful 1-hop context
+            # for Ransomwhere/peeling-chain terminal wallets.
+            with GraphService(settings.neo4j_uri, settings.neo4j_user, settings.neo4j_password) as _svc:
+                with _svc.driver.session() as _s:
+                    nb_result = _s.run(
+                        "MATCH (payer:Wallet)-[:SENDS]->(t:Transaction)-[:RECEIVES]->(w:Wallet {address: $addr}) "
+                        "RETURN DISTINCT payer.address AS nb LIMIT 10",
+                        addr=addr,
+                    )
+                    neighbors = [rec["nb"] for rec in nb_result]
+            nb_nodes = [
+                {"address": addr, "risk_score": float(risk_score), "is_seed": addr in seed_addrs}
+            ] + [
+                {"address": nb, "risk_score": float(risk_scores.get(nb, 0.0)), "is_seed": nb in seed_addrs}
+                for nb in neighbors
+            ]
+            nb_edges = [
+                {"source": nb, "target": addr, "weight": float(risk_scores.get(nb, 0.0)), "edge_importance": 0.5}
+                for nb in neighbors
+            ]
             results[addr] = {
                 "address": addr,
                 "risk_score": float(risk_score),
                 "is_seed": addr in seed_addrs,
-                "nodes": [{"address": addr, "risk_score": float(risk_score), "is_seed": addr in seed_addrs}],
-                "edges": [],
+                "nodes": nb_nodes,
+                "edges": nb_edges,
                 "feature_importance": [{"feature": name, "importance": 0.0} for name in NODE_FEATURE_NAMES],
             }
             if (rank_i + 1) % 10 == 0 or rank_i == 0:
-                print(f"    [{rank_i+1}/{len(ranked)}] {addr[:20]}... ISOLATED (no edges)", flush=True)
+                print(f"    [{rank_i+1}/{len(ranked)}] {addr[:20]}... fallback payers={len(neighbors)}", flush=True)
             continue
 
         try:

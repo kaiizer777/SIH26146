@@ -382,3 +382,43 @@ Severity colors must be vivid enough to communicate urgency instantly without bl
 - [x] **GraphSAGE training & inference**: Verified on hardware: training 12.2s CPU, inference 25.4ms for 24,673 nodes (Phase 7).
 - [x] **XAI-D calibration**: Composite score formula: `clip(0.35·anomaly + 0.45·risk + 0.15·rules + 0.05·mixing, 0, 1)`. Verdict distribution on 17,020 wallets: CRITICAL=103 (0.6%), HIGH=78 (0.5%), MEDIUM=3,377 (19.8%), LOW=13,462 (79.1%). All 103 CRITICAL wallets have non-empty triggered rules. The "87%/72%" placeholder is completely purged (Phase 8).
 - [ ] **Full-pipeline end-to-end timing**: MOVED to Section 4.5 (Phase 9.5), item 5. See there for acceptance criteria.
+
+---
+
+# SECTION 4.5: PHASE 9.5 — CRITICAL PRE-DEMO FIXES
+
+- [x] **ITEM 1 — Batch Ingest Round-Trip** *(2026-09-08)*
+  - Generated 1,000-row synthetic CSV (`data/uploads/synthetic_transactions.csv`, 0.32 MB).
+  - Root causes found and fixed: (a) stale local uvicorn (PID 4716) shadowing Docker FastAPI on port 8000 — killed; (b) Docker Dockerfile CMD pointed at stub `main:app` instead of `app.main:app` — fixed; (c) `config.py` `_DATA_ROOT` resolved to `/data` in Docker instead of `/app/data` — fixed via `DATA_ROOT` env var; (d) stale service worker cached from previous app at localhost:3000 enforcing uploadthing CSP blocking all `localhost:8000` calls — fixed with `SwUnregister.tsx` client component.
+  - Verified: POST `/ingest` → 202 Accepted → Celery `received=1000 inserted=1000 rejected=0` in 1.9s → status endpoint returns `SUCCESS` → alert grid auto-refreshed via `onSuccess()` callback with no manual reload.
+
+- [x] **ITEM 2 — Air-Gap Verification** *(2026-09-08)*
+  - Audited all CDN dependencies. `next/font/google` (Inter + JetBrains Mono) confirmed pre-cached in `.next/static/media/` as local woff2 files — zero CDN requests at runtime.
+  - No external CDN dependencies found in frontend source (D3, Lucide, all npm packages local).
+  - Stale service worker (uploadthing) unregistered via `SwUnregister.tsx`.
+  - **Air-gap status: safe for `npm run dev`**. Full production air-gap requires `next build` (fonts embedded at build time).
+
+- [x] **ITEM 3 — Fix `seed_wallet_proximity` Zeroing Bug** *(2026-09-08)*
+  - Root cause: `train_graphsage.py` ran GDS Personalized PageRank in-memory but never wrote `w.seed_proximity` back to Neo4j. `build_evidence_trails.py` read from Neo4j and got 0.0 for every wallet.
+  - Fix: `write_pagerank_to_neo4j()` added to `train_graphsage.py`; `backend/scripts/fix_seed_proximity.py` created to backfill.
+  - Ran `fix_seed_proximity.py`: 17,474 wallets scored, written to Neo4j in 2.5s. Re-ran `build_evidence_trails.py`: 17,041 trails, **12,750 wallets with non-zero `seed_wallet_proximity`**. PASS.
+  - FastAPI restarted: `evidence=17041` confirmed in XAI store logs.
+
+- [x] **ITEM 4 — Fix GNNExplainer Empty-Subgraph Problem** *(2026-09-08)*
+  - Root cause (3-stage diagnosis):
+    1. All 500 top-risk wallets had 0 CO_SPEND edges — Ransomwhere/peeling-chain addresses never co-sign inputs.
+    2. SENDS/RECEIVES in Neo4j are `Wallet→Transaction` (not Wallet→Wallet), so direct queries returned 0.
+    3. Actual Wallet→Wallet path is 2-hop: `(Wallet)-[:SENDS]->(Transaction)-[:RECEIVES]->(Wallet)` — 262,201 such paths exist.
+  - Fix: Changed `rebuild_pyg_data()` edge fetch to use the 2-hop Tx path + CO_SPEND. **296,120 Wallet→Wallet pairs projected.**
+  - Fix: Isolated-node fallback now queries payer wallets via incoming 2-hop path instead of producing empty output.
+  - Re-ran `explain_graphsage.py --top-k 100 --epochs 5`: wallets with projected edges got `edges_kept=2-4` from GNNExplainer; isolated wallets got `fallback payers=1`. **Zero empty subgraphs.** Done in 86.5s.
+  - FastAPI restarted: `subgraph=100` confirmed in XAI store logs.
+
+- [x] **ITEM 5 — Measure Full-Pipeline End-to-End Timing** *(2026-09-08)*
+  - Measured via `time_pipeline.py` script (HTTP requests to Docker FastAPI):
+    - Upload + Celery dispatch: **35 ms**
+    - Celery pipeline (1,000 rows, GeoIP enrichment, PostgreSQL COPY): **563 ms**
+    - Alert grid fetch (17,020 alerts): **1,386 ms**
+    - **Total end-to-end: 1,983 ms (~2s)**
+  - Ingest throughput: 1,000 rows in 563 ms = **1,776 rows/sec** (well within spec; bulk 100k target was verified at 8,307–11,938 rows/sec in Phase 2).
+  - Alert fetch latency driven by XAI store scan over 17,020 wallets; acceptable for demo.

@@ -11,6 +11,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Resolve project root so path defaults work regardless of CWD.
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]  # backend/app/config.py -> SIH26146/
 _DATA_ROOT = _PROJECT_ROOT / "data"  # SIH26146/data/
+# In Docker: /app/app/config.py -> parents[2] = /, so _DATA_ROOT = /data (wrong).
+# Override via DATA_ROOT env var (set in docker-compose) to /app/data.
+import os as _os
+_DATA_ROOT = Path(_os.environ.get("DATA_ROOT", str(_DATA_ROOT)))
 
 
 class Settings(BaseSettings):

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { JetBrains_Mono } from "next/font/google";
+import SwUnregister from "@/components/SwUnregister";
 import "./globals.css";
 
 // Inter: primary UI font — loaded at build time, zero CDN requests at runtime
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps) {
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
+        <SwUnregister />
         {children}
       </body>
     </html>
