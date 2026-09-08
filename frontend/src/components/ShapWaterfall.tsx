@@ -80,7 +80,7 @@ export default function ShapWaterfall({ attributions }: ShapWaterfallProps) {
         <text
           x={LEFT_LABEL_W + 4}
           y={PADDING_V - 2}
-          fontSize={9}
+          fontSize={10}
           fill="#64748b"
           fontFamily="monospace"
         >
@@ -89,7 +89,7 @@ export default function ShapWaterfall({ attributions }: ShapWaterfallProps) {
         <text
           x={zeroX + 4}
           y={PADDING_V - 2}
-          fontSize={9}
+          fontSize={10}
           fill="#64748b"
           fontFamily="monospace"
         >
@@ -113,7 +113,7 @@ export default function ShapWaterfall({ attributions }: ShapWaterfallProps) {
                 x={LEFT_LABEL_W - 6}
                 y={y + ROW_HEIGHT / 2 + 1}
                 textAnchor="end"
-                fontSize={11}
+                fontSize={12}
                 fill="#334155"
                 dominantBaseline="middle"
               >
@@ -149,7 +149,7 @@ export default function ShapWaterfall({ attributions }: ShapWaterfallProps) {
                 x={positive ? barX + barW + 3 : barX - 3}
                 y={y + ROW_HEIGHT / 2 + 1}
                 textAnchor={positive ? "start" : "end"}
-                fontSize={9}
+                fontSize={10.5}
                 fill={labelFill}
                 dominantBaseline="middle"
                 fontFamily="monospace"
@@ -165,7 +165,7 @@ export default function ShapWaterfall({ attributions }: ShapWaterfallProps) {
       {/* Floating tooltip */}
       {tooltip && (
         <div
-          className="absolute z-50 px-2 py-1.5 rounded text-[11px] bg-slate-900 text-slate-100 pointer-events-none crypto-mono shadow-lg whitespace-nowrap"
+          className="absolute z-50 px-2.5 py-1.5 rounded-md text-xs bg-slate-900 text-slate-100 pointer-events-none crypto-mono shadow-lg whitespace-nowrap"
           style={{ left: tooltip.x, top: tooltip.y }}
         >
           {tooltip.text}
@@ -173,13 +173,13 @@ export default function ShapWaterfall({ attributions }: ShapWaterfallProps) {
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-2 px-1">
-        <span className="flex items-center gap-1.5 text-[11px] text-slate-600">
-          <span className="w-3 h-2 rounded bg-red-600 inline-block" />
+      <div className="flex items-center gap-5 mt-2.5 px-1">
+        <span className="flex items-center gap-1.5 text-xs text-slate-600">
+          <span className="w-3.5 h-2 rounded bg-red-600 inline-block" />
           Illicit push (positive)
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-slate-600">
-          <span className="w-3 h-2 rounded bg-emerald-600 inline-block" />
+        <span className="flex items-center gap-1.5 text-xs text-slate-600">
+          <span className="w-3.5 h-2 rounded bg-emerald-600 inline-block" />
           Benign pull (negative)
         </span>
       </div>
