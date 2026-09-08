@@ -119,21 +119,28 @@ function Accordion({
   title,
   icon,
   defaultOpen = false,
+  isOpen,
+  onToggle,
   children,
   className,
 }: {
   title: string;
   icon: React.ReactNode;
   defaultOpen?: boolean;
+  isOpen?: boolean;
+  onToggle?: () => void;
   children: React.ReactNode;
   className?: string;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const open = isOpen !== undefined ? isOpen : internalOpen;
+  const handleToggle = onToggle ?? (() => setInternalOpen((o) => !o));
+
   return (
     <div className={clsx("border border-slate-200 rounded-lg overflow-hidden flex flex-col", className)}>
       <button
         className="flex items-center justify-between w-full px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left shrink-0"
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleToggle}
         aria-expanded={open}
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -167,6 +174,7 @@ export default function EntityDrawer({
   onClose,
 }: EntityDrawerProps) {
   const [copied, setCopied] = useState(false);
+  const [mlRowOpen, setMlRowOpen] = useState(true);
 
   const isOpen = address !== null;
 
@@ -379,13 +387,14 @@ export default function EntityDrawer({
 
               {/* Evidence Accordions */}
               <div className="flex flex-col gap-2.5">
-                {/* Co-Spending & Autoencoder (side-by-side 50% width row with equal height) */}
+                {/* Co-Spending & Autoencoder (side-by-side 50% width row with synchronized open/close) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-stretch">
                   {/* Cluster Co-Spending */}
                   <Accordion
                     title="Cluster Co-Spending Analysis"
                     icon={<Network className="w-4 h-4" />}
-                    defaultOpen={true}
+                    isOpen={mlRowOpen}
+                    onToggle={() => setMlRowOpen((o) => !o)}
                     className="h-full"
                   >
                     <Row label="Cluster ID" value={data.evidence_trail.cluster_id ?? "—"} mono />
@@ -405,7 +414,8 @@ export default function EntityDrawer({
                   <Accordion
                     title="Autoencoder Reconstruction"
                     icon={<Activity className="w-4 h-4" />}
-                    defaultOpen={true}
+                    isOpen={mlRowOpen}
+                    onToggle={() => setMlRowOpen((o) => !o)}
                     className="h-full"
                   >
                     <Row
