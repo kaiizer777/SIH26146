@@ -41,3 +41,11 @@ dist/
 Thumbs.db
 .vscode/
 .idea/
+
+# Markdown tracking & workflow docs (only README and 26146.md tracked)
+*.md
+!README.md
+!26146.md
+**/*.md
+!**/README.md
+
