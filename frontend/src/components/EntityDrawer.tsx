@@ -120,17 +120,19 @@ function Accordion({
   icon,
   defaultOpen = false,
   children,
+  className,
 }: {
   title: string;
   icon: React.ReactNode;
   defaultOpen?: boolean;
   children: React.ReactNode;
+  className?: string;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden">
+    <div className={clsx("border border-slate-200 rounded-lg overflow-hidden flex flex-col", className)}>
       <button
-        className="flex items-center justify-between w-full px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+        className="flex items-center justify-between w-full px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left shrink-0"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
       >
@@ -145,7 +147,7 @@ function Accordion({
         )}
       </button>
       {open && (
-        <div className="px-4 py-3.5 bg-white text-sm text-slate-700 space-y-2.5">
+        <div className="px-4 py-3.5 bg-white text-sm text-slate-700 space-y-2.5 flex-1 flex flex-col justify-between">
           {children}
         </div>
       )}
@@ -377,13 +379,14 @@ export default function EntityDrawer({
 
               {/* Evidence Accordions */}
               <div className="flex flex-col gap-2.5">
-                {/* Co-Spending & Autoencoder (side-by-side 50% width row) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start">
+                {/* Co-Spending & Autoencoder (side-by-side 50% width row with equal height) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-stretch">
                   {/* Cluster Co-Spending */}
                   <Accordion
                     title="Cluster Co-Spending Analysis"
                     icon={<Network className="w-4 h-4" />}
                     defaultOpen={true}
+                    className="h-full"
                   >
                     <Row label="Cluster ID" value={data.evidence_trail.cluster_id ?? "—"} mono />
                     <Row label="Cluster Size" value={data.evidence_trail.cluster_size?.toLocaleString() ?? "—"} mono />
@@ -403,6 +406,7 @@ export default function EntityDrawer({
                     title="Autoencoder Reconstruction"
                     icon={<Activity className="w-4 h-4" />}
                     defaultOpen={true}
+                    className="h-full"
                   >
                     <Row
                       label="Anomaly Score (MSE)"
@@ -419,6 +423,21 @@ export default function EntityDrawer({
                         data.evidence_trail.anomaly_rank_percentile != null
                           ? `${data.evidence_trail.anomaly_rank_percentile.toFixed(1)}%`
                           : "—"
+                      }
+                      mono
+                    />
+                    <Row
+                      label="Threshold Status"
+                      value={
+                        data.evidence_trail.anomaly_score != null
+                          ? data.evidence_trail.anomaly_score >= 0.0346
+                            ? "Exceeded (≥ 0.0346)"
+                            : "Normal (< 0.0346)"
+                          : "—"
+                      }
+                      highlight={
+                        data.evidence_trail.anomaly_score != null &&
+                        data.evidence_trail.anomaly_score >= 0.0346
                       }
                       mono
                     />
