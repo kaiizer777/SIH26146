@@ -91,8 +91,10 @@ export default function GraphCanvas({
   const [selectedNode, setSelectedNode] = useState<SimNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [hoverLeader, setHoverLeader] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const hoveredNodeRef = useRef<SimNode | null>(null);
   hoveredNodeRef.current = hoveredNode;
+  const simNodesRef = useRef<SimNode[]>([]);
   const [nodeFilter, setNodeFilter] = useState<"all" | "high" | "seeds" | "wallets" | "tx" | "ip">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
@@ -235,34 +237,73 @@ export default function GraphCanvas({
     });
   }, []);
 
-  // Calculate dynamic card position adjacent to focused node with zero overlap
-  const updateHoverCardPos = useCallback((d: SimNode) => {
-    if (!svgRef.current) return;
-    const svgEl = svgRef.current;
-    const transform = d3.zoomTransform(svgEl);
-    const nx = transform.applyX(d.x ?? 0);
-    const ny = transform.applyY(d.y ?? 0);
-    const cw = svgEl.clientWidth || 1000;
-    const ch = svgEl.clientHeight || 700;
-    const cardW = 380;
-    const cardH = 224;
+  // Calculate dynamic card position outside the active 1-hop neighbor cluster with zero overlap
+  const updateHoverCardPos = useCallback(
+    (d: SimNode) => {
+      if (!svgRef.current) return;
+      const svgEl = svgRef.current;
+      const transform = d3.zoomTransform(svgEl);
+      const nx = transform.applyX(d.x ?? 0);
+      const ny = transform.applyY(d.y ?? 0);
+      const cw = svgEl.clientWidth || 1000;
+      const ch = svgEl.clientHeight || 700;
+      const cardW = 380;
+      const cardH = 224;
+      const CLEARANCE = 28;
 
-    // Place horizontally adjacent to node (28px offset from center).
-    // Node radius is <= 15px, ensuring >= 13px clearance from node boundary (zero overlap).
-    let left = nx + 28;
-    if (left + cardW > cw - 16) {
-      left = nx - cardW - 28;
-    }
-    if (left < 16) {
-      left = Math.max(16, Math.min(cw - cardW - 16, nx - cardW / 2));
-    }
+      // Retrieve all 1-hop illuminated neighbor coordinates in screen space
+      const neighborIds = adjacency.get(d.id);
+      const simNodes = simNodesRef.current;
+      const neighborNodes = simNodes.filter(
+        (n) => neighborIds?.has(n.id) && n.x != null && n.y != null,
+      );
 
-    // Center vertically on node, keeping clear of top command bar (56px) and bottom legend (50px)
-    let top = ny - cardH / 2;
-    top = Math.max(56, Math.min(ch - cardH - 50, top));
+      // Compute bounding box of the entire illuminated 1-hop subgraph in screen pixels
+      let minX = nx;
+      let maxX = nx;
+      neighborNodes.forEach((n) => {
+        const px = transform.applyX(n.x ?? 0);
+        minX = Math.min(minX, px);
+        maxX = Math.max(maxX, px);
+      });
 
-    setHoverPos({ x: left, y: top });
-  }, []);
+      // Place card completely outside the neighbor cluster:
+      let left: number;
+      const rightPlacement = maxX + CLEARANCE;
+      const leftPlacement = minX - CLEARANCE - cardW;
+
+      if (rightPlacement + cardW <= cw - 16) {
+        // Fits cleanly to the right of all neighbors
+        left = rightPlacement;
+      } else if (leftPlacement >= 16) {
+        // Fits cleanly to the left of all neighbors
+        left = leftPlacement;
+      } else {
+        // Cluster spans most of screen: place on whichever side has more free room
+        const spaceRight = cw - maxX;
+        const spaceLeft = minX;
+        left = spaceRight >= spaceLeft ? Math.max(16, cw - cardW - 16) : 16;
+      }
+
+      // Vertical position: center on node, clamped away from top bar (56px) and bottom legend (50px)
+      let top = ny - cardH / 2;
+      top = Math.max(56, Math.min(ch - cardH - 50, top));
+
+      setHoverPos({ x: left, y: top });
+
+      // Tactical leader line attachment on card border
+      const attachX = left > nx ? left : left + cardW;
+      const attachY = Math.max(top + 24, Math.min(top + cardH - 24, ny));
+
+      setHoverLeader({
+        x1: nx,
+        y1: ny,
+        x2: attachX,
+        y2: attachY,
+      });
+    },
+    [adjacency],
+  );
 
   // -------------------------------------------------------------------------
   // Main D3 Force Graph Simulation & Rendering
@@ -331,6 +372,7 @@ export default function GraphCanvas({
 
     // Simulation Data Prep
     const simNodes: SimNode[] = nodes.map((n) => ({ ...n }));
+    simNodesRef.current = simNodes;
     const nodeById = new Map(simNodes.map((n) => [n.id, n]));
     const simLinks: SimLink[] = links
       .filter((l) => nodeById.has(l.source as string) && nodeById.has(l.target as string))
@@ -487,6 +529,7 @@ export default function GraphCanvas({
       .on("mouseleave", () => {
         setHoveredNode(null);
         setHoverPos(null);
+        setHoverLeader(null);
       })
       .on("click", (ev, d) => {
         ev.stopPropagation();
@@ -706,6 +749,30 @@ export default function GraphCanvas({
           <span className="font-bold text-red-700">Seed Entity ({counts.seeds})</span>
         </button>
       </div>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Tactical SVG Leader Line (Connects Focused Node to HUD Card) */}
+      {/* ------------------------------------------------------------------- */}
+      {hoveredNode && !selectedNode && hoverLeader && (
+        <svg className="absolute inset-0 pointer-events-none z-25 w-full h-full">
+          {/* Target Reticle at Node Center */}
+          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="4" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
+          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="9" fill="none" stroke="#0284c7" strokeWidth="1" strokeDasharray="2,2" opacity="0.8" />
+          {/* Connecting Dashed Cyan Beam */}
+          <line
+            x1={hoverLeader.x1}
+            y1={hoverLeader.y1}
+            x2={hoverLeader.x2}
+            y2={hoverLeader.y2}
+            stroke="#0284c7"
+            strokeWidth="1.5"
+            strokeDasharray="4,3"
+            opacity="0.85"
+          />
+          {/* Anchor Tick on HUD Card Edge */}
+          <circle cx={hoverLeader.x2} cy={hoverLeader.y2} r="3" fill="#38bdf8" />
+        </svg>
+      )}
 
       {/* ------------------------------------------------------------------- */}
       {/* Hover Glass HUD Tooltip (Enlarged, Positioned Adjacent to Focused Node) */}
