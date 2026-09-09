@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { clsx } from "clsx";
-import { Copy, Check, AlertTriangle, Layers, Zap } from "lucide-react";
+import { Copy, Check, AlertTriangle, Layers, Zap, Search, X, ShieldAlert, Sparkles } from "lucide-react";
 import type { AlertItem } from "@/lib/api";
 
 type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
@@ -23,30 +23,30 @@ interface AlertTableProps {
 }
 
 // ---------------------------------------------------------------------------
-// Severity styles
+// Severity pill styles (tactile defense grade)
 // ---------------------------------------------------------------------------
 
 const VERDICT_PILL: Record<Verdict, string> = {
-  CRITICAL: "pill-critical",
-  HIGH: "pill-high",
-  MEDIUM: "pill-medium",
-  LOW: "pill-low",
+  CRITICAL: "pill-critical text-red-800",
+  HIGH: "pill-high text-orange-900",
+  MEDIUM: "pill-medium text-yellow-900",
+  LOW: "pill-low text-emerald-800",
 };
 
 const VERDICT_DOT: Record<Verdict, string> = {
-  CRITICAL: "bg-red-600",
-  HIGH: "bg-orange-600",
-  MEDIUM: "bg-yellow-600",
-  LOW: "bg-emerald-600",
+  CRITICAL: "bg-red-600 ring-2 ring-red-300",
+  HIGH: "bg-orange-600 ring-2 ring-orange-300",
+  MEDIUM: "bg-amber-500 ring-2 ring-amber-300",
+  LOW: "bg-emerald-600 ring-2 ring-emerald-300",
 };
 
 // ---------------------------------------------------------------------------
-// Address helpers
+// Address helper with copy feedback
 // ---------------------------------------------------------------------------
 
 function truncateAddr(addr: string): string {
-  if (addr.length <= 10) return addr;
-  return `${addr.slice(0, 5)}…${addr.slice(-4)}`;
+  if (addr.length <= 12) return addr;
+  return `${addr.slice(0, 6)}…${addr.slice(-6)}`;
 }
 
 function CopyableAddress({ address }: { address: string }) {
@@ -64,20 +64,26 @@ function CopyableAddress({ address }: { address: string }) {
   );
 
   return (
-    <span className="inline-flex items-center gap-1 group/addr">
+    <span className="inline-flex items-center gap-1.5 group/addr">
       <span
-        className="crypto-mono text-xs text-slate-800"
+        className="crypto-mono text-xs font-semibold text-slate-800 tracking-tight select-all"
         title={address}
       >
         {truncateAddr(address)}
       </span>
       <button
         onClick={copy}
-        className="opacity-0 group-hover/addr:opacity-100 transition-opacity text-slate-400 hover:text-slate-600"
+        className={clsx(
+          "p-1 rounded transition-all",
+          copied
+            ? "bg-emerald-50 text-emerald-600 opacity-100"
+            : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 opacity-60 group-hover/addr:opacity-100",
+        )}
         aria-label="Copy full address"
+        title={copied ? "Copied!" : "Copy address"}
       >
         {copied ? (
-          <Check className="w-3 h-3 text-emerald-500" />
+          <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
         ) : (
           <Copy className="w-3 h-3" />
         )}
@@ -87,26 +93,25 @@ function CopyableAddress({ address }: { address: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Skeleton rows
+// Skeleton row loader
 // ---------------------------------------------------------------------------
 
 function SkeletonRow() {
   return (
     <tr className="border-b border-slate-100">
-      {[40, 120, 60, 50, 60, 60, 90].map((w, i) => (
-        <td key={i} className="py-2 px-3">
-          <div
-            className="h-3.5 rounded bg-slate-100 animate-pulse"
-            style={{ width: w }}
-          />
-        </td>
-      ))}
+      <td className="py-2.5 px-3.5"><div className="h-4.5 w-24 rounded bg-slate-100 animate-pulse" /></td>
+      <td className="py-2.5 px-3.5"><div className="h-4 w-32 rounded bg-slate-100 animate-pulse" /></td>
+      <td className="py-2.5 px-3.5"><div className="h-4 w-20 rounded bg-slate-100 animate-pulse" /></td>
+      <td className="py-2.5 px-3.5"><div className="h-4 w-12 rounded bg-slate-100 animate-pulse" /></td>
+      <td className="py-2.5 px-3.5"><div className="h-4 w-18 rounded bg-slate-100 animate-pulse" /></td>
+      <td className="py-2.5 px-3.5"><div className="h-4 w-14 rounded bg-slate-100 animate-pulse" /></td>
+      <td className="py-2.5 px-3.5"><div className="h-4 w-28 rounded bg-slate-100 animate-pulse" /></td>
     </tr>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main component
+// Main Component
 // ---------------------------------------------------------------------------
 
 export default function AlertTable({
@@ -127,12 +132,11 @@ export default function AlertTable({
   const tableRef = useRef<HTMLTableElement>(null);
   const sentinelRef = useRef<HTMLTableRowElement>(null);
 
-  // Keyboard navigation
+  // Keyboard navigation (Arrow keys + Enter)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         const activeEl = document.activeElement;
-        // Only intercept if focus is on table or its children
         if (!tableRef.current?.contains(activeEl) && activeEl?.tagName !== "BODY") return;
         e.preventDefault();
         setFocusIdx((prev) => {
@@ -162,20 +166,22 @@ export default function AlertTable({
     return () => io.disconnect();
   }, [hasMore, isLoading, onLoadMore]);
 
-  // Error banner
+  // Error State Banner
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center flex-1 p-8 text-center">
-        <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-3">
-          <AlertTriangle className="w-5 h-5 text-red-600" />
+      <div className="flex flex-col items-center justify-center flex-1 p-8 text-center bg-slate-50/50">
+        <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center mb-3 shadow-sm">
+          <AlertTriangle className="w-6 h-6 text-red-600 stroke-[2.2]" />
         </div>
-        <p className="text-sm font-semibold text-slate-800 mb-1">Failed to load alerts</p>
-        <p className="text-xs text-slate-500 mb-4 crypto-mono">{error}</p>
+        <p className="text-sm font-bold text-slate-900 mb-1">Surveillance Stream Error</p>
+        <p className="text-xs text-slate-500 mb-4 max-w-md crypto-mono bg-white border border-slate-200 rounded p-2">
+          {error}
+        </p>
         <button
           onClick={onResetFilters}
-          className="text-xs px-3 py-1.5 bg-slate-900 text-white rounded hover:bg-slate-700 transition-colors"
+          className="text-xs px-4 py-2 tactile-btn-primary text-white font-semibold rounded-md shadow-xs cursor-pointer"
         >
-          Retry Request
+          Reset Filters & Retry
         </button>
       </div>
     );
@@ -184,26 +190,28 @@ export default function AlertTable({
   // Empty state
   if (!isLoading && items.length === 0) {
     return (
-      <div className="flex flex-col gap-3 p-4">
-        {/* Search bar still visible */}
+      <div className="flex flex-col flex-1 p-4 bg-slate-50/50">
         <SearchBar
           value={searchValue}
           onChange={onSearchChange}
           inputRef={searchRef}
         />
-        <div className="flex flex-col items-center justify-center flex-1 py-16 px-8 text-center bg-slate-100 rounded-lg">
-          <p className="text-sm font-semibold text-slate-700 mb-1">
-            No matching alerts found
+        <div className="flex flex-col items-center justify-center flex-1 py-20 px-8 text-center bg-white border border-slate-200 rounded-xl shadow-2xs mt-3">
+          <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center mb-3 text-slate-400">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <p className="text-sm font-bold text-slate-800 mb-1">
+            No Matching Alerts in Stream
           </p>
-          <p className="text-xs text-slate-500 mb-4">
-            No wallets match the active filters.
+          <p className="text-xs text-slate-500 mb-5 max-w-sm">
+            No monitored wallet entities match your active filters or search criteria.
           </p>
           <button
             onClick={onResetFilters}
             id="alerts-reset-filters-btn"
-            className="text-xs px-3 py-1.5 bg-slate-900 text-white rounded hover:bg-slate-700 transition-colors"
+            className="text-xs px-4 py-2 tactile-btn-primary text-white font-semibold rounded-md shadow-xs cursor-pointer"
           >
-            Reset Filters
+            Clear All Active Filters
           </button>
         </div>
       </div>
@@ -211,9 +219,9 @@ export default function AlertTable({
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      {/* Search bar */}
-      <div className="p-3 border-b border-slate-200 bg-white">
+    <div className="flex flex-col flex-1 overflow-hidden bg-white">
+      {/* Search Bar strip */}
+      <div className="px-4 py-2.5 border-b border-slate-200/90 bg-white shadow-2xs">
         <SearchBar
           value={searchValue}
           onChange={onSearchChange}
@@ -221,41 +229,47 @@ export default function AlertTable({
         />
       </div>
 
-      {/* Table */}
+      {/* Main Alert Data Grid */}
       <div className="overflow-auto flex-1">
         <table
           ref={tableRef}
           className="w-full text-xs border-collapse"
-          aria-label="Alert table"
+          aria-label="Bitcoin Alert Surveillance Table"
           tabIndex={0}
         >
           <thead className="sticky top-0 z-10">
-            <tr className="bg-slate-100 border-b border-slate-200">
+            <tr className="bg-slate-50 border-b border-slate-200/90 shadow-2xs">
               {[
-                "Risk Verdict",
-                "Entity Address",
-                "Anomaly Score",
-                "Cluster",
-                "Mixing",
-                "Seed",
-                "Observed",
-              ].map((col) => (
+                { name: "Risk Verdict", width: "w-36" },
+                { name: "Entity Address", width: "w-52" },
+                { name: "Anomaly Score", width: "w-36" },
+                { name: "Cluster Partition", width: "w-24" },
+                { name: "Laundering Pattern", width: "w-32" },
+                { name: "Intelligence Seed", width: "w-28" },
+                { name: "Telemetry Timestamp", width: "w-40" },
+              ].map(({ name, width }) => (
                 <th
-                  key={col}
-                  className="py-2 px-3 text-left font-semibold uppercase tracking-wider text-slate-600 whitespace-nowrap"
+                  key={name}
+                  className={clsx(
+                    "py-2.5 px-3.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap select-none",
+                    width,
+                  )}
                 >
-                  {col}
+                  {name}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
-            {/* Skeleton rows on initial load */}
+          <tbody className="divide-y divide-slate-100">
+            {/* Skeleton rows during initial fetch */}
             {isLoading && items.length === 0
-              ? Array.from({ length: 12 }).map((_, i) => <SkeletonRow key={i} />)
+              ? Array.from({ length: 14 }).map((_, i) => <SkeletonRow key={i} />)
               : items.map((item, idx) => {
                   const isSelected = item.address === selectedAddress;
                   const verdict = item.verdict as Verdict;
+                  const anomalyScore = item.anomaly_score ?? 0;
+                  // Anomaly intensity for micro-bar (normalized 0-1)
+                  const anomalyRatio = Math.min(1, Math.max(0, (anomalyScore - 0) / 4));
 
                   return (
                     <tr
@@ -266,17 +280,17 @@ export default function AlertTable({
                         onSelect(item);
                       }}
                       className={clsx(
-                        "border-b border-slate-100 cursor-pointer transition-colors",
+                        "group cursor-pointer transition-colors duration-100",
                         isSelected
-                          ? "bg-sky-50/70 border-l-4 border-l-sky-600"
-                          : "hover:bg-slate-50/80 border-l-4 border-l-transparent",
+                          ? "bg-sky-50/90 border-l-4 border-l-sky-600 font-medium"
+                          : "hover:bg-slate-50/90 border-l-4 border-l-transparent",
                       )}
                     >
                       {/* Risk Verdict */}
-                      <td className="py-2 px-3 whitespace-nowrap">
+                      <td className="py-2.5 px-3.5 whitespace-nowrap">
                         <span
                           className={clsx(
-                            "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold",
+                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-tight shadow-2xs",
                             VERDICT_PILL[verdict],
                           )}
                         >
@@ -286,76 +300,97 @@ export default function AlertTable({
                               VERDICT_DOT[verdict],
                             )}
                           />
-                          {verdict}
-                          <span className="opacity-80">
+                          <span>{verdict}</span>
+                          <span className="crypto-mono font-extrabold text-[11px] opacity-90 ml-0.5">
                             {item.composite_score.toFixed(3)}
                           </span>
                         </span>
                       </td>
 
                       {/* Address */}
-                      <td className="py-2 px-3">
+                      <td className="py-2.5 px-3.5 whitespace-nowrap">
                         <CopyableAddress address={item.address} />
                       </td>
 
-                      {/* Anomaly Score */}
-                      <td className="py-2 px-3 whitespace-nowrap">
-                        <span className="crypto-mono text-xs text-slate-800">
-                          {item.anomaly_score != null
-                            ? item.anomaly_score.toFixed(4)
-                            : "—"}
-                        </span>
-                        {item.anomaly_rank_percentile != null && (
-                          <span className="ml-1 crypto-mono text-[10px] text-slate-600">
-                            {item.anomaly_rank_percentile.toFixed(1)}%
+                      {/* Anomaly Score with inline spark indicator */}
+                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          {/* Micro severity spark bar */}
+                          <div
+                            className="w-10 h-1.5 rounded-full bg-slate-200/80 overflow-hidden shrink-0"
+                            title={`Anomaly score: ${anomalyScore.toFixed(4)}`}
+                          >
+                            <div
+                              className={clsx(
+                                "h-full rounded-full",
+                                anomalyScore >= 2.5
+                                  ? "bg-red-500"
+                                  : anomalyScore >= 1.0
+                                  ? "bg-amber-500"
+                                  : "bg-sky-500",
+                              )}
+                              style={{ width: `${Math.max(8, anomalyRatio * 100)}%` }}
+                            />
+                          </div>
+                          <span className="crypto-mono text-xs font-semibold text-slate-800">
+                            {item.anomaly_score != null
+                              ? item.anomaly_score.toFixed(4)
+                              : "—"}
                           </span>
-                        )}
+                          {item.anomaly_rank_percentile != null && (
+                            <span className="crypto-mono text-[10px] text-slate-400 font-medium">
+                              {item.anomaly_rank_percentile.toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
                       </td>
 
-                      {/* Cluster ID */}
-                      <td className="py-2 px-3">
+                      {/* Cluster Partition */}
+                      <td className="py-2.5 px-3.5 whitespace-nowrap">
                         {item.cluster_id != null ? (
-                          <span className="crypto-mono text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-medium">
+                          <span className="crypto-mono text-xs px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 border border-slate-200 font-semibold shadow-2xs">
                             #{item.cluster_id}
                           </span>
                         ) : (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-slate-400 text-xs">—</span>
                         )}
                       </td>
 
-                      {/* Mixing Flag */}
-                      <td className="py-2 px-3 whitespace-nowrap">
+                      {/* Mixing / Pattern Flag */}
+                      <td className="py-2.5 px-3.5 whitespace-nowrap">
                         {item.is_peeling_chain ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-orange-100/70 text-orange-900 border border-orange-300">
-                            <Layers className="w-3 h-3 text-orange-800" />
-                            {item.chain_hops ?? "?"}‑hop
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-50 text-orange-800 border border-orange-200/90 shadow-2xs">
+                            <Layers className="w-3 h-3 text-orange-600 stroke-[2.2]" />
+                            <span>{item.chain_hops ?? "?"}‑hop peel</span>
                           </span>
                         ) : item.is_mixing ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100/70 text-amber-900 border border-amber-300">
-                            <Zap className="w-3 h-3 text-amber-800" />
-                            CoinJoin
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 shadow-2xs">
+                            <Zap className="w-3 h-3 text-amber-600 stroke-[2.2]" />
+                            <span>CoinJoin</span>
                           </span>
                         ) : (
-                          <span className="text-slate-500 text-xs">—</span>
+                          <span className="text-slate-400 text-xs">—</span>
                         )}
                       </td>
 
-                      {/* Seed */}
-                      <td className="py-2 px-3 whitespace-nowrap">
+                      {/* Seed status */}
+                      <td className="py-2.5 px-3.5 whitespace-nowrap">
                         {item.is_seed ? (
-                          <span className="crypto-mono text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-900 border border-red-300 font-semibold">
+                          <span className="crypto-mono text-xs px-2 py-0.5 rounded-md bg-red-100/80 text-red-800 border border-red-200 font-bold shadow-2xs">
                             {item.seed_family
-                              ? item.seed_family.slice(0, 18)
+                              ? item.seed_family.slice(0, 16)
                               : "SEED"}
                           </span>
                         ) : (
-                          <span className="crypto-mono text-xs text-slate-800">Clean</span>
+                          <span className="crypto-mono text-xs text-slate-500 font-medium">
+                            Clean
+                          </span>
                         )}
                       </td>
 
-                      {/* Timestamp */}
-                      <td className="py-2 px-3 whitespace-nowrap">
-                        <span className="crypto-mono text-xs text-slate-800">
+                      {/* Telemetry timestamp */}
+                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                        <span className="crypto-mono text-xs text-slate-600 font-medium">
                           {item.ts
                             ? item.ts.replace("T", " ").slice(0, 16) + " UTC"
                             : "—"}
@@ -368,9 +403,12 @@ export default function AlertTable({
             {/* Infinite scroll sentinel */}
             {hasMore && (
               <tr ref={sentinelRef}>
-                <td colSpan={7} className="py-2 px-3 text-center">
+                <td colSpan={7} className="py-3 px-4 text-center bg-slate-50/50">
                   {isLoading ? (
-                    <span className="text-xs text-slate-400">Loading more…</span>
+                    <span className="inline-flex items-center gap-2 text-xs font-semibold text-sky-700 crypto-mono">
+                      <span className="w-3 h-3 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
+                      Streaming next telemetry partition…
+                    </span>
                   ) : null}
                 </td>
               </tr>
@@ -379,18 +417,44 @@ export default function AlertTable({
         </table>
       </div>
 
-      {/* Footer count */}
-      <div className="px-3 py-2 border-t border-slate-200 bg-slate-50 shrink-0">
-        <span className="crypto-mono text-[11px] text-slate-500">
-          {items.length.toLocaleString()} of {total.toLocaleString()} entities
-        </span>
+      {/* Operator Status Footer */}
+      <div className="h-9 px-4 border-t border-slate-200/90 bg-slate-50 flex items-center justify-between shrink-0 select-none text-[11px]">
+        <div className="flex items-center gap-2 text-slate-600 crypto-mono">
+          <span className="font-semibold text-slate-900">
+            {items.length.toLocaleString()}
+          </span>{" "}
+          of{" "}
+          <span className="font-semibold text-slate-900">
+            {total.toLocaleString()}
+          </span>{" "}
+          entities loaded
+        </div>
+
+        {/* Console Operator Key Shortcuts Hint */}
+        <div className="hidden sm:flex items-center gap-3 text-slate-600 crypto-mono text-[10px]">
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs font-semibold">↑</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs font-semibold">↓</kbd>
+            <span>Navigate</span>
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs font-semibold">Click</kbd>
+            <span>Inspect Dossier</span>
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs font-semibold">/</kbd>
+            <span>Search</span>
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Search bar sub-component
+// Search Bar Sub-component
 // ---------------------------------------------------------------------------
 
 interface SearchBarProps {
@@ -401,14 +465,28 @@ interface SearchBarProps {
 
 function SearchBar({ value, onChange, inputRef }: SearchBarProps) {
   return (
-    <input
-      ref={inputRef}
-      id="alerts-search-input"
-      type="text"
-      placeholder="Search by address prefix… (/ or Ctrl+K)"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full h-8 px-3 text-xs border border-slate-200 rounded bg-slate-50 text-slate-800 crypto-mono placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
-    />
+    <div className="relative flex items-center w-full">
+      <div className="absolute left-3 text-slate-400 pointer-events-none flex items-center">
+        <Search className="w-3.5 h-3.5" />
+      </div>
+      <input
+        ref={inputRef}
+        id="alerts-search-input"
+        type="text"
+        placeholder="Search by Bitcoin address prefix… (/ or Ctrl+K)"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full h-8.5 pl-9 pr-8 text-xs border border-slate-200/90 rounded-md bg-slate-50/70 text-slate-900 crypto-mono placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 shadow-2xs transition-all"
+      />
+      {value && (
+        <button
+          onClick={() => onChange("")}
+          className="absolute right-2.5 text-slate-400 hover:text-slate-600 transition-colors p-0.5 rounded"
+          aria-label="Clear search"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
   );
 }

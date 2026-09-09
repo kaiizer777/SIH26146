@@ -35,19 +35,19 @@ interface EntityDrawerProps {
 
 const VERDICT_CLASSES: Record<Verdict, { pill: string; gauge: string }> = {
   CRITICAL: {
-    pill: "bg-red-50 text-red-700 border border-red-200",
+    pill: "pill-critical text-red-800",
     gauge: "#dc2626",
   },
   HIGH: {
-    pill: "bg-orange-50 text-orange-700 border border-orange-200",
+    pill: "pill-high text-orange-900",
     gauge: "#ea580c",
   },
   MEDIUM: {
-    pill: "bg-yellow-50 text-yellow-800 border border-yellow-200",
+    pill: "pill-medium text-yellow-900",
     gauge: "#ca8a04",
   },
   LOW: {
-    pill: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    pill: "pill-low text-emerald-800",
     gauge: "#16a34a",
   },
 };
@@ -224,8 +224,8 @@ export default function EntityDrawer({
       {/* Centered Forensic Dossier Card */}
       <aside
         className={clsx(
-          "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] lg:w-[60vw] h-[98vh] max-w-5xl",
-          "flex flex-col bg-white rounded-lg border border-slate-200 shadow-2xl overflow-hidden",
+          "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] lg:w-[60vw] h-[96vh] max-w-5xl",
+          "flex flex-col bg-white rounded-xl border border-slate-200/90 shadow-drawer overflow-hidden",
           "transition-all duration-200 ease-out",
           isOpen
             ? "opacity-100 scale-100 pointer-events-auto"
@@ -236,21 +236,34 @@ export default function EntityDrawer({
         aria-modal="true"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-slate-50 shrink-0">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-slate-600" />
-            <span className="text-sm font-semibold uppercase tracking-wider text-slate-800">
-              Forensic Dossier
-            </span>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200/90 bg-slate-50/90 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-md bg-slate-900 text-white flex items-center justify-center shadow-2xs">
+              <Shield className="w-3.5 h-3.5 text-sky-400 stroke-[2.2]" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
+                NTRO Forensic Dossier
+              </span>
+              <span className="text-slate-300">|</span>
+              <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
+                Classified Investigation Ledger
+              </span>
+            </div>
           </div>
-          <button
-            id="drawer-close-btn"
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-200/60"
-            aria-label="Close dossier"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-400 text-[10px] crypto-mono font-medium shadow-2xs">
+              ESC
+            </kbd>
+            <button
+              id="drawer-close-btn"
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-700 transition-colors p-1.5 rounded-md hover:bg-slate-200/70"
+              aria-label="Close dossier"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -656,14 +669,14 @@ export default function EntityDrawer({
 
         {/* Footer: export */}
         {data && (
-          <div className="px-5 py-3.5 border-t border-slate-200 bg-slate-50 shrink-0 flex items-center justify-end">
+          <div className="px-5 py-3.5 border-t border-slate-200/90 bg-slate-50/90 shrink-0 flex items-center justify-end">
             <button
               id="drawer-download-dossier-btn"
               onClick={downloadDossier}
-              className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 h-9 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-colors shadow-xs"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 h-9 rounded-md tactile-btn-primary text-white text-xs font-semibold shadow-xs cursor-pointer"
             >
-              <Download className="w-4 h-4" />
-              Download Forensic Dossier (JSON)
+              <Download className="w-3.5 h-3.5 text-sky-300 stroke-[2.2]" />
+              <span>Download Forensic Dossier (JSON)</span>
             </button>
           </div>
         )}
