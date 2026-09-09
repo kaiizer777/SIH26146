@@ -165,7 +165,15 @@ async def post_ingest(file: UploadFile) -> JSONResponse:
     # --- Enqueue Celery task ---
     from app.tasks.ingest import process_ingest_file  # local import avoids circular at module load
 
-    task = process_ingest_file.delay(str(temp_path), detected_fmt)
+    try:
+        task = process_ingest_file.delay(str(temp_path), detected_fmt)
+    except Exception as exc:
+        temp_path.unlink(missing_ok=True)
+        logger.exception("Failed to enqueue Celery ingest task for %s: %s", temp_path, exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Task queue unavailable. Please ensure Celery worker is active.",
+        )
 
     # Store file hash in Redis with a 24-hour TTL (86400 seconds)
     if redis_cli is not None:

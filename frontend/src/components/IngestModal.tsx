@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { Upload, X, FileText, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -36,6 +36,12 @@ export default function IngestModal({
   const [errorMsg, setErrorMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
+  }, []);
 
   const reset = useCallback(() => {
     if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
@@ -100,7 +106,7 @@ export default function IngestModal({
               setStage("success");
               setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
               toast.success(`Batch ingested: ${inserted} rows processed`);
-              setTimeout(() => {
+              pollTimerRef.current = setTimeout(() => {
                 onSuccess();
                 handleClose();
               }, 1500);

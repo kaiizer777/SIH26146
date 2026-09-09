@@ -77,9 +77,12 @@ class TestDuplicateIngestGuard:
             )
 
     def test_duplicate_upload_returns_409_and_deletes_temp(self):
-        """Uploading identical content returns HTTP 409 and does not enqueue Celery."""
+        """Uploading identical content returns HTTP 409, does not enqueue Celery, and deletes temp file."""
         mock_redis = MagicMock()
         mock_redis.get.return_value = b"original-task-uuid-5678"
+
+        upload_dir = Path(settings.upload_dir)
+        files_before = set(upload_dir.iterdir()) if upload_dir.exists() else set()
 
         with (
             patch("app.routers.ingest.get_redis_client", return_value=mock_redis),
@@ -100,6 +103,10 @@ class TestDuplicateIngestGuard:
 
             # Celery must NOT be called
             mock_delay.assert_not_called()
+
+            # Verify temp file was unlinked and not leaked on disk
+            files_after = set(upload_dir.iterdir()) if upload_dir.exists() else set()
+            assert files_after == files_before
 
     def test_redis_error_on_get_fails_open_gracefully(self):
         """When Redis is down on read, upload succeeds without crashing."""
@@ -144,6 +151,31 @@ class TestDuplicateIngestGuard:
 
             assert response.status_code == 202
             assert response.json() == {"task_id": "task-fallback-888", "status": "PENDING"}
+
+    def test_celery_enqueue_failure_cleans_up_temp_file(self):
+        """When Celery broker fails on delay(), temp file is cleaned up and 503 is returned."""
+        mock_redis = MagicMock()
+        mock_redis.get.return_value = None
+
+        upload_dir = Path(settings.upload_dir)
+        files_before = set(upload_dir.iterdir()) if upload_dir.exists() else set()
+
+        with (
+            patch("app.routers.ingest.get_redis_client", return_value=mock_redis),
+            patch("app.tasks.ingest.process_ingest_file.delay", side_effect=RuntimeError("Broker unavailable")),
+        ):
+            response = client.post(
+                "/ingest",
+                files={"file": ("test.csv", io.BytesIO(SAMPLE_CSV), "text/csv")},
+                headers=AUTH_HEADERS,
+            )
+
+            assert response.status_code == 503
+            assert response.json()["detail"] == "Task queue unavailable. Please ensure Celery worker is active."
+
+            # Verify temp file was unlinked and not leaked on disk
+            files_after = set(upload_dir.iterdir()) if upload_dir.exists() else set()
+            assert files_after == files_before
 
 
 class TestDuplicateRowRejection:

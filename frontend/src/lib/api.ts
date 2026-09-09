@@ -165,6 +165,13 @@ function extractErrorDetail(
   if (typeof body?.detail === "string") {
     return body.detail;
   }
+  if (Array.isArray(body?.detail)) {
+    const msgs = (body.detail as Array<{ msg?: string }>)
+      .map((d) => d?.msg)
+      .filter(Boolean);
+    if (msgs.length > 0) return msgs.join("; ");
+    return JSON.stringify(body.detail);
+  }
   if (body?.detail && typeof body.detail === "object") {
     const detailObj = body.detail as Record<string, unknown>;
     return (
