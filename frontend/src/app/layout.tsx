@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   description:
     "AI-powered offline Bitcoin transaction monitoring and money-laundering detection for NTRO. " +
     "Correlates network-layer (IP/ASN) with blockchain-layer (wallet/TXID) data using ML clustering, " +
-    "anomaly detection, and GraphSAGE risk scoring with full SHAP + GNNExplainer explainability.",
+    "FT-Transformer anomaly detection and Relational Graph Transformer risk scoring with full SHAP + Attention explainability.",
 };
 
 interface LayoutProps {

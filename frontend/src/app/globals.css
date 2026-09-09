@@ -310,3 +310,103 @@ select:focus-visible {
   outline: none;
 }
 
+/* =========================================================
+   3D Tactile Modal & Surface Elevation
+   ========================================================= */
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.animate-shimmer {
+  animation: shimmer-sweep 2s ease-in-out infinite;
+}
+
+.shadow-3d-modal {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 8px 16px -4px rgba(15, 23, 42, 0.08),
+    0 24px 48px -12px rgba(15, 23, 42, 0.22);
+}
+
+.tactile-card-3d {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #cbd5e1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 1px 3px rgba(15, 23, 42, 0.05),
+    0 4px 6px -2px rgba(15, 23, 42, 0.03);
+}
+
+.tactile-dropzone-3d {
+  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
+  border: 2px dashed #38bdf8;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 4px 16px -2px rgba(2, 132, 199, 0.12),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.tactile-dropzone-3d-active {
+  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+  border-color: #0284c7 !important;
+  box-shadow:
+    inset 0 2px 6px rgba(2, 132, 199, 0.18),
+    0 0 0 4px rgba(2, 132, 199, 0.15) !important;
+}
+
+.tactile-medallion-3d {
+  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
+  border: 1px solid #7dd3fc;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    0 2px 4px rgba(2, 132, 199, 0.1),
+    0 8px 16px -2px rgba(2, 132, 199, 0.2);
+}
+
+/* =========================================================
+   3D Tactile Toggle Switch (Defense-Grade Light Switch)
+   ========================================================= */
+
+.tactile-switch {
+  position: relative;
+  display: inline-flex;
+  height: 22px;
+  width: 40px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(180deg, #e2e8f0 0%, #f1f5f9 100%);
+  box-shadow: inset 0 1.5px 3px rgba(15, 23, 42, 0.15), 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tactile-switch-on {
+  border-color: #0284c7;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+  box-shadow: inset 0 1.5px 3px rgba(2, 132, 199, 0.35), 0 0 0 1px rgba(2, 132, 199, 0.2);
+}
+
+.tactile-switch-thumb {
+  pointer-events: none;
+  display: inline-block;
+  height: 16px;
+  width: 16px;
+  transform: translateX(2px) translateY(2px);
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 1);
+  border: 1px solid #e2e8f0;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms ease;
+}
+
+.tactile-switch-on .tactile-switch-thumb {
+  transform: translateX(20px) translateY(2px);
+  border-color: #bae6fd;
+}
+
+
+

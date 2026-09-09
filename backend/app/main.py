@@ -111,6 +111,12 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    use_legacy_anomaly = getattr(settings, "use_legacy_anomaly_model", getattr(settings, "use_legacy_models", False))
+    use_legacy_risk = getattr(settings, "use_legacy_risk_model", getattr(settings, "use_legacy_models", False))
+    anom_label = "Autoencoder (legacy fallback)" if use_legacy_anomaly else "FT-Transformer (primary)"
+    risk_label = "GraphSAGE (legacy fallback)" if use_legacy_risk else "Graph Transformer (primary)"
+    logger.info("[MODEL CONFIG] Anomaly: %s | Risk: %s", anom_label, risk_label)
+
     logger.info("Loading XAI artifact store into memory…")
     xai_store.load()
     logger.info(

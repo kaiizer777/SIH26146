@@ -52,11 +52,18 @@ def pg_conn():
 
 @pytest.fixture(scope="module")
 def threshold() -> float:
+    # If SOTA FT-Transformer is active in DB, check against its 95th percentile threshold
+    ft_tf = _find_latest("ft_threshold_*.json")
+    if ft_tf:
+        with open(ft_tf) as f:
+            data = json.load(f)
+            return float(data.get("threshold_95pct", data.get("threshold")))
     tf = _find_latest("threshold_*.json")
     if not tf:
         pytest.skip("No threshold_*.json found; run train_autoencoder.py first")
     with open(tf) as f:
         return float(json.load(f)["threshold"])
+
 
 
 # ---------------------------------------------------------------------------

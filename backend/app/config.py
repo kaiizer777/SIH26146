@@ -5,6 +5,9 @@ No secrets are hardcoded here.
 """
 
 from pathlib import Path
+from typing import Any
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -85,8 +88,42 @@ class Settings(BaseSettings):
     # Static bearer token for dev/offline-demo use. Set via .env for production.
     api_dev_token: str = "dev-token-ntro-2026"
 
+    # --- Stage 3: Model Architecture Configuration ---
+    # Tradeoffs:
+    #   FT-Transformer (anomaly, primary, default False): Higher precision (0.78 vs 0.71),
+    #     lower false-positive rate (14.3% vs 28.6%), lower recall (0.66 vs 0.84).
+    #     Recommended for automated surveillance and high-precision alerting.
+    #   Autoencoder (anomaly, fallback, True): Higher recall (0.84), but higher false-positive rate.
+    #     Recommended when detection recall is prioritized over false alarms.
+    use_legacy_anomaly_model: bool = False
+
+    #   Graph Transformer (risk, primary, default False): Strictly outperforms legacy GraphSAGE
+    #     across all metrics (Validation F1 0.9130 vs 0.8750, Test F1 0.9091 vs 0.8696, Test AUC 0.9822 vs 0.9654).
+    #   GraphSAGE (risk, fallback, True): Legacy 3-layer GraphSAGE baseline architecture.
+    use_legacy_risk_model: bool = False
+
+    # Deprecated master toggle: when set to True, enables legacy fallback across BOTH models.
+    # Maintained strictly for backward compatibility with existing scripts/docs referencing USE_LEGACY_MODELS.
+    use_legacy_models: bool = False
+
     # --- Neo4j database name ---
     neo4j_database: str = "neo4j"
+
+    @model_validator(mode="after")
+    def _sync_legacy_models(self) -> "Settings":
+        """If deprecated USE_LEGACY_MODELS is explicitly set, propagate to unset model flags."""
+        if "use_legacy_models" in self.model_fields_set and self.use_legacy_models:
+            if "use_legacy_anomaly_model" not in self.model_fields_set:
+                self.use_legacy_anomaly_model = True
+            if "use_legacy_risk_model" not in self.model_fields_set:
+                self.use_legacy_risk_model = True
+        return self
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
+        if name == "use_legacy_models" and isinstance(value, bool):
+            super().__setattr__("use_legacy_anomaly_model", value)
+            super().__setattr__("use_legacy_risk_model", value)
 
 
 settings = Settings()

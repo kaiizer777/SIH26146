@@ -188,8 +188,8 @@ _FEATURE_LABELS: dict[str, str] = {
     "unique_asn_count": "Multi-ASN Routing Count",
     "unique_country_count": "Multi-Country Routing Count",
     "cluster_id": "Cluster Membership",
-    "anomaly_score": "Autoencoder Anomaly Score",
-    "risk_score": "GraphSAGE Risk Score",
+    "anomaly_score": "FT-Transformer Anomaly Score",
+    "risk_score": "Relational Graph Transformer Risk Score",
     "is_mixing_flag": "Mixing Heuristic Flag",
     "chain_hops": "Peeling Chain Hop Depth",
     "pass_through_ratio": "Pass-Through Ratio",
@@ -235,7 +235,7 @@ def _build_narrative(
         parts.append("CoinJoin mixing fingerprint detected in transaction structure.")
     if rank_pct >= 90:
         parts.append(
-            f"Autoencoder reconstruction error at the {rank_pct:.1f}th percentile — extreme structural anomaly."
+            f"FT-Transformer reconstruction error at the {rank_pct:.1f}th percentile — extreme tabular structural anomaly."
         )
     if cluster_id is not None and cluster_size > 100:
         parts.append(f"Member of co-spend cluster #{cluster_id} ({cluster_size:,} wallets).")

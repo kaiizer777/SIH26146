@@ -117,6 +117,8 @@ function RiskGauge({ score, verdict }: { score: number; verdict: string }) {
 
 function Accordion({
   title,
+  subtitle,
+  badge,
   icon,
   defaultOpen = false,
   isOpen,
@@ -125,6 +127,8 @@ function Accordion({
   className,
 }: {
   title: string;
+  subtitle?: string;
+  badge?: React.ReactNode;
   icon: React.ReactNode;
   defaultOpen?: boolean;
   isOpen?: boolean;
@@ -143,14 +147,22 @@ function Accordion({
         onClick={handleToggle}
         aria-expanded={open}
       >
-        <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-          {icon}
-          {title}
-        </span>
+        <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+          <span className="flex items-center gap-2 text-sm font-semibold text-slate-800 flex-wrap">
+            {icon}
+            <span>{title}</span>
+            {badge}
+          </span>
+          {subtitle && (
+            <span className="text-[11px] text-slate-500 font-normal pl-6">
+              {subtitle}
+            </span>
+          )}
+        </div>
         {open ? (
-          <ChevronDown className="w-4 h-4 text-slate-400" />
+          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-slate-400" />
+          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
         )}
       </button>
       {open && (
@@ -421,7 +433,7 @@ export default function EntityDrawer({
 
               {/* Evidence Accordions */}
               <div className="flex flex-col gap-2.5">
-                {/* Co-Spending & Autoencoder (side-by-side 50% width row with synchronized open/close) */}
+                {/* Co-Spending & FT-Transformer Tabular Anomaly (side-by-side 50% width row with synchronized open/close) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-stretch">
                   {/* Cluster Co-Spending */}
                   <Accordion
@@ -470,10 +482,16 @@ export default function EntityDrawer({
                     />
                   </Accordion>
 
-                  {/* Autoencoder Reconstruction */}
+                  {/* FT-Transformer Tabular Anomaly */}
                   <Accordion
-                    title="Autoencoder Reconstruction"
-                    icon={<Activity className="w-4 h-4" />}
+                    title="FT-Transformer Tabular Anomaly"
+                    subtitle="Multi-Head Self-Attention MSE Reconstruction"
+                    badge={
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 border border-sky-200">
+                        MSE Reconstruction
+                      </span>
+                    }
+                    icon={<Activity className="w-4 h-4 text-sky-600" />}
                     isOpen={mlRowOpen}
                     onToggle={() => setMlRowOpen((o) => !o)}
                     className="h-full"
@@ -486,6 +504,7 @@ export default function EntityDrawer({
                           : "—"
                       }
                       mono
+                      tooltip="Tabular reconstruction MSE from FT-Transformer multi-head self-attention"
                     />
                     <Row
                       label="Percentile Rank"
@@ -495,6 +514,7 @@ export default function EntityDrawer({
                           : "—"
                       }
                       mono
+                      tooltip="Empirical anomaly percentile across monitored entities"
                     />
                     <Row
                       label="Threshold Status"
@@ -510,6 +530,7 @@ export default function EntityDrawer({
                         data.evidence_trail.anomaly_score >= 0.0346
                       }
                       mono
+                      tooltip="Calibrated decision boundary for tabular reconstruction anomaly"
                     />
                   </Accordion>
                 </div>

@@ -18,6 +18,7 @@ __pycache__/
 *.mmdb
 *.tar.gz
 *.pth
+data/staging_graph_cache.pt
 data/geoip/
 data/raw/
 # Generated synthetic datasets — reproducible via generate_synthetic_data.py

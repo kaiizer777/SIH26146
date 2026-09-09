@@ -76,6 +76,7 @@ NODE_FEATURE_NAMES = [
 # ---------------------------------------------------------------------------
 # Autoencoder definition (must match train_autoencoder.py exactly)
 # ---------------------------------------------------------------------------
+from app.ml.ft_transformer import FTTransformerAnomaly
 from app.services.feature_extractor import FEATURE_DIM
 
 
@@ -108,8 +109,8 @@ class Autoencoder(nn.Module):
         return self.decoder(self.encoder(x))
 
 
-class AutoencoderMSEWrapper(nn.Module):
-    """Wraps Autoencoder so forward() returns per-sample reconstruction MSE.
+class AnomalyMSEWrapper(nn.Module):
+    """Wraps Autoencoder or FTTransformerAnomaly so forward() returns per-sample reconstruction MSE.
 
     Shape: input [N, 18] → output [N, 1] (mean squared error per sample).
     This is the scalar that SHAP attributes to individual features.
@@ -117,15 +118,21 @@ class AutoencoderMSEWrapper(nn.Module):
     score we use num_outputs=1.
     """
 
-    def __init__(self, model: Autoencoder) -> None:
+    def __init__(self, model: nn.Module) -> None:
         super().__init__()
         self.model = model
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         recon = self.model(x)
+        if isinstance(recon, tuple):
+            recon = recon[0]
         # Per-sample MSE: shape [N]
         mse = ((recon - x) ** 2).mean(dim=1)
         return mse.unsqueeze(1)  # [N, 1] — required by GradientExplainer
+
+
+# Backward compatibility alias
+AutoencoderMSEWrapper = AnomalyMSEWrapper
 
 
 # ---------------------------------------------------------------------------
@@ -140,31 +147,65 @@ def _find_latest(pattern: str) -> Path:
     return matches[-1]
 
 
-def load_model() -> tuple[AutoencoderMSEWrapper, object, float]:
-    """Load autoencoder, scaler, and threshold. Returns (wrapper, scaler, threshold)."""
-    model_path = _find_latest("autoencoder_*.pt")
-    scaler_path = _find_latest("scaler_*.pkl")
-    thresh_path = _find_latest("threshold_*.json")
+def load_model(
+    model_type: str = "auto",
+    model_path_str: str | None = None,
+) -> tuple[AnomalyMSEWrapper, object, float, str]:
+    """Load autoencoder or FT-Transformer, scaler, and threshold.
 
-    print(f"  Model:     {model_path.name}")
-    print(f"  Scaler:    {scaler_path.name}")
-    print(f"  Threshold: {thresh_path.name}")
+    Returns:
+        (wrapper, scaler, threshold, resolved_model_type)
+    """
+    resolved_type = model_type.lower()
+    if resolved_type == "auto":
+        if model_path_str and "ft_transformer" in model_path_str.lower():
+            resolved_type = "ft_transformer"
+        else:
+            # Default to autoencoder if available, otherwise check ft_transformer
+            if list(_MODELS_DIR.glob("autoencoder_*.pt")):
+                resolved_type = "autoencoder"
+            elif list(_MODELS_DIR.glob("ft_transformer_*.pt")):
+                resolved_type = "ft_transformer"
+            else:
+                resolved_type = "autoencoder"
 
-    model = Autoencoder()
-    model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
-    model.eval()
+    if resolved_type == "ft_transformer":
+        model_path = Path(model_path_str) if model_path_str else _find_latest("ft_transformer_*.pt")
+        scaler_path = _find_latest("ft_scaler_*.pkl")
+        thresh_path = _find_latest("ft_threshold_*.json")
 
-    wrapper = AutoencoderMSEWrapper(model)
+        print(f"  Model:     {model_path.name} (FT-Transformer)")
+        print(f"  Scaler:    {scaler_path.name}")
+        print(f"  Threshold: {thresh_path.name}")
+
+        model: nn.Module = FTTransformerAnomaly(num_features=FEATURE_DIM, d_model=32, n_layers=2, n_heads=4, d_ff=64)
+        model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
+        model.eval()
+    else:
+        resolved_type = "autoencoder"
+        model_path = Path(model_path_str) if model_path_str else _find_latest("autoencoder_*.pt")
+        scaler_path = _find_latest("scaler_*.pkl")
+        thresh_path = _find_latest("threshold_*.json")
+
+        print(f"  Model:     {model_path.name} (Autoencoder)")
+        print(f"  Scaler:    {scaler_path.name}")
+        print(f"  Threshold: {thresh_path.name}")
+
+        model = Autoencoder()
+        model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
+        model.eval()
+
+    wrapper = AnomalyMSEWrapper(model)
     wrapper.eval()
 
     scaler = joblib.load(scaler_path)
 
-    with open(thresh_path, "r") as f:
+    with open(thresh_path, "r", encoding="utf-8") as f:
         thresh_data = json.load(f)
     threshold: float = float(thresh_data["threshold"])
     print(f"  Anomaly threshold: {threshold:.6f}")
 
-    return wrapper, scaler, threshold
+    return wrapper, scaler, threshold, resolved_type
 
 
 # ---------------------------------------------------------------------------
@@ -229,17 +270,24 @@ def load_flagged_rows(conn, threshold: float) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def compute_shap_attributions(
-    wrapper: AutoencoderMSEWrapper,
+    wrapper: AnomalyMSEWrapper,
     scaler,
     background_rows: list[dict],
     flagged_rows: list[dict],
     batch_size: int = 256,
-) -> dict[str, list[dict]]:
+) -> tuple[dict[str, list[dict]], dict[str, dict]]:
     """Compute GradientExplainer SHAP values for all flagged transactions.
 
+    When FTTransformerAnomaly is active, also extracts native cross-feature
+    and [CLS] self-attention matrices.
+
     Returns:
-        dict txid → waterfall list: [{feature, attribution, value}, ...] sorted by |attribution| desc.
+        (results, attention_matrices) where:
+            results: dict txid → waterfall list [{feature, attribution, value, (optional) attention}]
+            attention_matrices: dict txid → {cross_feature_attention: [18, 18], cls_attention: [18]}
     """
+    is_ft = isinstance(wrapper.model, FTTransformerAnomaly)
+
     print("\n  Building SHAP background tensor ...")
     bg_feats = extract_features_batch(background_rows).astype(np.float32)  # (100, 18)
     bg_scaled = scaler.transform(bg_feats).astype(np.float32)
@@ -250,8 +298,11 @@ def compute_shap_attributions(
 
     print(f"  Computing SHAP values for {len(flagged_rows):,} flagged txs "
           f"(batch_size={batch_size}) ...")
+    if is_ft:
+        print("  FT-Transformer detected: extracting native cross-feature self-attention...")
 
     results: dict[str, list[dict]] = {}
+    attention_matrices: dict[str, dict] = {}
     t0 = time.time()
 
     for start in range(0, len(flagged_rows), batch_size):
@@ -274,6 +325,15 @@ def compute_shap_attributions(
             # (B, F, 1) -> (B, F)
             attr_matrix = attr_matrix.squeeze(axis=-1)
 
+        # Extract native attention from FT-Transformer if active
+        cross_attn_batch = None
+        cls_attn_batch = None
+        if is_ft:
+            with torch.no_grad():
+                _, attn_dict = wrapper.model(input_tensor, return_attention=True)
+                cross_attn_batch = attn_dict["cross_feature_attention"].cpu().numpy()  # (B, 18, 18)
+                cls_attn_batch = attn_dict["cls_attention"].cpu().numpy()              # (B, 18)
+
         for i, row in enumerate(batch):
             txid = str(row.get("txid", f"__unknown_{start + i}__"))
             attrs = attr_matrix[i]          # (18,)
@@ -287,9 +347,21 @@ def compute_shap_attributions(
                 }
                 for j in range(len(FEATURE_NAMES))
             ]
+
+            if cls_attn_batch is not None:
+                for entry in waterfall:
+                    j = FEATURE_NAMES.index(entry["feature"])
+                    entry["attention"] = round(float(cls_attn_batch[i, j]), 6)
+
             # Sort by absolute attribution magnitude descending
             waterfall.sort(key=lambda d: abs(d["attribution"]), reverse=True)
             results[txid] = waterfall
+
+            if cross_attn_batch is not None and cls_attn_batch is not None:
+                attention_matrices[txid] = {
+                    "cross_feature_attention": cross_attn_batch[i].round(6).tolist(),
+                    "cls_attention": cls_attn_batch[i].round(6).tolist(),
+                }
 
         if (start // batch_size) % 5 == 0:
             pct = min(100, (start + len(batch)) / len(flagged_rows) * 100)
@@ -298,7 +370,7 @@ def compute_shap_attributions(
 
     elapsed = time.time() - t0
     print(f"  SHAP complete: {len(results):,} txids in {elapsed:.1f}s.")
-    return results
+    return results, attention_matrices
 
 
 # ---------------------------------------------------------------------------
@@ -306,19 +378,24 @@ def compute_shap_attributions(
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Phase 8 XAI-A: Autoencoder SHAP Attribution.")
+    parser = argparse.ArgumentParser(description="Phase 8 XAI-A: Autoencoder / FT-Transformer SHAP Attribution.")
     parser.add_argument("--batch-size", type=int, default=256,
                         help="SHAP batch size (default 256)")
     parser.add_argument("--background-n", type=int, default=100,
                         help="Number of background (normal) samples (default 100)")
+    parser.add_argument("--model-type", type=str, default="auto", choices=["auto", "autoencoder", "ft_transformer"],
+                        help="Model type to explain: auto (default), autoencoder, or ft_transformer")
+    parser.add_argument("--model-path", type=str, default=None,
+                        help="Explicit path to .pt model weights")
     args = parser.parse_args()
 
     xai_dir = Path(settings.xai_dir)
     xai_dir.mkdir(parents=True, exist_ok=True)
     out_path = Path(settings.shap_attributions_path)
+    attn_out_path = xai_dir / "attention_matrices.json"
 
     print("=" * 60)
-    print("Phase 8 XAI-A — Autoencoder SHAP Feature Attribution")
+    print("Phase 8 XAI-A — Feature Attribution & Attention Extraction")
     print("=" * 60)
     print(f"  shap version: {shap.__version__}")
     print(f"  torch version: {torch.__version__}")
@@ -327,7 +404,10 @@ def main() -> None:
 
     # 1. Load model + scaler + threshold
     print("[1/4] Loading model artifacts ...")
-    wrapper, scaler, threshold = load_model()
+    wrapper, scaler, threshold, resolved_type = load_model(
+        model_type=args.model_type,
+        model_path_str=args.model_path,
+    )
 
     # 2. Connect to PostgreSQL
     conn = psycopg2.connect(settings.database_url)
@@ -342,9 +422,9 @@ def main() -> None:
         print("  WARNING: No flagged transactions found. Exiting.")
         return
 
-    # 4. Compute SHAP
-    print("\n[3/4] Computing SHAP attributions ...")
-    attributions = compute_shap_attributions(
+    # 4. Compute SHAP & Attention
+    print("\n[3/4] Computing SHAP attributions & attention slices ...")
+    attributions, attention_matrices = compute_shap_attributions(
         wrapper, scaler, bg_rows, flagged_rows, batch_size=args.batch_size
     )
 
@@ -354,6 +434,13 @@ def main() -> None:
         json.dump(attributions, f, indent=None, separators=(",", ":"))
     size_mb = out_path.stat().st_size / 1024 / 1024
     print(f"  Written: {out_path} ({size_mb:.2f} MB)")
+
+    if attention_matrices:
+        print(f"  Writing {len(attention_matrices):,} attention matrices -> {attn_out_path} ...")
+        with open(attn_out_path, "w", encoding="utf-8") as f:
+            json.dump(attention_matrices, f, indent=None, separators=(",", ":"))
+        attn_mb = attn_out_path.stat().st_size / 1024 / 1024
+        print(f"  Written: {attn_out_path} ({attn_mb:.2f} MB)")
 
     print("\n" + "=" * 60)
     print("XAI-A COMPLETE.")

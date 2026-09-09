@@ -56,11 +56,33 @@ from app.config import settings
 from app.services.graph_service import GraphService
 
 # ---------------------------------------------------------------------------
-# Thresholds (match Phase 5/7 outputs)
+# Thresholds & Dynamic Resolution
 # ---------------------------------------------------------------------------
-ANOMALY_THRESHOLD = 0.034618   # from threshold_20260907.json
 RISK_SCORE_THRESHOLD = 0.5     # match settings.risk_score_flag_threshold
 PEELING_CHAIN_MIN_HOPS = 5     # Phase 6 spec
+
+
+def get_anomaly_threshold() -> float:
+    """Resolve calibrated anomaly threshold from active models directory."""
+    models_dir = Path(settings.models_dir)
+    use_legacy = getattr(settings, "use_legacy_anomaly_model", getattr(settings, "use_legacy_models", False))
+    if not use_legacy:
+        th_files = sorted(models_dir.glob("ft_threshold_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if th_files:
+            try:
+                with open(th_files[0], "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return float(data.get("threshold", data.get("calibrated_threshold", 0.036354)))
+            except Exception:
+                pass
+    th_files = sorted(models_dir.glob("threshold_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if th_files:
+        try:
+            with open(th_files[0], "r", encoding="utf-8") as f:
+                return float(json.load(f)["threshold"])
+        except Exception:
+            pass
+    return 0.036354
 
 
 # ---------------------------------------------------------------------------
@@ -260,6 +282,7 @@ def _build_triggered_rules(
     chain_hops: int,
     cluster_size: int,
     is_seed: bool,
+    anomaly_threshold: float,
 ) -> List[str]:
     """Generate human-readable rule strings from actual computed values."""
     rules: List[str] = []
@@ -267,9 +290,11 @@ def _build_triggered_rules(
     if risk_score >= RISK_SCORE_THRESHOLD:
         rules.append(f"HIGH_GRAPH_RISK (score={risk_score:.3f} >= {RISK_SCORE_THRESHOLD:.2f})")
 
-    if anomaly >= ANOMALY_THRESHOLD:
+    use_legacy_anom = getattr(settings, "use_legacy_anomaly_model", getattr(settings, "use_legacy_models", False))
+    rule_name = "AUTOENCODER_ANOMALY" if use_legacy_anom else "FT_TRANSFORMER_ANOMALY"
+    if anomaly >= anomaly_threshold:
         rules.append(
-            f"AUTOENCODER_ANOMALY (score={anomaly:.4f} >= {ANOMALY_THRESHOLD:.4f}, "
+            f"{rule_name} (score={anomaly:.4f} >= {anomaly_threshold:.4f}, "
             f"rank_pct={anomaly_pct:.1f})"
         )
 
@@ -352,6 +377,9 @@ def main() -> None:
 
     print(f"  Building trails for {len(candidate_addrs):,} wallets ...")
 
+    anomaly_thresh = get_anomaly_threshold()
+    print(f"  Active anomaly threshold: {anomaly_thresh:.6f}")
+
     trails: Dict[str, dict] = {}
     for addr in candidate_addrs:
         wd = wallet_stats.get(addr, {})
@@ -374,6 +402,7 @@ def main() -> None:
             chain_hops=chain_hops,
             cluster_size=cluster_size,
             is_seed=is_seed,
+            anomaly_threshold=anomaly_thresh,
         )
 
         trails[addr] = {

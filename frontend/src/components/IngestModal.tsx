@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
-import { Upload, X, FileText, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
+import {
+  Upload,
+  X,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  ShieldCheck,
+  Sliders,
+} from "lucide-react";
 import { toast } from "sonner";
 import { uploadIngestFile, fetchIngestStatus, syncIngestTask, ApiError } from "@/lib/api";
 
@@ -110,7 +119,6 @@ export default function IngestModal({
               const warnMsg = `No new transactions inserted — all ${count.toLocaleString()} rows were rejected as duplicates (txid already exists). The alert table reflects existing data.`;
               setStatusText(warnMsg);
               toast.warning(warnMsg);
-              // Still trigger onSuccess() so existing alert data is visible and refreshed
               onSuccess();
             } else if (inserted === 0 && rejected === 0 && received === 0) {
               setStage("error");
@@ -210,40 +218,47 @@ export default function IngestModal({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop with frosted atmospheric depth */}
       <div
-        className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-[5px] transition-all duration-200"
         onClick={handleClose}
       />
 
-      {/* Modal */}
+      {/* 3D Elevated Modal Card Container */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Ingest batch file"
-        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-drawer overflow-hidden"
+        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl border border-slate-200/90 shadow-3d-modal overflow-hidden transition-all duration-200"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
-          <div className="flex items-center gap-2">
-            <Upload className="w-4 h-4 text-slate-600" />
-            <span className="text-sm font-semibold text-slate-800">
-              Ingest Batch File
-            </span>
+        {/* Tactile 3D Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50 to-slate-100/90 shadow-[inset_0_1px_0_rgba(255,255,255,1)]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-b from-sky-50 to-sky-100/90 border border-sky-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_2px_rgba(15,23,42,0.06)] flex items-center justify-center shrink-0">
+              <Upload className="w-4 h-4 text-sky-700" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900 tracking-tight">
+                Ingest Batch File
+              </span>
+              <span className="text-[10px] font-mono font-medium uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                ETL Pipeline
+              </span>
+            </div>
           </div>
           <button
             id="ingest-modal-close-btn"
             onClick={handleClose}
             aria-label="Close modal"
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center bg-gradient-to-b from-white to-slate-100 border border-slate-300 text-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_2px_rgba(15,23,42,0.08)] active:shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.2)] active:translate-y-[0.5px] cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-5 flex flex-col gap-4">
-          {/* Dropzone — only show when idle */}
+        {/* Modal Body */}
+        <div className="p-6 flex flex-col gap-4 bg-white">
+          {/* 3D Recessed Dropzone Chamber — only show when idle */}
           {stage === "idle" && (
             <div
               id="ingest-dropzone"
@@ -255,26 +270,65 @@ export default function IngestModal({
               onDrop={onDrop}
               onClick={() => fileInputRef.current?.click()}
               className={clsx(
-                "flex flex-col items-center justify-center gap-3 h-40 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
-                dragOver
-                  ? "border-sky-500 bg-sky-50"
-                  : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100",
+                "relative flex flex-col items-center justify-center gap-4 py-9 px-6 rounded-xl cursor-pointer select-none",
+                dragOver ? "tactile-dropzone-3d-active" : "tactile-dropzone-3d"
               )}
             >
-              <Upload
+              {/* 3D Floating Icon Medallion — Default Sky-Tinted 3D Elevation */}
+              <div
                 className={clsx(
-                  "w-8 h-8 transition-colors",
-                  dragOver ? "text-sky-500" : "text-slate-400",
+                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-colors duration-150",
+                  dragOver
+                    ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_6px_16px_rgba(2,132,199,0.35)] scale-105"
+                    : "tactile-medallion-3d"
                 )}
-              />
-              <div className="text-center">
-                <p className="text-sm font-medium text-slate-700">
-                  Drop file here or click to browse
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5 crypto-mono">
-                  Accepts .csv, .json, .xml — max 500 MB
+              >
+                <Upload
+                  className={clsx(
+                    "w-6 h-6",
+                    dragOver ? "text-white" : "text-sky-600"
+                  )}
+                />
+              </div>
+
+              {/* Title & 3D Interactive Browse CTA */}
+              <div className="text-center space-y-1.5">
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-sm font-semibold text-slate-800 tracking-tight">
+                    Drop batch file here
+                  </p>
+                  <span className="text-xs text-slate-400 font-medium">or</span>
+                  <span className="px-3.5 py-1 rounded-md text-xs font-semibold text-sky-700 bg-sky-50/90 border border-sky-300 inline-flex items-center gap-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(2,132,199,0.08)]">
+                    Browse Files
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Ingest raw blockchain & network logs for offline forensic analysis
                 </p>
               </div>
+
+              {/* 3D Format Token Chips */}
+              <div className="flex items-center gap-2 pt-0.5">
+                {[".CSV", ".JSON", ".XML"].map((fmt) => (
+                  <span
+                    key={fmt}
+                    className="crypto-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-gradient-to-b from-white to-slate-100 border border-slate-200/90 text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_2px_rgba(15,23,42,0.04)]"
+                  >
+                    {fmt}
+                  </span>
+                ))}
+                <span className="text-slate-300">•</span>
+                <span className="crypto-mono text-[11px] font-medium text-slate-500">
+                  Max 500 MB
+                </span>
+              </div>
+
+              {/* Security & Integrity Badge */}
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-0.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>SHA-256 duplicate validation & air-gapped parsing</span>
+              </div>
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -286,61 +340,81 @@ export default function IngestModal({
             </div>
           )}
 
-          {/* File info */}
+          {/* 3D Elevated File Info Card */}
           {selectedFile && stage !== "idle" && (
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded bg-slate-50 border border-slate-200">
-              <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_4px_rgba(15,23,42,0.04)]">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-b from-sky-50 to-sky-100 border border-sky-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.05)] flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4 text-sky-700" />
+              </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-slate-800 truncate">
+                <p className="text-xs font-semibold text-slate-800 truncate">
                   {selectedFile.name}
                 </p>
                 <p className="crypto-mono text-[11px] text-slate-500">
                   {(selectedFile.size / 1024).toFixed(0)} KB
                 </p>
               </div>
+              <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-medium uppercase bg-sky-50 border border-sky-200 text-sky-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                {stage === "uploading" ? "Uploading" : "Processing"}
+              </span>
             </div>
           )}
 
-          {/* Progress bar */}
+          {/* 3D Grooved Progress Gauge */}
           {isWorking && (
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-[11px] text-slate-500">
-                <span>{statusText}</span>
-                <span className="crypto-mono">{progress}%</span>
+            <div className="space-y-2 p-4 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-slate-700 flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
+                  </span>
+                  {statusText}
+                </span>
+                <span className="crypto-mono font-bold text-sky-700 px-2.5 py-0.5 rounded bg-white border border-slate-200 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_2px_rgba(15,23,42,0.05)]">
+                  {progress}%
+                </span>
               </div>
-              <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+              {/* 3D Inset Track */}
+              <div className="h-3 w-full rounded-full bg-gradient-to-b from-slate-200 to-slate-100 p-0.5 border border-slate-200/90 shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.14),0_1px_0_rgba(255,255,255,0.9)] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-sky-600 transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-sky-600 via-sky-500 to-cyan-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_1px_3px_rgba(2,132,199,0.35)] transition-all duration-500 relative overflow-hidden"
                   style={{ width: `${progress}%` }}
-                />
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+                </div>
               </div>
             </div>
           )}
 
-          {/* Success */}
+          {/* 3D Success Card */}
           {stage === "success" && (
-            <div className="flex items-center gap-3 px-3 py-3 rounded bg-emerald-50 border border-emerald-200">
-              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div className="flex items-center gap-3.5 p-4 rounded-xl bg-gradient-to-b from-emerald-50/90 via-emerald-50/60 to-emerald-100/50 border border-emerald-300/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(16,185,129,0.08)]">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-b from-white to-emerald-100 border border-emerald-300 shadow-[inset_0_1.5px_0_rgba(255,255,255,1),0_2px_4px_rgba(16,185,129,0.2)] flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              </div>
               <div>
-                <p className="text-xs font-semibold text-emerald-700">
-                  Ingestion complete
+                <p className="text-xs font-bold text-emerald-900">
+                  Ingestion Complete
                 </p>
-                <p className="text-[11px] text-emerald-600">{statusText}</p>
+                <p className="text-xs text-emerald-700 mt-0.5">{statusText}</p>
               </div>
             </div>
           )}
 
-          {/* All-Rejected Warning Banner (DUP-2b) */}
+          {/* 3D All-Rejected Warning Banner (DUP-2b) */}
           {stage === "warning" && (
             <div className="flex flex-col gap-3">
               <div
                 id="ingest-duplicate-warning-banner"
                 role="alert"
-                className="flex items-start gap-3 px-3.5 py-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900"
+                className="flex items-start gap-3.5 p-4 rounded-xl bg-gradient-to-b from-amber-50/90 via-amber-50/60 to-amber-100/50 border border-amber-300/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(217,119,6,0.08)] text-amber-900"
               >
-                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-amber-900">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-b from-white to-amber-100 border border-amber-300 shadow-[inset_0_1.5px_0_rgba(255,255,255,1),0_2px_4px_rgba(217,119,6,0.2)] flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <p className="text-xs font-bold text-amber-900">
                     Duplicate Transactions Detected
                   </p>
                   <p className="text-xs text-amber-800 leading-relaxed">
@@ -351,14 +425,14 @@ export default function IngestModal({
               <div className="flex items-center justify-between pt-1">
                 <button
                   onClick={reset}
-                  className="text-xs px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-50 transition-colors text-slate-700 font-medium"
+                  className="tactile-btn-secondary text-xs px-3.5 py-1.5 rounded-lg text-slate-700 font-medium cursor-pointer"
                 >
                   Upload Another File
                 </button>
                 <button
                   id="ingest-warning-dismiss-btn"
                   onClick={handleClose}
-                  className="text-xs px-4 py-1.5 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors font-medium shadow-sm"
+                  className="text-xs px-4 py-1.5 bg-gradient-to-b from-amber-500 to-amber-600 text-white rounded-lg font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_4px_rgba(217,119,6,0.25)] hover:from-amber-600 hover:to-amber-700 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] active:translate-y-[0.5px] transition-all cursor-pointer"
                 >
                   Dismiss
                 </button>
@@ -366,17 +440,19 @@ export default function IngestModal({
             </div>
           )}
 
-          {/* Duplicate Upload Detected (DUP-2a) */}
+          {/* 3D Duplicate Upload Detected Banner (DUP-2a) */}
           {stage === "duplicate" && (
             <div className="flex flex-col gap-3">
               <div
                 id="ingest-duplicate-error-banner"
                 role="alert"
-                className="flex items-start gap-3 px-3.5 py-3 rounded-lg bg-red-50 border border-red-300 text-red-900"
+                className="flex items-start gap-3.5 p-4 rounded-xl bg-gradient-to-b from-red-50/90 via-red-50/60 to-red-100/50 border border-red-300/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(220,38,38,0.08)] text-red-900"
               >
-                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-red-800">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-b from-white to-red-100 border border-red-300 shadow-[inset_0_1.5px_0_rgba(255,255,255,1),0_2px_4px_rgba(220,38,38,0.2)] flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <p className="text-xs font-bold text-red-900">
                     Duplicate File Detected
                   </p>
                   <p className="text-xs text-red-700 leading-relaxed">
@@ -387,37 +463,54 @@ export default function IngestModal({
               <button
                 id="ingest-try-another-file-btn"
                 onClick={reset}
-                className="text-xs px-4 py-2 bg-slate-900 text-white rounded hover:bg-slate-700 transition-colors self-start font-medium"
+                className="tactile-btn-primary text-xs px-4 py-2 rounded-lg text-white font-medium self-start cursor-pointer"
               >
                 Select Another File
               </button>
             </div>
           )}
 
-          {/* Generic Error */}
+          {/* 3D Generic Error Card */}
           {stage === "error" && (
             <div className="flex flex-col gap-3">
-              <div className="flex items-start gap-3 px-3 py-3 rounded bg-red-50 border border-red-200">
-                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-semibold text-red-700">
-                    Ingestion failed
+              <div className="flex items-start gap-3.5 p-4 rounded-xl bg-gradient-to-b from-red-50/90 via-red-50/60 to-red-100/50 border border-red-300/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(220,38,38,0.08)]">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-b from-white to-red-100 border border-red-300 shadow-[inset_0_1.5px_0_rgba(255,255,255,1),0_2px_4px_rgba(220,38,38,0.2)] flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-red-900">
+                    Ingestion Failed
                   </p>
-                  <p className="crypto-mono text-[11px] text-red-600 break-all">
+                  <p className="crypto-mono text-xs text-red-700 break-all mt-0.5">
                     {errorMsg}
                   </p>
                 </div>
               </div>
               <button
                 onClick={reset}
-                className="text-xs px-4 py-2 bg-slate-900 text-white rounded hover:bg-slate-700 transition-colors self-start"
+                className="tactile-btn-primary text-xs px-4 py-2 rounded-lg text-white font-medium self-start cursor-pointer"
               >
                 Try Another File
               </button>
             </div>
           )}
         </div>
+
+        {/* 3D Tactile Footer Strip */}
+        <div className="px-6 py-3 bg-gradient-to-b from-slate-50 to-slate-100/90 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,1)]">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+            <span className="font-medium">NTRO Air-Gapped Surveillance</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <kbd className="crypto-mono px-1.5 py-0.5 text-[10px] font-semibold bg-white rounded border border-slate-200 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_1px_rgba(15,23,42,0.06)] text-slate-600">
+              ESC
+            </kbd>
+            <span>to close</span>
+          </div>
+        </div>
       </div>
     </>
   );
 }
+

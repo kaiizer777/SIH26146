@@ -1,7 +1,7 @@
 """Inline Scorer Service — Phase 11.2 (Live Post-Ingest Online Inference).
 
 Scores newly ingested transactions in-process using:
-1. PyTorch Autoencoder reconstruction MSE (anomaly score)
+1. PyTorch FT-Transformer tabular reconstruction MSE (anomaly score; legacy Autoencoder fallback)
 2. Scaler normalization (StandardScaler)
 3. Heuristic rule detections (Ransomwhere seed overlap, peeling chain candidate)
 4. Provisional composite scoring: clip(0.35 * min(mse/threshold, 1.0) + 0.15 * rules, 0.0, 1.0)
@@ -63,11 +63,13 @@ class Autoencoder(nn.Module):
 # Lazy Artifact Registry
 # ---------------------------------------------------------------------------
 
-_model: Autoencoder | None = None
+_model: nn.Module | None = None
 _scaler: Any = None
 _threshold: float = 0.03461795300245285
 _seeds: set[str] = set()
 _baseline_scores: np.ndarray | None = None
+_anomaly_version: str = "ft_transformer_20260909"
+_risk_version: str = "graph_transformer_20260909"
 _init_lock = threading.Lock()
 _initialized = False
 
@@ -81,7 +83,7 @@ def _find_file(pattern: str, base_dir: Path) -> Path | None:
 
 def init_scorer() -> None:
     """Lazily load models, scaler, threshold, seeds, and baseline scores."""
-    global _model, _scaler, _threshold, _seeds, _baseline_scores, _initialized
+    global _model, _scaler, _threshold, _seeds, _baseline_scores, _anomaly_version, _risk_version, _initialized
     if _initialized:
         return
 
@@ -91,34 +93,114 @@ def init_scorer() -> None:
 
         models_dir = Path(settings.models_dir)
 
-        # 1. Threshold
-        threshold_file = _find_file("threshold_*.json", models_dir)
-        if threshold_file and threshold_file.exists():
-            try:
-                with open(threshold_file, "r", encoding="utf-8") as f:
-                    _threshold = float(json.load(f)["threshold"])
-            except Exception as exc:
-                logger.warning("Failed to load threshold json (%s), using default: %s", threshold_file, exc)
+        use_legacy_anomaly = getattr(settings, "use_legacy_anomaly_model", getattr(settings, "use_legacy_models", False))
+        use_legacy_risk = getattr(settings, "use_legacy_risk_model", getattr(settings, "use_legacy_models", False))
 
-        # 2. Scaler
-        scaler_file = _find_file("scaler_*.pkl", models_dir)
-        if scaler_file and scaler_file.exists():
-            try:
-                _scaler = joblib.load(scaler_file)
-            except Exception as exc:
-                logger.warning("Failed to load scaler pkl (%s): %s", scaler_file, exc)
+        anom_label = "Autoencoder (legacy fallback)" if use_legacy_anomaly else "FT-Transformer (primary)"
+        risk_label = "GraphSAGE (legacy fallback)" if use_legacy_risk else "Graph Transformer (primary)"
+        logger.info("[MODEL CONFIG] Anomaly: %s | Risk: %s", anom_label, risk_label)
 
-        # 3. Model
-        model_file = _find_file("autoencoder_*.pt", models_dir)
-        if model_file and model_file.exists():
-            try:
-                model = Autoencoder()
-                state = torch.load(model_file, map_location="cpu", weights_only=True)
-                model.load_state_dict(state)
-                model.eval()
-                _model = model
-            except Exception as exc:
-                logger.warning("Failed to load autoencoder model (%s): %s", model_file, exc)
+        # Resolve risk model version for metadata stamps
+        if use_legacy_risk:
+            gs_file = _find_file("graphsage_*.pt", models_dir)
+            _risk_version = gs_file.stem if gs_file else "graphsage_20260908"
+        else:
+            gt_file = _find_file("graph_transformer_*.pt", models_dir)
+            _risk_version = gt_file.stem if gt_file else "graph_transformer_20260909"
+
+        if use_legacy_anomaly:
+            logger.info("Fallback configuration active: loading legacy Autoencoder weights.")
+            # 1. Threshold
+            threshold_file = _find_file("threshold_*.json", models_dir)
+            if threshold_file and threshold_file.exists():
+                try:
+                    with open(threshold_file, "r", encoding="utf-8") as f:
+                        _threshold = float(json.load(f)["threshold"])
+                except Exception as exc:
+                    logger.warning("Failed to load legacy threshold json: %s", exc)
+
+            # 2. Scaler
+            scaler_file = _find_file("scaler_*.pkl", models_dir)
+            if scaler_file and scaler_file.exists():
+                try:
+                    _scaler = joblib.load(scaler_file)
+                except Exception as exc:
+                    logger.warning("Failed to load legacy scaler pkl: %s", exc)
+
+            # 3. Model
+            model_file = _find_file("autoencoder_*.pt", models_dir)
+            if model_file and model_file.exists():
+                try:
+                    model = Autoencoder()
+                    state = torch.load(model_file, map_location="cpu", weights_only=True)
+                    model.load_state_dict(state)
+                    model.eval()
+                    _model = model
+                    _anomaly_version = model_file.stem
+                    logger.info("Loaded legacy autoencoder model: %s (architecture: Autoencoder)", model_file)
+                except Exception as exc:
+                    logger.warning("Failed to load autoencoder model: %s", exc)
+        else:
+            # Stage 3 Default: Prioritize FT-Transformer
+            # 1. Threshold (prioritize FT-Transformer threshold)
+            threshold_file = _find_file("ft_threshold_*.json", models_dir) or _find_file("threshold_*.json", models_dir)
+            if threshold_file and threshold_file.exists():
+                try:
+                    with open(threshold_file, "r", encoding="utf-8") as f:
+                        _threshold = float(json.load(f)["threshold"])
+                except Exception as exc:
+                    logger.warning("Failed to load threshold json (%s), using default: %s", threshold_file, exc)
+
+            # 2. Scaler (prioritize FT-Transformer scaler)
+            scaler_file = _find_file("ft_scaler_*.pkl", models_dir) or _find_file("scaler_*.pkl", models_dir)
+            if scaler_file and scaler_file.exists():
+                try:
+                    _scaler = joblib.load(scaler_file)
+                except Exception as exc:
+                    logger.warning("Failed to load scaler pkl (%s): %s", scaler_file, exc)
+
+            # 3. Model: Prioritize FT-Transformer checkpoint; fallback to legacy Autoencoder
+            ft_model_file = _find_file("ft_transformer_*.pt", models_dir)
+            if ft_model_file and ft_model_file.exists():
+                try:
+                    from app.ml.ft_transformer import FTTransformerAnomaly
+
+                    ckpt = torch.load(ft_model_file, map_location="cpu", weights_only=False)
+                    if isinstance(ckpt, dict) and "model_state_dict" in ckpt:
+                        state_dict = ckpt["model_state_dict"]
+                        model = FTTransformerAnomaly(
+                            num_features=ckpt.get("num_features", 18),
+                            d_model=ckpt.get("d_model", 64),
+                            n_layers=ckpt.get("n_layers", 2),
+                            n_heads=ckpt.get("n_heads", 4),
+                            d_ff=ckpt.get("d_ff", 128),
+                            dropout=ckpt.get("dropout", 0.1),
+                        )
+                    else:
+                        state_dict = ckpt
+                        model = FTTransformerAnomaly()
+
+                    model.load_state_dict(state_dict)
+                    model.eval()
+                    _model = model
+                    _anomaly_version = ft_model_file.stem
+                    logger.info("Loaded FT-Transformer model: %s (architecture: FTTransformerAnomaly)", ft_model_file)
+                except Exception as exc:
+                    logger.warning("Failed to load FT-Transformer model (%s): %s", ft_model_file, exc)
+
+            if _model is None:
+                model_file = _find_file("autoencoder_*.pt", models_dir)
+                if model_file and model_file.exists():
+                    try:
+                        model = Autoencoder()
+                        state = torch.load(model_file, map_location="cpu", weights_only=True)
+                        model.load_state_dict(state)
+                        model.eval()
+                        _model = model
+                        _anomaly_version = model_file.stem
+                        logger.info("Loaded legacy autoencoder model: %s (architecture: Autoencoder)", model_file)
+                    except Exception as exc:
+                        logger.warning("Failed to load autoencoder model (%s): %s", model_file, exc)
 
         # 4. Ransomwhere Seeds
         seed_paths = [
@@ -232,7 +314,7 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
 
     init_scorer()
 
-    # 1. Feature extraction & Autoencoder MSE
+    # 1. Feature extraction & Anomaly MSE
     features = extract_features_batch(rows)
     N = len(rows)
 
@@ -242,11 +324,14 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
         scaled_features = features.astype(np.float32)
 
     if _model is not None:
-        device = torch.device("cpu")
-        with torch.no_grad():
-            batch_tensor = torch.from_numpy(scaled_features).to(device)
-            recon = _model(batch_tensor)
-            mses = ((recon - batch_tensor) ** 2).mean(dim=1).cpu().numpy().tolist()
+        if hasattr(_model, "score_numpy"):
+            mses = _model.score_numpy(scaled_features).tolist()
+        else:
+            device = torch.device("cpu")
+            with torch.no_grad():
+                batch_tensor = torch.from_numpy(scaled_features).to(device)
+                recon = _model(batch_tensor)
+                mses = ((recon - batch_tensor) ** 2).mean(dim=1).cpu().numpy().tolist()
     else:
         # Fallback if model could not be loaded: use normalized feature sum
         mses = [float(np.mean(row_feat ** 2)) for row_feat in scaled_features]
@@ -331,6 +416,8 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
         seed_prox = float(agg["seed_proximity"])
         ts_str = str(agg["ts"]) if agg["ts"] is not None else None
 
+        model_version_stamp = f"{_anomaly_version}+{_risk_version}"
+
         composite_record = {
             "address": addr,
             "anomaly_score": anomaly,
@@ -348,6 +435,9 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
             "chain_hops": 1 if is_mix else 0,
             "mixing_patterns": ["PEELING_CHAIN_CANDIDATE"] if is_mix else [],
             "seed_wallet_proximity": seed_prox,
+            "model_version": model_version_stamp,
+            "anomaly_model_version": _anomaly_version,
+            "risk_model_version": _risk_version,
         }
 
         evidence_record = {
@@ -360,6 +450,9 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
             "mixing_hops": None,
             "triggered_rules": rules_list,
             "provisional": True,
+            "model_version": model_version_stamp,
+            "anomaly_model_version": _anomaly_version,
+            "risk_model_version": _risk_version,
         }
 
         # Top-level item satisfies both direct schema assertions and nested upsert lookups
@@ -373,9 +466,40 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
             "is_mixing": is_mix,
             "provisional": True,
             "ts": ts_str,
+            "model_version": model_version_stamp,
+            "anomaly_model_version": _anomaly_version,
+            "risk_model_version": _risk_version,
             "composite_record": composite_record,
             "evidence_record": evidence_record,
         }
         results.append(item)
 
     return results
+
+
+def reset_scorer_for_tests() -> None:
+    """Reset scorer singleton state for testing fallback configurations."""
+    global _model, _scaler, _threshold, _seeds, _baseline_scores, _anomaly_version, _risk_version, _initialized
+    with _init_lock:
+        _model = None
+        _scaler = None
+        _threshold = 0.03461795300245285
+        _seeds = set()
+        _baseline_scores = None
+        _anomaly_version = "ft_transformer_20260909"
+        _risk_version = "graph_transformer_20260909"
+        _initialized = False
+
+
+def get_model_info() -> dict[str, Any]:
+    """Return dictionary of loaded model type, threshold, and model versions."""
+    return {
+        "model_type": type(_model).__name__ if _model is not None else None,
+        "threshold": _threshold,
+        "scaler_loaded": _scaler is not None,
+        "anomaly_version": _anomaly_version,
+        "risk_version": _risk_version,
+        "model_version": f"{_anomaly_version}+{_risk_version}",
+    }
+
+

@@ -52,13 +52,86 @@ def load() -> None:
         _load_subgraph()
 
         _loaded = True
+
+        # Inspect loaded artifact provenance and active architecture versions
+        use_legacy_anomaly = getattr(settings, "use_legacy_anomaly_model", getattr(settings, "use_legacy_models", False))
+        use_legacy_risk = getattr(settings, "use_legacy_risk_model", getattr(settings, "use_legacy_models", False))
+        models_dir = Path(settings.models_dir)
+        provenance_parts: list[str] = []
+
+        if models_dir.exists():
+            if use_legacy_anomaly:
+                ae_files = sorted(models_dir.glob("autoencoder_*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+                if ae_files:
+                    provenance_parts.append(f"Autoencoder={ae_files[0].name}")
+            else:
+                ft_files = sorted(models_dir.glob("ft_transformer_*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+                if ft_files:
+                    provenance_parts.append(f"FT-Transformer={ft_files[0].name}")
+
+            if use_legacy_risk:
+                gs_files = sorted(models_dir.glob("graphsage_*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+                if gs_files:
+                    provenance_parts.append(f"GraphSAGE={gs_files[0].name}")
+            else:
+                gt_files = sorted(models_dir.glob("graph_transformer_*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+                if gt_files:
+                    provenance_parts.append(f"RelationalGraphTransformer={gt_files[0].name}")
+
+        anom_label = "Autoencoder (legacy fallback)" if use_legacy_anomaly else "FT-Transformer (primary)"
+        risk_label = "GraphSAGE (legacy fallback)" if use_legacy_risk else "Graph Transformer (primary)"
+        logger.info("[MODEL CONFIG] Anomaly: %s | Risk: %s", anom_label, risk_label)
+
+        prov_str = ", ".join(provenance_parts) if provenance_parts else f"{anom_label} + {risk_label}"
+
         logger.info(
-            "XAI store loaded: composite=%d evidence=%d shap=%d subgraph=%d",
+            "XAI store loaded: composite=%d evidence=%d shap=%d subgraph=%d (active architecture: %s)",
             len(_composite),
             len(_evidence),
             len(_shap),
             len(_subgraph),
+            prov_str,
         )
+
+
+def get_provenance() -> dict[str, str]:
+    """Return dictionary of active model architectures and checkpoint provenance."""
+    use_legacy_anomaly = getattr(settings, "use_legacy_anomaly_model", getattr(settings, "use_legacy_models", False))
+    use_legacy_risk = getattr(settings, "use_legacy_risk_model", getattr(settings, "use_legacy_models", False))
+    models_dir = Path(settings.models_dir)
+
+    res: dict[str, str] = {
+        "anomaly_architecture": "Autoencoder" if use_legacy_anomaly else "FTTransformerAnomaly",
+        "risk_architecture": "GraphSAGEClassifier" if use_legacy_risk else "RelationalGraphTransformer",
+    }
+
+    if models_dir.exists():
+        if use_legacy_anomaly:
+            ae_files = sorted(models_dir.glob("autoencoder_*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+            if ae_files:
+                res["autoencoder_checkpoint"] = ae_files[0].name
+                res["anomaly_checkpoint"] = ae_files[0].name
+        else:
+            ft_files = sorted(models_dir.glob("ft_transformer_*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+            if ft_files:
+                res["ft_transformer_checkpoint"] = ft_files[0].name
+                res["anomaly_checkpoint"] = ft_files[0].name
+
+        if use_legacy_risk:
+            gs_files = sorted(models_dir.glob("graphsage_*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+            if gs_files:
+                res["graphsage_checkpoint"] = gs_files[0].name
+                res["risk_checkpoint"] = gs_files[0].name
+        else:
+            gt_files = sorted(models_dir.glob("graph_transformer_*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+            if gt_files:
+                res["graph_transformer_checkpoint"] = gt_files[0].name
+                res["risk_checkpoint"] = gt_files[0].name
+
+    anom_stem = Path(res.get("anomaly_checkpoint", res["anomaly_architecture"])).stem
+    risk_stem = Path(res.get("risk_checkpoint", res["risk_architecture"])).stem
+    res["model_version"] = f"{anom_stem}+{risk_stem}"
+    return res
 
 
 # ---------------------------------------------------------------------------
@@ -211,3 +284,16 @@ def _load_subgraph() -> None:
             addr = item.get("address") or item.get("wallet_address")
             if addr:
                 _subgraph[addr] = item
+
+
+def reset_store_for_tests() -> None:
+    """Reset store singleton state for testing fallback configurations."""
+    global _composite, _evidence, _shap, _subgraph, _loaded
+    with _store_lock:
+        _composite = {}
+        _evidence = {}
+        _shap = {}
+        _subgraph = {}
+        _loaded = False
+
+
