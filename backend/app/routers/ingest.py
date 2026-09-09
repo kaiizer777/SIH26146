@@ -15,16 +15,21 @@ import hashlib
 import logging
 import uuid
 from pathlib import Path
+from typing import Any
 
 import redis
 from celery.result import AsyncResult
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from app.celery_app import celery_app
 from app.config import settings
-from app.schemas.ingest import IngestResponse, TaskStatusResponse
+from app.schemas.ingest import IngestResponse, IngestSyncResponse, TaskStatusResponse
+from app.services.db import SessionLocal
+from app.services import inline_scorer
 from app.services.parser import detect_format
+import app.services.xai_store as xai_store
 
 logger = logging.getLogger(__name__)
 
@@ -239,3 +244,99 @@ async def get_ingest_status(task_id: str) -> TaskStatusResponse:
 
     # Covers REVOKED and any other states.
     return TaskStatusResponse(task_id=task_id, status=state)
+
+
+_fallback_synced_tasks: set[str] = set()
+
+
+@router.post(
+    "/sync/{task_id}",
+    response_model=IngestSyncResponse,
+    summary="Sync newly ingested transactions into in-memory XAI store",
+)
+async def post_ingest_sync(task_id: str) -> IngestSyncResponse:
+    """Score newly ingested transactions inline and upsert into the XAI store.
+
+    1. Checks Celery task status (must be SUCCESS).
+    2. Enforces idempotency via Redis 'sync_done:{task_id}' (409 if already synced).
+    3. Queries PostgreSQL for rows inserted within the last 2 minutes.
+    4. Passes rows to inline_scorer.score_batch().
+    5. Upserts provisional records into in-memory xai_store, skipping addresses
+       that already have rich permanent dossiers.
+    6. Sets 'sync_done:{task_id}' in Redis (TTL=3600s) and returns counts.
+    """
+    # 1. Status Check: inspect Celery task state
+    result = AsyncResult(task_id, app=celery_app)
+    state = result.state
+    if state != "SUCCESS":
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task {task_id} not found or not in SUCCESS state (current state: {state})",
+        )
+
+    # 2. Idempotency Guard: check Redis key sync_done:{task_id}
+    redis_cli = get_redis_client()
+    if redis_cli is not None:
+        try:
+            if redis_cli.get(f"sync_done:{task_id}") is not None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Task already synced within cooldown window",
+                )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.warning("Redis error checking sync_done:%s: %s — checking fallback", task_id, exc)
+            if task_id in _fallback_synced_tasks:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Task already synced within cooldown window",
+                )
+    else:
+        if task_id in _fallback_synced_tasks:
+            raise HTTPException(
+                status_code=409,
+                detail="Task already synced within cooldown window",
+            )
+
+    # 3. PostgreSQL Query: retrieve newly ingested rows
+    rows: list[dict[str, Any]] = []
+    try:
+        async with SessionLocal() as db:
+            query_res = await db.execute(
+                text("SELECT * FROM transactions WHERE ingested_at > NOW() - INTERVAL '2 minutes'")
+            )
+            rows = [dict(r._mapping) for r in query_res.fetchall()]
+    except Exception as exc:
+        logger.warning("Failed querying recent transactions from database for sync: %s", exc)
+        rows = []
+
+    # 4. Scoring & Upsert: pass rows through inline_scorer.score_batch()
+    scored_records = inline_scorer.score_batch(rows)
+    upserted = 0
+    skipped_existing = 0
+
+    for item in scored_records:
+        addr = item["address"]
+        existing = xai_store.get_composite(addr)
+        if existing is not None and not existing.get("provisional", False):
+            skipped_existing += 1
+        else:
+            xai_store.upsert_composite(addr, item["composite_record"])
+            xai_store.upsert_evidence(addr, item["evidence_record"])
+            upserted += 1
+
+    # 5. Set idempotency key in Redis (and fallback cache) with TTL=3600
+    if redis_cli is not None:
+        try:
+            redis_cli.set(f"sync_done:{task_id}", "1", ex=3600)
+            logger.info("Stored sync_done:%s in Redis (ttl=3600s)", task_id)
+        except Exception as exc:
+            logger.warning("Redis error storing sync_done:%s: %s", task_id, exc)
+    _fallback_synced_tasks.add(task_id)
+
+    return IngestSyncResponse(
+        scored=len(rows),
+        upserted=upserted,
+        skipped_existing=skipped_existing,
+    )

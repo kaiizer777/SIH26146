@@ -209,6 +209,14 @@ class TaskStatusResponse(BaseModel):
     """Set on FAILURE: human-readable error message."""
 
 
+class IngestSyncResponse(BaseModel):
+    """Returned by POST /ingest/sync/{task_id}."""
+
+    scored: int
+    upserted: int
+    skipped_existing: int
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

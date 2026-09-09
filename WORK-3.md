@@ -153,8 +153,8 @@ def upsert_evidence(address: str, record: dict[str, Any]) -> None:
         _evidence[address] = record
 ```
 
-- [ ] Add `upsert_composite` and `upsert_evidence` to `xai_store.py` with `threading.Lock`
-- [ ] Verify existing `get_*` functions are unmodified
+- [x] Add `upsert_composite` and `upsert_evidence` to `xai_store.py` with `threading.Lock`
+- [x] Verify existing `get_*` functions are unmodified
 
 ---
 
@@ -197,9 +197,9 @@ evidence_record = {
 }
 ```
 
-- [ ] Create `backend/app/services/inline_scorer.py` reusing `feature_extractor.py`
-- [ ] Create `backend/tests/test_inline_scorer.py` — 10 dummy rows, assert: output length == unique addresses, `anomaly_score >= 0`, `verdict` in `{CRITICAL,HIGH,MEDIUM,LOW}`, no exceptions
-- [ ] Run `pytest backend/tests/test_inline_scorer.py -v` — must pass
+- [x] Create `backend/app/services/inline_scorer.py` reusing `feature_extractor.py`
+- [x] Create `backend/tests/test_inline_scorer.py` — 10 dummy rows, assert: output length == unique addresses, `anomaly_score >= 0`, `verdict` in `{CRITICAL,HIGH,MEDIUM,LOW}`, no exceptions
+- [x] Run `pytest backend/tests/test_inline_scorer.py -v` — must pass
 
 ---
 
@@ -223,10 +223,10 @@ SELECT * FROM transactions WHERE ingested_at > NOW() - INTERVAL '2 minutes'
 
 **Idempotency guard:** Check Redis for `"sync_done:{task_id}"`. If exists → 409. After processing → set `"sync_done:{task_id}"` in Redis with TTL=3600.
 
-- [ ] Add `POST /ingest/sync/{task_id}` to `backend/app/routers/ingest.py`
-- [ ] Verify: first call → 200 with scored/upserted counts
-- [ ] Verify: second call → 409 `"already synced"`
-- [ ] Verify: `GET /entity/{new_wallet_address}/explain` immediately after sync → 200 with provisional record (not 404)
+- [x] Add `POST /ingest/sync/{task_id}` to `backend/app/routers/ingest.py`
+- [x] Verify: first call → 200 with scored/upserted counts
+- [x] Verify: second call → 409 `"already synced"`
+- [x] Verify: `GET /entity/{new_wallet_address}/explain` immediately after sync → 200 with provisional record (not 404)
 
 ---
 
@@ -338,10 +338,10 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 - [x] `DUP-2b` `IngestModal.tsx` — orange warning on all-rejected Celery result
 
 ### Stage 2: Phase 11 `[STRETCH]`
-- [ ] `11.1` `xai_store.py` — `upsert_composite` + `upsert_evidence` with `threading.Lock`
-- [ ] `11.2` `inline_scorer.py` — reuses `feature_extractor.py`, `score_batch()` implemented
-- [ ] `11.2` `test_inline_scorer.py` — unit test passes (`pytest -v`)
-- [ ] `11.3` `POST /ingest/sync/{task_id}` — 200 on first call · 409 on repeat · new wallet dossier returns 200
+- [x] `11.1` `xai_store.py` — `upsert_composite` + `upsert_evidence` with `threading.Lock`
+- [x] `11.2` `inline_scorer.py` — reuses `feature_extractor.py`, `score_batch()` implemented
+- [x] `11.2` `test_inline_scorer.py` — unit test passes (`pytest -v`)
+- [x] `11.3` `POST /ingest/sync/{task_id}` — 200 on first call · 409 on repeat · new wallet dossier returns 200
 - [ ] `11.4` `IngestModal.tsx` — auto-calls sync after SUCCESS with try/catch fallback
 - [ ] `11.5` `EntityDrawer.tsx` — provisional mode renders · pre-indexed wallets unaffected
 
@@ -360,3 +360,4 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 - 2026-09-09 · [DUP-1, DUP-2 REVIEW FIXES] · Hardened duplicate handling following adversarial staff review: in-stream SHA-256 calculation avoiding redundant disk I/O, Redis socket/connect timeouts (2.0s), incrementing total_rejected on DB COPY failures in Celery task, fixed IngestModal polling hoisting/ESLint errors, and defensive duplicate condition avoiding false success on 0-row ingests · Verified via 5/5 passing pytest in test_dup_ingest.py, 15/15 passing test_ingest.py, 0 ESLint errors/warnings on Stage 1 frontend files, and successful Next.js build.
 - 2026-09-09 · [DUP-1, DUP-2 PRODUCTION HARDENING] · Added Celery broker failure cleanup with HTTP 503 guard and disk unlinking in ingest.py, array validation error unwrapping in api.ts, component unmount timer cleanup in IngestModal.tsx, and verified temp file unlinking on duplicate 409 · Verified via 6/6 passing pytest in test_dup_ingest.py, 15/15 passing test_ingest.py, and successful Next.js build with 0 TypeScript errors.
 - 2026-09-09 · [DUP-2 ACCESSIBILITY & ZERO-ROW GUARD] · Added empty 0-row ingest error guard to IngestModal.tsx preventing false positive success banners, and added Escape key handler for WCAG 2.2 keyboard parity · Verified via Next.js build and Stage 1 test suites.
+- 2026-09-09 · [11.1-11.3] · Implemented backend live post-ingest online inference sync: thread-safe mutation APIs in xai_store.py with threading.Lock, inline scoring service in inline_scorer.py using PyTorch Autoencoder reconstruction MSE and heuristic rules (peeling chain candidates and Ransomwhere seeds), and POST /ingest/sync/{task_id} in ingest.py with Celery status validation, Redis idempotency cooldown guard (TTL=3600s), and PostgreSQL recent-row retrieval · Verified via pytest backend/tests/test_inline_scorer.py -v (3/3 passed), pytest backend/tests/test_ingest_sync.py -v (4/4 passed), pytest backend/tests/test_dup_ingest.py -v (6/6 passed), and pytest backend/tests/test_ingest.py -v (15/15 passed, 2 skipped).

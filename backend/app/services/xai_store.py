@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+import threading
 from typing import Any
 
 from app.config import settings
@@ -32,6 +33,7 @@ _shap: dict[str, list[dict[str, Any]]] = {}  # address → list of 18 feature at
 _subgraph: dict[str, dict[str, Any]] = {}  # address → GNN subgraph
 
 _loaded: bool = False
+_store_lock = threading.Lock()
 
 
 def load() -> None:
@@ -40,58 +42,79 @@ def load() -> None:
     Called once from FastAPI lifespan. Subsequent calls are no-ops.
     """
     global _loaded
-    if _loaded:
-        return
+    with _store_lock:
+        if _loaded:
+            return
 
-    _load_composite()
-    _load_evidence()
-    _load_shap()
-    _load_subgraph()
+        _load_composite()
+        _load_evidence()
+        _load_shap()
+        _load_subgraph()
 
-    _loaded = True
-    logger.info(
-        "XAI store loaded: composite=%d evidence=%d shap=%d subgraph=%d",
-        len(_composite),
-        len(_evidence),
-        len(_shap),
-        len(_subgraph),
-    )
+        _loaded = True
+        logger.info(
+            "XAI store loaded: composite=%d evidence=%d shap=%d subgraph=%d",
+            len(_composite),
+            len(_evidence),
+            len(_shap),
+            len(_subgraph),
+        )
 
 
 # ---------------------------------------------------------------------------
-# Public getters
+# Public getters & mutation APIs
 # ---------------------------------------------------------------------------
+
+
+def upsert_composite(address: str, record: dict[str, Any]) -> None:
+    """Thread-safe upsert into the in-memory composite store."""
+    with _store_lock:
+        _composite[address] = record
+
+
+def upsert_evidence(address: str, record: dict[str, Any]) -> None:
+    """Thread-safe upsert into the in-memory evidence store."""
+    with _store_lock:
+        _evidence[address] = record
 
 
 def get_composite(address: str) -> dict[str, Any] | None:
-    return _composite.get(address)
+    with _store_lock:
+        return _composite.get(address)
 
 
 def get_evidence(address: str) -> dict[str, Any] | None:
-    return _evidence.get(address)
+    with _store_lock:
+        return _evidence.get(address)
 
 
 def get_shap(address: str) -> list[dict[str, Any]] | None:
-    return _shap.get(address)
+    with _store_lock:
+        return _shap.get(address)
 
 
 def get_subgraph(address: str) -> dict[str, Any] | None:
-    return _subgraph.get(address)
+    with _store_lock:
+        return _subgraph.get(address)
 
 
 def all_addresses() -> list[str]:
     """Return every address in the composite risk index."""
-    return list(_composite.keys())
+    with _store_lock:
+        return list(_composite.keys())
 
 
 def composite_count() -> int:
-    return len(_composite)
+    with _store_lock:
+        return len(_composite)
 
 
 def verdict_counts() -> dict[str, int]:
     """Return {verdict: count} across all indexed wallets."""
     counts: dict[str, int] = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-    for record in _composite.values():
+    with _store_lock:
+        records = list(_composite.values())
+    for record in records:
         v = record.get("verdict", "LOW")
         if v in counts:
             counts[v] += 1
