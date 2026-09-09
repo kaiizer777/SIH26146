@@ -52,6 +52,77 @@ export default function IngestModal({
     onClose();
   }, [reset, onClose]);
 
+  const pollStatus = useCallback(
+    function poll(taskId: string, attempts: number) {
+      if (attempts > 120) {
+        setErrorMsg("Task timed out after 4 minutes");
+        setStage("error");
+        return;
+      }
+
+      pollTimerRef.current = setTimeout(async () => {
+        try {
+          const status = await fetchIngestStatus(taskId);
+
+          if (status.status === "PROGRESS" && status.progress) {
+            const p = status.progress as Record<string, number>;
+            const pct = p.total
+              ? Math.round((p.processed / p.total) * 70) + 20
+              : 50;
+            setProgress(pct);
+            setStatusText(
+              `Processing… ${p.processed?.toLocaleString() ?? "?"} / ${p.total?.toLocaleString() ?? "?"} rows`,
+            );
+            poll(taskId, attempts + 1);
+          } else if (status.status === "SUCCESS") {
+            setProgress(100);
+            const result = status.result as Record<string, number> | undefined;
+            const inserted = Number(
+              result?.total_inserted ?? result?.inserted ?? result?.rows_inserted ?? 0
+            );
+            const rejected = Number(
+              result?.total_rejected ?? result?.rejected ?? result?.rows_rejected ?? 0
+            );
+            const received = Number(
+              result?.total_received ?? result?.received ?? (inserted + rejected)
+            );
+
+            if (inserted === 0 && (rejected > 0 || received > 0)) {
+              // DUP-2b: All rows rejected as duplicates (txid already exists in Postgres)
+              setStage("warning");
+              const count = rejected > 0 ? rejected : received;
+              const warnMsg = `No new transactions inserted — all ${count.toLocaleString()} rows were rejected as duplicates (txid already exists). The alert table reflects existing data.`;
+              setStatusText(warnMsg);
+              toast.warning(warnMsg);
+              // Still trigger onSuccess() so existing alert data is visible and refreshed
+              onSuccess();
+            } else {
+              setStage("success");
+              setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
+              toast.success(`Batch ingested: ${inserted} rows processed`);
+              setTimeout(() => {
+                onSuccess();
+                handleClose();
+              }, 1500);
+            }
+          } else if (status.status === "FAILURE") {
+            setErrorMsg(status.error ?? "Celery task failed");
+            setStage("error");
+            toast.error(`Ingest task failed: ${status.error}`);
+          } else {
+            // PENDING or STARTED
+            setProgress((p) => Math.min(p + 2, 45));
+            poll(taskId, attempts + 1);
+          }
+        } catch {
+          setErrorMsg("Failed to poll task status");
+          setStage("error");
+        }
+      }, 2000);
+    },
+    [onSuccess, handleClose],
+  );
+
   const startUpload = useCallback(
     async (file: File) => {
       setSelectedFile(file);
@@ -82,76 +153,8 @@ export default function IngestModal({
         toast.error(`Ingest failed: ${msg}`);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [pollStatus],
   );
-
-  const pollStatus = (taskId: string, attempts: number) => {
-    if (attempts > 120) {
-      setErrorMsg("Task timed out after 4 minutes");
-      setStage("error");
-      return;
-    }
-
-    pollTimerRef.current = setTimeout(async () => {
-      try {
-        const status = await fetchIngestStatus(taskId);
-
-        if (status.status === "PROGRESS" && status.progress) {
-          const p = status.progress as Record<string, number>;
-          const pct = p.total
-            ? Math.round((p.processed / p.total) * 70) + 20
-            : 50;
-          setProgress(pct);
-          setStatusText(
-            `Processing… ${p.processed?.toLocaleString() ?? "?"} / ${p.total?.toLocaleString() ?? "?"} rows`,
-          );
-          pollStatus(taskId, attempts + 1);
-        } else if (status.status === "SUCCESS") {
-          setProgress(100);
-          const result = status.result as Record<string, number> | undefined;
-          const inserted = Number(
-            result?.total_inserted ?? result?.inserted ?? result?.rows_inserted ?? 0
-          );
-          const rejected = Number(
-            result?.total_rejected ?? result?.rejected ?? result?.rows_rejected ?? 0
-          );
-          const received = Number(
-            result?.total_received ?? result?.received ?? (inserted + rejected)
-          );
-
-          if (inserted === 0 && rejected > 0 && rejected === received) {
-            // DUP-2b: All rows rejected as duplicates (txid already exists in Postgres)
-            setStage("warning");
-            const warnMsg = `No new transactions inserted — all ${rejected.toLocaleString()} rows were rejected as duplicates (txid already exists). The alert table reflects existing data.`;
-            setStatusText(warnMsg);
-            toast.warning(warnMsg);
-            // Still trigger onSuccess() so existing alert data is visible and refreshed
-            onSuccess();
-          } else {
-            setStage("success");
-            setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
-            toast.success(`Batch ingested: ${inserted} rows processed`);
-            setTimeout(() => {
-              onSuccess();
-              handleClose();
-            }, 1500);
-          }
-        } else if (status.status === "FAILURE") {
-          setErrorMsg(status.error ?? "Celery task failed");
-          setStage("error");
-          toast.error(`Ingest task failed: ${status.error}`);
-        } else {
-          // PENDING or STARTED
-          setProgress((p) => Math.min(p + 2, 45));
-          pollStatus(taskId, attempts + 1);
-        }
-      } catch (err) {
-        setErrorMsg("Failed to poll task status");
-        setStage("error");
-      }
-    }, 2000);
-  };
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {

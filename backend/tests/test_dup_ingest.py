@@ -144,3 +144,37 @@ class TestDuplicateIngestGuard:
 
             assert response.status_code == 202
             assert response.json() == {"task_id": "task-fallback-888", "status": "PENDING"}
+
+
+class TestDuplicateRowRejection:
+    """Test suite for DUP-2b Celery pipeline duplicate row handling."""
+
+    def test_database_copy_error_increments_total_rejected(self, tmp_path):
+        """When DB COPY fails (e.g. duplicate key violation), rows are counted in total_rejected."""
+        import psycopg2
+        from app.tasks.ingest import run_ingest_pipeline
+
+        test_file = tmp_path / "sample.csv"
+        test_file.write_bytes(SAMPLE_CSV)
+
+        fake_conn = MagicMock()
+        fake_conn.autocommit = False
+
+        def fake_failing_insert(conn, rows):
+            # Simulate PostgreSQL duplicate key violation
+            raise psycopg2.IntegrityError(
+                "duplicate key value violates unique constraint 'transactions_txid_key'"
+            )
+
+        summary = run_ingest_pipeline(
+            str(test_file),
+            "csv",
+            db_conn_factory=lambda: fake_conn,
+            insert_fn=fake_failing_insert,
+        )
+
+        assert summary["total_received"] == 1
+        assert summary["total_inserted"] == 0
+        assert summary["total_rejected"] == 1
+        fake_conn.rollback.assert_called()
+

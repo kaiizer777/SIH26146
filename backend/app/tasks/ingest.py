@@ -236,6 +236,7 @@ def run_ingest_pipeline(
                         conn.rollback()
                     except Exception:
                         pass
+                    total_rejected += len(batch)
                 batch.clear()
 
                 if progress_callback is not None:
@@ -257,6 +258,7 @@ def run_ingest_pipeline(
                     conn.rollback()
                 except Exception:
                     pass
+                total_rejected += len(batch)
 
     except Exception:
         if conn is not None:

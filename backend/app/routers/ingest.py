@@ -53,7 +53,11 @@ def get_redis_client() -> redis.Redis | None:
     global _redis_client
     if _redis_client is None:
         try:
-            _redis_client = redis.from_url(settings.redis_url)
+            _redis_client = redis.from_url(
+                settings.redis_url,
+                socket_timeout=2.0,
+                socket_connect_timeout=2.0,
+            )
         except Exception as exc:
             logger.warning("Could not initialize Redis client from '%s': %s", settings.redis_url, exc)
             return None
@@ -86,13 +90,15 @@ async def post_ingest(file: UploadFile) -> JSONResponse:
         "Received upload '%s', detected format: %s", file.filename, detected_fmt
     )
 
-    # --- Stream to temp file ---
+    # --- Stream to temp file and compute SHA-256 hash inline (DUP-1) ---
     ext = _FORMAT_EXT.get(detected_fmt, ".bin")
     temp_name = f"{uuid.uuid4().hex}{ext}"
     temp_path = _UPLOAD_DIR / temp_name
 
+    hasher = hashlib.sha256()
     try:
         total_bytes = len(header_chunk)
+        hasher.update(header_chunk)
         with open(temp_path, "wb") as fh:
             fh.write(header_chunk)
             while True:
@@ -107,7 +113,9 @@ async def post_ingest(file: UploadFile) -> JSONResponse:
                         status_code=413,
                         detail=f"Upload exceeds maximum allowed size of {_MAX_UPLOAD_BYTES // 1024 // 1024} MB.",
                     )
+                hasher.update(chunk)
                 fh.write(chunk)
+        file_hash = hasher.hexdigest()
     except HTTPException:
         raise
     except Exception as exc:
@@ -116,20 +124,9 @@ async def post_ingest(file: UploadFile) -> JSONResponse:
         raise HTTPException(status_code=500, detail="Failed to save uploaded file.")
 
     logger.info(
-        "Saved upload to %s (%.2f MB), enqueuing task", temp_path, total_bytes / 1024 / 1024
+        "Saved upload to %s (%.2f MB, hash=%s), checking for duplicates",
+        temp_path, total_bytes / 1024 / 1024, file_hash,
     )
-
-    # --- Compute SHA-256 hash & check for duplicate upload (DUP-1) ---
-    hasher = hashlib.sha256()
-    try:
-        with open(temp_path, "rb") as fh:
-            while chunk := fh.read(65_536):
-                hasher.update(chunk)
-        file_hash = hasher.hexdigest()
-    except Exception as exc:
-        temp_path.unlink(missing_ok=True)
-        logger.exception("Failed to compute SHA-256 hash for %s: %s", temp_path, exc)
-        raise HTTPException(status_code=500, detail="Failed to verify upload integrity.")
 
     redis_cli = get_redis_client()
     if redis_cli is not None:

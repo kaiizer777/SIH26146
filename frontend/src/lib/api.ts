@@ -158,6 +158,26 @@ export class ApiError extends Error {
   }
 }
 
+function extractErrorDetail(
+  body: Record<string, unknown> | null | undefined,
+  fallback: string,
+): string {
+  if (typeof body?.detail === "string") {
+    return body.detail;
+  }
+  if (body?.detail && typeof body.detail === "object") {
+    const detailObj = body.detail as Record<string, unknown>;
+    return (
+      (typeof detailObj.detail === "string" ? detailObj.detail : null) ||
+      JSON.stringify(body.detail)
+    );
+  }
+  if (typeof body?.message === "string") {
+    return body.message;
+  }
+  return fallback;
+}
+
 // ---------------------------------------------------------------------------
 // Core fetch helper
 // ---------------------------------------------------------------------------
@@ -179,13 +199,7 @@ async function apiFetch<T>(
     let detail = res.statusText;
     try {
       const body = await res.json();
-      if (typeof body.detail === "string") {
-        detail = body.detail;
-      } else if (body.detail && typeof body.detail === "object") {
-        detail = body.detail.detail || JSON.stringify(body.detail);
-      } else if (body.message) {
-        detail = body.message;
-      }
+      detail = extractErrorDetail(body, detail);
     } catch {}
     throw new ApiError(res.status, detail);
   }
@@ -238,13 +252,7 @@ export async function uploadIngestFile(file: File): Promise<IngestResponse> {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      if (typeof body.detail === "string") {
-        detail = body.detail;
-      } else if (body.detail && typeof body.detail === "object") {
-        detail = body.detail.detail || JSON.stringify(body.detail);
-      } else if (body.message) {
-        detail = body.message;
-      }
+      detail = extractErrorDetail(body, detail);
     } catch {}
     throw new ApiError(res.status, detail);
   }
