@@ -48,6 +48,8 @@ export interface AlertsParams {
   min_risk?: number | null;
   min_anomaly?: number | null;
   is_mixing?: boolean | null;
+  is_peeling_chain?: boolean | null;
+  is_coinjoin?: boolean | null;
   cluster_id?: number | null;
   search?: string | null;
 }
@@ -230,6 +232,8 @@ export async function fetchAlerts(params: AlertsParams = {}): Promise<AlertsResp
   if (params.min_risk != null) qs.set("min_risk", String(params.min_risk));
   if (params.min_anomaly != null) qs.set("min_anomaly", String(params.min_anomaly));
   if (params.is_mixing != null) qs.set("is_mixing", String(params.is_mixing));
+  if (params.is_peeling_chain != null) qs.set("is_peeling_chain", String(params.is_peeling_chain));
+  if (params.is_coinjoin != null) qs.set("is_coinjoin", String(params.is_coinjoin));
   if (params.cluster_id != null) qs.set("cluster_id", String(params.cluster_id));
   if (params.search) qs.set("search", params.search);
 

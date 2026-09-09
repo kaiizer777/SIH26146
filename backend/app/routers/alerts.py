@@ -12,6 +12,8 @@ Query parameters:
   min_risk  float = None
   min_anomaly float = None
   is_mixing bool = None
+  is_peeling_chain bool = None
+  is_coinjoin bool = None
   cluster_id int = None
   search    str  = None  (prefix match on address)
 """
@@ -59,6 +61,8 @@ async def get_alerts(
     min_risk: Optional[float] = Query(None, ge=0.0, le=1.0),
     min_anomaly: Optional[float] = Query(None, ge=0.0),
     is_mixing: Optional[bool] = Query(None),
+    is_peeling_chain: Optional[bool] = Query(None),
+    is_coinjoin: Optional[bool] = Query(None),
     cluster_id: Optional[int] = Query(None),
     search: Optional[str] = Query(None, max_length=100),
     db: AsyncSession = Depends(get_db),
@@ -90,11 +94,23 @@ async def get_alerts(
         # min_anomaly filter
         if min_anomaly is not None and rec.get("anomaly_score", 0.0) < min_anomaly:
             continue
-        # is_mixing filter
-        if is_mixing is not None:
-            rec_mixing = bool(rec.get("mixing_indicator", 0.0) > 0.0 or "CoinJoin" in str(rec.get("mixing_patterns", [])) or "peeling" in str(rec.get("mixing_patterns", [])).lower())
-            if rec_mixing != is_mixing:
-                continue
+        # Heuristic calculation
+        chain_hops = rec.get("chain_hops", 0) or 0
+        rec_peeling = chain_hops > 0
+        rec_mixing = bool(
+            rec.get("mixing_indicator", 0.0) > 0.0
+            or "CoinJoin" in str(rec.get("mixing_patterns", []))
+            or "peeling" in str(rec.get("mixing_patterns", [])).lower()
+        )
+        rec_coinjoin = rec_mixing and not rec_peeling
+
+        # Strict heuristic filtering
+        if is_peeling_chain is not None and rec_peeling != is_peeling_chain:
+            continue
+        if is_coinjoin is not None and rec_coinjoin != is_coinjoin:
+            continue
+        if is_mixing is not None and rec_mixing != is_mixing:
+            continue
         # cluster_id filter
         if cluster_id is not None and rec.get("cluster_id") != cluster_id:
             continue
@@ -156,7 +172,12 @@ async def get_alerts(
         mixing_patterns = rec.get("mixing_patterns", [])
         triggered_rules = rec.get("triggered_rules", [])
         chain_hops = rec.get("chain_hops", 0) or 0
-        is_peeling = chain_hops > 0
+        rec_peeling = chain_hops > 0
+        rec_mixing = bool(
+            rec.get("mixing_indicator", 0.0) > 0.0
+            or "CoinJoin" in str(rec.get("mixing_patterns", []))
+            or "peeling" in str(rec.get("mixing_patterns", [])).lower()
+        )
 
         seed_prox = rec.get("seed_wallet_proximity", 0.0) or 0.0
         is_seed_flag = seed_prox > 0.0 or bool(rec.get("is_seed", False))
@@ -175,9 +196,9 @@ async def get_alerts(
             risk_score=rec.get("risk_score"),
             composite_score=rec.get("composite_score", 0.0),
             verdict=rec.get("verdict", "LOW"),
-            is_mixing=bool(mixing_patterns) or bool(rec.get("mixing_indicator", 0.0) > 0.0),
-            is_peeling_chain=is_peeling,
-            chain_hops=chain_hops if is_peeling else None,
+            is_mixing=rec_mixing,
+            is_peeling_chain=rec_peeling,
+            chain_hops=chain_hops if rec_peeling else None,
             is_seed=is_seed_flag,
             seed_family=seed_family,
             triggered_rules=triggered_rules,

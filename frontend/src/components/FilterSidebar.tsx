@@ -1,18 +1,19 @@
 "use client";
 
+import React from "react";
 import { clsx } from "clsx";
 import { Filter, RotateCcw, X, Layers, Zap, Hash, Check } from "lucide-react";
 
-type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+export type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
-interface VerdictCounts {
+export interface VerdictCounts {
   CRITICAL: number;
   HIGH: number;
   MEDIUM: number;
   LOW: number;
 }
 
-interface Filters {
+export interface Filters {
   verdicts: Set<Verdict>;
   minAnomaly: number;
   isPeelingChain: boolean;
@@ -20,7 +21,7 @@ interface Filters {
   clusterId: string;
 }
 
-interface FilterSidebarProps {
+export interface FilterSidebarProps {
   filters: Filters;
   onChange: (filters: Filters) => void;
   filteredCount: number;
@@ -28,18 +29,44 @@ interface FilterSidebarProps {
   verdictCounts: VerdictCounts;
 }
 
-const VERDICT_STYLES: Record<Verdict, string> = {
-  CRITICAL: "pill-critical ring-1 ring-red-400/50 font-bold",
-  HIGH: "pill-high ring-1 ring-orange-400/50 font-bold",
-  MEDIUM: "pill-medium ring-1 ring-yellow-400/50 font-bold",
-  LOW: "pill-low ring-1 ring-emerald-400/50 font-bold",
-};
+interface VerdictVisualConfig {
+  activeCard: string;
+  unselectedCard: string;
+  unselectedDot: string;
+  activeDot: string;
+  isPulsing?: boolean;
+}
 
-const VERDICT_INDICATOR: Record<Verdict, string> = {
-  CRITICAL: "bg-red-600 ring-2 ring-red-200",
-  HIGH: "bg-orange-600 ring-2 ring-orange-200",
-  MEDIUM: "bg-amber-500 ring-2 ring-amber-200",
-  LOW: "bg-emerald-600 ring-2 ring-emerald-200",
+const VERDICT_CONFIG: Record<Verdict, VerdictVisualConfig> = {
+  CRITICAL: {
+    activeCard: "pill-critical ring-2 ring-red-400/70 font-bold shadow-xs",
+    unselectedCard:
+      "bg-white border-slate-200/90 text-slate-700 hover:border-red-200 hover:bg-red-50/20 shadow-2xs",
+    unselectedDot: "bg-red-500/80 ring-2 ring-red-200/60",
+    activeDot: "bg-red-600 ring-2 ring-red-300",
+    isPulsing: true,
+  },
+  HIGH: {
+    activeCard: "pill-high ring-2 ring-orange-400/70 font-bold shadow-xs",
+    unselectedCard:
+      "bg-white border-slate-200/90 text-slate-700 hover:border-orange-200 hover:bg-orange-50/20 shadow-2xs",
+    unselectedDot: "bg-orange-500/80 ring-2 ring-orange-200/60",
+    activeDot: "bg-orange-600 ring-2 ring-orange-300",
+  },
+  MEDIUM: {
+    activeCard: "pill-medium ring-2 ring-amber-400/70 font-bold shadow-xs",
+    unselectedCard:
+      "bg-white border-slate-200/90 text-slate-700 hover:border-amber-200 hover:bg-amber-50/20 shadow-2xs",
+    unselectedDot: "bg-amber-500/80 ring-2 ring-amber-200/60",
+    activeDot: "bg-amber-500 ring-2 ring-amber-300",
+  },
+  LOW: {
+    activeCard: "pill-low ring-2 ring-emerald-400/70 font-bold shadow-xs",
+    unselectedCard:
+      "bg-white border-slate-200/90 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/20 shadow-2xs",
+    unselectedDot: "bg-emerald-500/80 ring-2 ring-emerald-200/60",
+    activeDot: "bg-emerald-600 ring-2 ring-emerald-300",
+  },
 };
 
 export default function FilterSidebar({
@@ -77,61 +104,103 @@ export default function FilterSidebar({
     totalCount > 0 ? Math.min(100, Math.round((filteredCount / totalCount) * 100)) : 100;
 
   return (
-    <aside className="w-[270px] shrink-0 flex flex-col bg-white border-r border-slate-200/90 overflow-y-auto select-none">
+    <aside className="w-[280px] shrink-0 flex flex-col bg-white border-r border-slate-200/90 overflow-y-auto select-none">
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/90 bg-slate-50/80 sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <Filter className="w-3.5 h-3.5 text-slate-500" />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+      <div className="h-11 flex items-center justify-between px-3.5 border-b border-slate-200/90 bg-gradient-to-b from-slate-50/95 to-slate-100/75 sticky top-0 z-10 backdrop-blur-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center justify-center w-5.5 h-5.5 rounded-md bg-white border border-slate-200/90 text-slate-700 shadow-2xs shrink-0">
+            <Filter className="w-3 h-3 text-sky-700 stroke-[2.3]" />
+          </div>
+          <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-slate-800 truncate">
             Surveillance Filters
           </span>
           {hasActiveFilters && (
-            <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-sky-600 text-white text-[10px] font-bold">
+            <span className="flex items-center justify-center px-1.5 h-4.5 rounded-full bg-sky-600 text-white text-[9.5px] font-extrabold shadow-xs crypto-mono shrink-0">
               {activeFilterCount}
             </span>
           )}
         </div>
         {hasActiveFilters && (
           <button
+            type="button"
             onClick={resetAll}
-            className="flex items-center gap-1 text-[11px] font-semibold text-sky-600 hover:text-sky-800 transition-colors py-0.5 px-1.5 rounded hover:bg-sky-50"
+            className="tactile-btn-secondary flex items-center gap-1 text-[10.5px] font-semibold text-slate-700 hover:text-slate-900 transition-all py-0.5 px-2 rounded-md border border-slate-200/90 shadow-2xs active:scale-95 group cursor-pointer shrink-0"
             aria-label="Reset all filters"
           >
-            <RotateCcw className="w-3 h-3" />
+            <RotateCcw className="w-2.5 h-2.5 text-slate-500 group-hover:text-slate-800 group-hover:-rotate-90 transition-transform duration-200" />
             Reset
           </button>
         )}
       </div>
 
-      <div className="flex flex-col gap-5 p-4">
-        {/* Coverage Gauge Card */}
-        <div className="p-3 rounded-lg border border-slate-200/90 bg-slate-50/60 shadow-2xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-            <span className="text-[10.5px] uppercase font-semibold tracking-wider text-slate-400">
-              Matched Scope
-            </span>
-            <span className="crypto-mono text-xs font-bold text-slate-800">
-              {coveragePercent}%
+      <div className="flex flex-col gap-4.5 p-3.5">
+        {/* Coverage Gauge / Stream Telemetry Card */}
+        <div className="p-3 rounded-lg border border-slate-200/90 bg-gradient-to-b from-white via-slate-50/50 to-slate-100/50 shadow-card">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span
+                  className={clsx(
+                    "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                    hasActiveFilters ? "bg-sky-400" : "bg-emerald-400",
+                  )}
+                />
+                <span
+                  className={clsx(
+                    "relative inline-flex rounded-full h-2 w-2 ring-1.5",
+                    hasActiveFilters
+                      ? "bg-sky-500 ring-sky-200"
+                      : "bg-emerald-500 ring-emerald-200",
+                  )}
+                />
+              </span>
+              <span className="text-[10px] uppercase font-extrabold tracking-[0.14em] text-slate-600">
+                Stream Telemetry
+              </span>
+            </div>
+            <span
+              className={clsx(
+                "text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded border crypto-mono",
+                hasActiveFilters
+                  ? "bg-sky-50 text-sky-700 border-sky-200 shadow-2xs"
+                  : "bg-slate-100 text-slate-500 border-slate-200/90",
+              )}
+            >
+              {hasActiveFilters ? `${activeFilterCount} Active` : "Unfiltered"}
             </span>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden mb-2">
+
+          {/* Dual-tone gradient progress bar */}
+          <div className="w-full h-2 rounded-full bg-slate-200/80 p-0.5 border border-slate-300/40 overflow-hidden shadow-inner mb-2">
             <div
-              className="h-full bg-sky-600 rounded-full transition-all duration-300"
+              className="h-full rounded-full bg-gradient-to-r from-sky-500 via-teal-500 to-emerald-500 transition-all duration-300 shadow-xs"
               style={{ width: `${coveragePercent}%` }}
             />
           </div>
-          <div className="text-[11.5px] text-slate-600 crypto-mono">
-            Showing <span className="font-bold text-slate-900">{filteredCount.toLocaleString()}</span> of{" "}
-            <span className="text-slate-500">{totalCount.toLocaleString()}</span>
+
+          <div className="flex items-center justify-between text-[11px] crypto-mono">
+            <div className="text-slate-500 text-[10.5px]">
+              Scope:{" "}
+              <span className="font-bold text-slate-900 tabular-nums">
+                {filteredCount.toLocaleString()}
+              </span>{" "}
+              /{" "}
+              <span className="text-slate-600 tabular-nums">
+                {totalCount.toLocaleString()}
+              </span>
+            </div>
+            <span className="font-extrabold text-slate-800 bg-white border border-slate-200/90 rounded px-1.5 py-0.5 shadow-2xs tabular-nums text-[11px]">
+              {coveragePercent}%
+            </span>
           </div>
         </div>
 
-        {/* Risk Verdict Filter */}
+        {/* Risk Verdict Filter Matrix */}
         <div>
           <label className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
             <span>Risk Verdict</span>
             {filters.verdicts.size > 0 && (
-              <span className="text-[10px] font-semibold text-sky-600 normal-case tracking-normal">
+              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/80 px-1.5 py-0.2 rounded crypto-mono">
                 {filters.verdicts.size} selected
               </span>
             )}
@@ -139,39 +208,53 @@ export default function FilterSidebar({
           <div className="flex flex-col gap-1.5">
             {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as Verdict[]).map((v) => {
               const active = filters.verdicts.has(v);
+              const cfg = VERDICT_CONFIG[v];
               return (
                 <button
                   key={v}
                   id={`filter-verdict-${v.toLowerCase()}`}
                   onClick={() => toggleVerdict(v)}
                   className={clsx(
-                    "flex items-center justify-between w-full px-3 py-2 rounded-md text-xs font-medium border transition-all cursor-pointer",
-                    active
-                      ? VERDICT_STYLES[v]
-                      : "bg-white border-slate-200/90 text-slate-700 hover:border-slate-300 hover:bg-slate-50/70 shadow-2xs",
+                    "flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs transition-all cursor-pointer border",
+                    active ? cfg.activeCard : cfg.unselectedCard,
                   )}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2.5">
+                    {active && cfg.isPulsing ? (
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600 ring-2 ring-red-200" />
+                      </span>
+                    ) : (
+                      <span
+                        className={clsx(
+                          "w-2 h-2 rounded-full shrink-0 transition-all",
+                          active ? cfg.activeDot : cfg.unselectedDot,
+                        )}
+                      />
+                    )}
                     <span
                       className={clsx(
-                        "w-2 h-2 rounded-full shrink-0 transition-all",
-                        active ? VERDICT_INDICATOR[v] : "bg-slate-300",
+                        "font-semibold tracking-tight",
+                        active ? "text-current" : "text-slate-800",
                       )}
-                    />
-                    <span className="font-semibold">{v}</span>
+                    >
+                      {v}
+                    </span>
                   </span>
-                  <div className="flex items-center gap-1.5">
+
+                  <div className="flex items-center gap-2">
                     <span
                       className={clsx(
-                        "crypto-mono text-[11px] px-1.5 py-0.5 rounded",
+                        "crypto-mono text-[11px] px-1.5 py-0.5 rounded tabular-nums transition-colors",
                         active
-                          ? "bg-white/80 font-bold"
-                          : "bg-slate-100 text-slate-500 border border-slate-200/60 font-medium",
+                          ? "bg-white text-slate-900 border border-current/20 font-bold shadow-2xs"
+                          : "bg-slate-100 text-slate-600 border border-slate-200/70 font-medium",
                       )}
                     >
                       {verdictCounts[v].toLocaleString()}
                     </span>
-                    {active && <Check className="w-3 h-3 text-current stroke-[2.5]" />}
+                    {active && <Check className="w-3.5 h-3.5 text-current stroke-[2.5]" />}
                   </div>
                 </button>
               );
@@ -179,11 +262,11 @@ export default function FilterSidebar({
           </div>
         </div>
 
-        {/* Min Anomaly Score Slider */}
+        {/* Min Anomaly Score Range Slider & Presets */}
         <div>
           <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
             <span>Min Anomaly Score</span>
-            <span className="crypto-mono text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">
+            <span className="crypto-mono text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200/90 rounded px-1.5 py-0.5 shadow-2xs">
               ≥ {filters.minAnomaly.toFixed(2)}
             </span>
           </div>
@@ -199,12 +282,17 @@ export default function FilterSidebar({
               onChange={(e) =>
                 onChange({ ...filters, minAnomaly: parseFloat(e.target.value) })
               }
-              className="w-full custom-slider"
+              style={
+                {
+                  "--slider-track-bg": `linear-gradient(to right, #0284c7 0%, #0284c7 ${filters.minAnomaly * 100}%, #e2e8f0 ${filters.minAnomaly * 100}%, #e2e8f0 100%)`,
+                } as React.CSSProperties
+              }
+              className="w-full custom-slider cursor-pointer"
               aria-label="Minimum anomaly score threshold"
             />
           </div>
 
-          <div className="flex justify-between text-[10px] text-slate-400 crypto-mono mt-1.5 px-1">
+          <div className="flex justify-between text-[10px] text-slate-400 crypto-mono mt-1.5 px-1 font-medium">
             <span>0.00</span>
             <span>0.25</span>
             <span>0.50</span>
@@ -212,31 +300,38 @@ export default function FilterSidebar({
             <span>1.00</span>
           </div>
 
-          {/* Quick presets */}
-          <div className="grid grid-cols-4 gap-1 mt-2.5">
+          {/* Quick Presets Segmented Pills */}
+          <div className="grid grid-cols-4 gap-1 p-1 rounded-lg bg-slate-100 border border-slate-200/80 mt-2.5">
             {[
               { label: "All", val: 0 },
               { label: "0.25", val: 0.25 },
               { label: "0.50", val: 0.5 },
               { label: "0.75", val: 0.75 },
-            ].map(({ label, val }) => (
-              <button
-                key={label}
-                onClick={() => onChange({ ...filters, minAnomaly: val })}
-                className={clsx(
-                  "py-1 rounded text-[10px] crypto-mono font-medium border transition-colors cursor-pointer text-center",
-                  filters.minAnomaly === val
-                    ? "bg-sky-600 text-white border-sky-600 shadow-2xs font-semibold"
-                    : "bg-slate-50 text-slate-600 border-slate-200/90 hover:bg-white hover:border-slate-300",
-                )}
-              >
-                {label}
-              </button>
-            ))}
+            ].map(({ label, val }) => {
+              const isSelected = filters.minAnomaly === val;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => onChange({ ...filters, minAnomaly: val })}
+                  className={clsx(
+                    "py-1 rounded text-[10.5px] crypto-mono transition-all cursor-pointer text-center flex items-center justify-center gap-1",
+                    isSelected
+                      ? "bg-sky-600 text-white font-bold shadow-xs border border-sky-600"
+                      : "bg-white text-slate-600 font-medium border border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-2xs",
+                  )}
+                >
+                  {isSelected && (
+                    <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                  )}
+                  <span>{label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Heuristic Toggles */}
+        {/* Laundering Heuristics */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2.5">
             Laundering Heuristics
@@ -244,16 +339,18 @@ export default function FilterSidebar({
           <div className="flex flex-col gap-2">
             <HeuristicToggle
               id="filter-peeling-chain"
-              icon={<Layers className="w-3.5 h-3.5 text-orange-600" />}
-              label="Peeling Chains Only"
+              icon={<Layers className="w-4 h-4" />}
+              iconVariant="orange"
+              label="Peeling Chains"
               subtitle="Linear multi-hop peel transfers"
               checked={filters.isPeelingChain}
               onChange={(v) => onChange({ ...filters, isPeelingChain: v })}
             />
             <HeuristicToggle
               id="filter-coinjoin"
-              icon={<Zap className="w-3.5 h-3.5 text-amber-600" />}
-              label="CoinJoin Mixing Only"
+              icon={<Zap className="w-4 h-4" />}
+              iconVariant="amber"
+              label="CoinJoin Mixing"
               subtitle="Equal-output mixing rounds"
               checked={filters.isCoinJoin}
               onChange={(v) => onChange({ ...filters, isCoinJoin: v })}
@@ -261,32 +358,86 @@ export default function FilterSidebar({
           </div>
         </div>
 
-        {/* Cluster ID Search */}
+        {/* Cluster Partition Input & Quick Seed Chips */}
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
-            Cluster Partition
-          </label>
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
+            <span>Cluster Partition</span>
+            {filters.clusterId && (
+              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/90 rounded px-1.5 py-0.2 crypto-mono">
+                #{filters.clusterId}
+              </span>
+            )}
+          </div>
           <div className="relative">
-            <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-              <Hash className="w-3.5 h-3.5" />
+            <div
+              className={clsx(
+                "absolute left-2.5 top-1/2 -translate-y-1/2 transition-colors pointer-events-none",
+                filters.clusterId ? "text-sky-600" : "text-slate-400",
+              )}
+            >
+              <Hash className="w-3.5 h-3.5 stroke-[2.2]" />
             </div>
             <input
               id="filter-cluster-id"
               type="text"
-              placeholder="e.g. 14 or 9"
+              placeholder="e.g. 516 or 38"
               value={filters.clusterId}
-              onChange={(e) => onChange({ ...filters, clusterId: e.target.value })}
-              className="w-full h-8 pl-8 pr-7 text-xs border border-slate-200/90 rounded-md bg-white text-slate-800 crypto-mono placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 shadow-2xs"
+              onChange={(e) =>
+                onChange({ ...filters, clusterId: e.target.value.trim() })
+              }
+              className="w-full h-8.5 pl-8 pr-7 text-xs border border-slate-200/90 rounded-md bg-white text-slate-900 crypto-mono font-semibold placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-2xs transition-all"
             />
             {filters.clusterId && (
               <button
+                type="button"
                 onClick={() => onChange({ ...filters, clusterId: "" })}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-0.5 rounded"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-0.5 rounded hover:bg-slate-100 cursor-pointer"
                 aria-label="Clear cluster ID"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
+          </div>
+
+          {/* Quick-select seed partition chips */}
+          <div className="flex items-center gap-1.5 mt-2">
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              Seeds:
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...filters,
+                  clusterId: filters.clusterId === "516" ? "" : "516",
+                })
+              }
+              className={clsx(
+                "px-2 py-0.5 rounded text-[10.5px] crypto-mono border transition-all cursor-pointer",
+                filters.clusterId === "516"
+                  ? "bg-sky-50 text-sky-700 border-sky-300 font-bold shadow-2xs"
+                  : "bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-white hover:border-slate-300 font-medium",
+              )}
+            >
+              #516 Prime
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...filters,
+                  clusterId: filters.clusterId === "38" ? "" : "38",
+                })
+              }
+              className={clsx(
+                "px-2 py-0.5 rounded text-[10.5px] crypto-mono border transition-all cursor-pointer",
+                filters.clusterId === "38"
+                  ? "bg-sky-50 text-sky-700 border-sky-300 font-bold shadow-2xs"
+                  : "bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-white hover:border-slate-300 font-medium",
+              )}
+            >
+              #38 Core
+            </button>
           </div>
         </div>
       </div>
@@ -301,6 +452,7 @@ export default function FilterSidebar({
 interface HeuristicToggleProps {
   id: string;
   icon: React.ReactNode;
+  iconVariant: "orange" | "amber";
   label: string;
   subtitle: string;
   checked: boolean;
@@ -310,25 +462,43 @@ interface HeuristicToggleProps {
 function HeuristicToggle({
   id,
   icon,
+  iconVariant,
   label,
   subtitle,
   checked,
   onChange,
 }: HeuristicToggleProps) {
+  const isOrange = iconVariant === "orange";
+
   return (
     <label
       htmlFor={id}
       className={clsx(
-        "flex items-start justify-between p-2.5 rounded-lg border transition-all cursor-pointer select-none",
+        "flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer select-none",
         checked
-          ? "bg-sky-50/60 border-sky-200 shadow-2xs"
-          : "bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50",
+          ? isOrange
+            ? "bg-gradient-to-r from-orange-50/70 via-orange-50/40 to-white border-orange-300 shadow-2xs ring-1 ring-orange-200/60"
+            : "bg-gradient-to-r from-amber-50/70 via-amber-50/40 to-white border-amber-300 shadow-2xs ring-1 ring-amber-200/60"
+          : "bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs",
       )}
     >
-      <div className="flex items-start gap-2.5 min-w-0 pr-2">
-        <div className="mt-0.5 shrink-0">{icon}</div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-xs font-semibold text-slate-800 leading-tight">
+      <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+        <div
+          className={clsx(
+            "w-7.5 h-7.5 rounded-md flex items-center justify-center shrink-0 transition-colors",
+            checked
+              ? isOrange
+                ? "bg-orange-500 text-white shadow-xs"
+                : "bg-amber-500 text-white shadow-xs"
+              : isOrange
+                ? "bg-orange-50 text-orange-600 border border-orange-200/70"
+                : "bg-amber-50 text-amber-600 border border-amber-200/70",
+          )}
+        >
+          {icon}
+        </div>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-xs font-bold text-slate-800 leading-tight">
             {label}
           </span>
           <span className="text-[10.5px] text-slate-400 leading-normal mt-0.5">
@@ -337,7 +507,7 @@ function HeuristicToggle({
         </div>
       </div>
 
-      <div className="relative shrink-0 mt-0.5">
+      <div className="relative shrink-0">
         <input
           id={id}
           type="checkbox"
@@ -348,7 +518,11 @@ function HeuristicToggle({
         <div
           className={clsx(
             "w-8 h-4.5 rounded-full transition-colors",
-            checked ? "bg-sky-600" : "bg-slate-200",
+            checked
+              ? isOrange
+                ? "bg-orange-500 shadow-xs"
+                : "bg-amber-500 shadow-xs"
+              : "bg-slate-200",
           )}
         />
         <div

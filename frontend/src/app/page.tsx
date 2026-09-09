@@ -90,8 +90,13 @@ export default function SurveillanceDashboard() {
         ? ([...filters.verdicts][0] as Verdict)
         : null,
     min_anomaly: filters.minAnomaly > 0 ? filters.minAnomaly : null,
+    // Strict heuristic isolation:
+    is_peeling_chain:
+      filters.isPeelingChain && !filters.isCoinJoin ? true : null,
+    is_coinjoin:
+      filters.isCoinJoin && !filters.isPeelingChain ? true : null,
     is_mixing:
-      filters.isCoinJoin || filters.isPeelingChain ? true : null,
+      filters.isPeelingChain && filters.isCoinJoin ? true : null,
     cluster_id: filters.clusterId ? parseInt(filters.clusterId) : null,
     search: searchValue || null,
   };

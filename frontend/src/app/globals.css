@@ -217,7 +217,14 @@ input[type="range"].custom-slider:focus {
 
 input[type="range"].custom-slider::-webkit-slider-runnable-track {
   height: 6px;
-  background: #e2e8f0;
+  background: var(--slider-track-bg, #e2e8f0);
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+}
+
+input[type="range"].custom-slider::-moz-range-track {
+  height: 6px;
+  background: var(--slider-track-bg, #e2e8f0);
   border-radius: 9999px;
   border: 1px solid #cbd5e1;
 }
