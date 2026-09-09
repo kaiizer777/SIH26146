@@ -90,6 +90,9 @@ export default function GraphCanvas({
   const [frozen, setFrozen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<SimNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const hoveredNodeRef = useRef<SimNode | null>(null);
+  hoveredNodeRef.current = hoveredNode;
   const [nodeFilter, setNodeFilter] = useState<"all" | "high" | "seeds" | "wallets" | "tx" | "ip">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
@@ -232,6 +235,35 @@ export default function GraphCanvas({
     });
   }, []);
 
+  // Calculate dynamic card position adjacent to focused node with zero overlap
+  const updateHoverCardPos = useCallback((d: SimNode) => {
+    if (!svgRef.current) return;
+    const svgEl = svgRef.current;
+    const transform = d3.zoomTransform(svgEl);
+    const nx = transform.applyX(d.x ?? 0);
+    const ny = transform.applyY(d.y ?? 0);
+    const cw = svgEl.clientWidth || 1000;
+    const ch = svgEl.clientHeight || 700;
+    const cardW = 380;
+    const cardH = 224;
+
+    // Place horizontally adjacent to node (28px offset from center).
+    // Node radius is <= 15px, ensuring >= 13px clearance from node boundary (zero overlap).
+    let left = nx + 28;
+    if (left + cardW > cw - 16) {
+      left = nx - cardW - 28;
+    }
+    if (left < 16) {
+      left = Math.max(16, Math.min(cw - cardW - 16, nx - cardW / 2));
+    }
+
+    // Center vertically on node, keeping clear of top command bar (56px) and bottom legend (50px)
+    let top = ny - cardH / 2;
+    top = Math.max(56, Math.min(ch - cardH - 50, top));
+
+    setHoverPos({ x: left, y: top });
+  }, []);
+
   // -------------------------------------------------------------------------
   // Main D3 Force Graph Simulation & Rendering
   // -------------------------------------------------------------------------
@@ -283,7 +315,15 @@ export default function GraphCanvas({
       }
     });
 
-    const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([0.1, 8]).on("zoom", (ev) => g.attr("transform", ev.transform));
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 8])
+      .on("zoom", (ev) => {
+        g.attr("transform", ev.transform);
+        if (hoveredNodeRef.current) {
+          updateHoverCardPos(hoveredNodeRef.current);
+        }
+      });
     zoomRef.current = zoom;
     svg.call(zoom);
 
@@ -440,9 +480,18 @@ export default function GraphCanvas({
 
     // Event handlers
     nodeSel
-      .on("mouseenter", (_, d) => setHoveredNode(d))
-      .on("mouseleave", () => setHoveredNode(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); setSelectedNode(d); });
+      .on("mouseenter", (_, d) => {
+        setHoveredNode(d);
+        updateHoverCardPos(d);
+      })
+      .on("mouseleave", () => {
+        setHoveredNode(null);
+        setHoverPos(null);
+      })
+      .on("click", (ev, d) => {
+        ev.stopPropagation();
+        setSelectedNode(d);
+      });
 
     // Drag behavior
     const drag = d3.drag<SVGGElement, SimNode>()
@@ -659,66 +708,128 @@ export default function GraphCanvas({
       </div>
 
       {/* ------------------------------------------------------------------- */}
-      {/* Hover Glass HUD Tooltip (Dark Glassmorphic Surveillance HUD) */}
+      {/* Hover Glass HUD Tooltip (Enlarged, Positioned Adjacent to Focused Node) */}
       {/* ------------------------------------------------------------------- */}
       {hoveredNode && !selectedNode && (
-        <div className="absolute top-16 right-3 z-30 pointer-events-none w-76 rounded-xl bg-slate-950/95 text-white backdrop-blur-md border border-slate-700/80 p-3.5 shadow-2xl transition-all">
+        <div
+          style={
+            hoverPos
+              ? { left: `${hoverPos.x}px`, top: `${hoverPos.y}px` }
+              : { right: "16px", top: "64px" }
+          }
+          className="absolute z-30 pointer-events-none w-[380px] rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out"
+        >
+          {/* Header: Type Badge + Threat Tier Tag */}
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400">
-                {hoveredNode.type.toUpperCase()}
-              </span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-extrabold uppercase tracking-widest text-sky-400">
+                {hoveredNode.type === "wallet" ? (
+                  <Activity className="w-3 h-3 text-sky-400" />
+                ) : hoveredNode.type === "ip" ? (
+                  <Globe className="w-3 h-3 text-sky-400" />
+                ) : (
+                  <Layers className="w-3 h-3 text-sky-400" />
+                )}
+                <span>{hoveredNode.type}</span>
+              </div>
               {hoveredNode.country && (
-                <span className="px-1.5 py-0.2 rounded bg-slate-800 text-sky-300 text-[9px] crypto-mono">
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-sky-300 text-[9.5px] crypto-mono font-bold">
                   {hoveredNode.country}
                 </span>
               )}
             </div>
-            {hoveredNode.is_seed && (
-              <span className="px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-extrabold tracking-wide animate-pulse">
+
+            {/* Severity Pill */}
+            {hoveredNode.is_seed ? (
+              <span className="px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-extrabold tracking-wider animate-pulse shadow-xs">
                 ILLICIT SEED
+              </span>
+            ) : (hoveredNode.risk_score ?? 0) >= 0.8 ? (
+              <span className="px-2 py-0.5 rounded-full bg-red-950/90 border border-red-500/80 text-red-200 text-[10px] font-extrabold tracking-wider">
+                CRITICAL THREAT
+              </span>
+            ) : (hoveredNode.risk_score ?? 0) >= 0.6 ? (
+              <span className="px-2 py-0.5 rounded-full bg-orange-950/90 border border-orange-500/80 text-orange-200 text-[10px] font-bold tracking-wider">
+                HIGH RISK
+              </span>
+            ) : (hoveredNode.risk_score ?? 0) >= 0.4 ? (
+              <span className="px-2 py-0.5 rounded-full bg-amber-950/90 border border-amber-500/80 text-amber-200 text-[10px] font-bold tracking-wider">
+                MEDIUM RISK
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 text-[10px] font-bold tracking-wider">
+                LOW RISK
               </span>
             )}
           </div>
 
-          <p className="crypto-mono text-xs font-bold text-slate-100 truncate mb-2.5 select-all">
-            {hoveredNode.id}
-          </p>
+          {/* Node Identifier */}
+          <div className="mt-2.5 mb-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mb-1">
+              Target Identifier
+            </span>
+            <p className="crypto-mono text-xs font-bold text-slate-100 break-all select-all leading-relaxed">
+              {hoveredNode.id}
+            </p>
+          </div>
 
-          <div className="space-y-1.5 pt-2 border-t border-slate-800/80 text-[10.5px] crypto-mono">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-400">Risk Score</span>
-              <div className="flex items-center gap-2">
-                <div className="w-16 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                  <div
-                    className={clsx(
-                      "h-full rounded-full",
-                      (hoveredNode.risk_score ?? 0) >= 0.8
-                        ? "bg-red-500"
-                        : (hoveredNode.risk_score ?? 0) >= 0.5
-                        ? "bg-amber-500"
-                        : "bg-emerald-500",
-                    )}
-                    style={{ width: `${Math.round((hoveredNode.risk_score ?? 0) * 100)}%` }}
-                  />
-                </div>
-                <span className={clsx("font-extrabold", (hoveredNode.risk_score ?? 0) >= 0.8 ? "text-red-400" : "text-emerald-400")}>
+          {/* Telemetry Metrics Grid */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800/80">
+              <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-1">
+                Risk Score
+              </span>
+              <div className="flex items-baseline gap-2">
+                <span
+                  className={clsx(
+                    "crypto-mono text-base font-extrabold",
+                    (hoveredNode.risk_score ?? 0) >= 0.8
+                      ? "text-red-400"
+                      : (hoveredNode.risk_score ?? 0) >= 0.5
+                      ? "text-amber-400"
+                      : "text-emerald-400",
+                  )}
+                >
                   {hoveredNode.risk_score != null ? hoveredNode.risk_score.toFixed(3) : "0.000"}
                 </span>
+                <span className="text-[10px] text-slate-400 font-medium">/ 1.0</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden mt-1.5">
+                <div
+                  className={clsx(
+                    "h-full rounded-full transition-all",
+                    (hoveredNode.risk_score ?? 0) >= 0.8
+                      ? "bg-red-500"
+                      : (hoveredNode.risk_score ?? 0) >= 0.5
+                      ? "bg-amber-500"
+                      : "bg-emerald-500",
+                  )}
+                  style={{ width: `${Math.round((hoveredNode.risk_score ?? 0) * 100)}%` }}
+                />
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-slate-400">Cluster Degree</span>
-              <span className="font-bold text-slate-200">
+            <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800/80">
+              <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-1">
+                Cluster Degree
+              </span>
+              <span className="crypto-mono text-base font-extrabold text-slate-100 block">
                 {(inOutDegree.get(hoveredNode.id)?.in ?? 0) + (inOutDegree.get(hoveredNode.id)?.out ?? 0)} Edges
+              </span>
+              <span className="text-[9.5px] text-slate-400 crypto-mono block mt-1">
+                ↓ {inOutDegree.get(hoveredNode.id)?.in ?? 0} in • ↑ {inOutDegree.get(hoveredNode.id)?.out ?? 0} out
               </span>
             </div>
           </div>
 
-          <p className="text-[9.5px] text-slate-400 mt-2.5 italic text-right">
-            Click node to pin forensic dossier
-          </p>
+          {/* Action Footer */}
+          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+            <span className="flex items-center gap-1.5 text-sky-400 font-semibold">
+              <Shield className="w-3 h-3 stroke-[2.2]" />
+              <span>Click node to pin forensic inspector</span>
+            </span>
+            <span className="crypto-mono text-slate-400">Cluster #{clusterId}</span>
+          </div>
         </div>
       )}
 
