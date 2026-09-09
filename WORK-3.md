@@ -300,7 +300,7 @@ $$\text{Score} = \text{Reconstruction Error (MSE)} + \beta \cdot \text{KL Diverg
 
 - [ ] Implement `VariationalAutoencoder` PyTorch class with reparameterization in `train_autoencoder.py`
 - [ ] Update training loop with ELBO loss (MSE + KL-div)
-- [ ] Save upgraded weights to `models/autoencoder.pt` and `models/scaler.pkl`
+- [ ] Save upgraded weights to `models/vae_anomaly.pt` and `models/vae_scaler.pkl`
 - [ ] Update `backend/scripts/explain_autoencoder.py` to support VAE forward pass for SHAP `GradientExplainer`
 
 ---
@@ -319,7 +319,7 @@ $$\text{Score} = \text{Reconstruction Error (MSE)} + \beta \cdot \text{KL Diverg
 
 - [ ] Implement `RelationalGNN` PyTorch Geometric model class in `backend/app/ml/graphsage.py`
 - [ ] Update `train_graphsage.py` to extract multi-relational `edge_type` tensor alongside `edge_index`
-- [ ] Train RGCN model on CPU (<60s) and export weights to `models/graphsage.pt`
+- [ ] Train RGCN model on CPU (<60s) and export weights to `models/rgcn_risk.pt` and `models/rgcn_address_map.pkl`
 
 ---
 
@@ -348,8 +348,8 @@ $$\text{Score} = \text{Reconstruction Error (MSE)} + \beta \cdot \text{KL Diverg
 - [ ] `11.5` `EntityDrawer.tsx` — provisional mode renders · pre-indexed wallets unaffected
 
 ### Stage 3: Model Architecture Upgrade (VAE & RGCN)
-- [ ] `ML-1` `train_autoencoder.py` — VAE architecture + ELBO loss implementation
-- [ ] `ML-2` `graphsage.py` & `train_graphsage.py` — Relational GNN (`RGCNConv`) with multi-relation edge types
+- [ ] `ML-1` `train_autoencoder.py` — VAE architecture + ELBO loss implementation (`models/vae_anomaly.pt`, `models/vae_scaler.pkl`)
+- [ ] `ML-2` `graphsage.py` & `train_graphsage.py` — Relational GNN (`RGCNConv`) with multi-relation edge types (`models/rgcn_risk.pt`, `models/rgcn_address_map.pkl`)
 - [ ] `ML-3` Retrain models on synthetic + Ransomwhere dataset (<60s on CPU) and export `.pt`/`.pkl`
 - [ ] `ML-4` Verify SHAP + GNNExplainer compatibility and run full test suite with 0 regressions
 
