@@ -45,11 +45,11 @@ Follow this sequential order to avoid context switching or editing the same file
 │  2.4 11.4: frontend/src/components/IngestModal.tsx (auto-sync call)  │
 │  2.5 11.5: frontend/src/components/EntityDrawer.tsx (provisional UI) │
 ├────────────────────────────────────────────────────────────────────────┤
-│ STAGE 3: MODEL UPGRADE — VAE & RELATIONAL GNN (SOTA Elevation)         │
-│  3.1 ML-1: backend/scripts/train_autoencoder.py (VAE with ELBO Loss)   │
-│  3.2 ML-2: backend/app/ml/graphsage.py & train script (Relational GNN) │
-│  3.3 ML-3: Retrain & regenerate .pt/.pkl artifacts (~60s CPU run)      │
-│  3.4 ML-4: Verify SHAP & GNNExplainer XAI compatibility                │
+│ STAGE 3: MODEL UPGRADE — DUAL TRANSFORMER ARCHITECTURE (SOTA ELEVATION)│
+│  3.1 ML-1: FT-Transformer for Tabular Anomaly Detection                │
+│  3.2 ML-2: Multi-Head Relational Graph Transformer for Risk Proximity  │
+│  3.3 ML-3: Fast CPU Retraining & Export (models/ft_*, models/graph_*)  │
+│  3.4 ML-4: Attention Heatmap Extraction & Full Pipeline Verification   │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -275,58 +275,56 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 ---
 
 ## ─────────────────────────────────────────
-## STAGE 3 — MODEL ARCHITECTURE UPGRADE (SOTA ELEVATION)
+## STAGE 3 — MODEL ARCHITECTURE UPGRADE (DUAL TRANSFORMER SOTA)
 ## ─────────────────────────────────────────
 
-**Objective:** Upgrade core DL models from baseline (MLP Autoencoder + Homogeneous GraphSAGE) to state-of-the-art production architectures (**Variational Autoencoder with ELBO Loss** + **Relational Graph Neural Network RGCN**) while preserving 100% of pipeline contracts, SHAP explainability, and $<10\text{ms}$ CPU inference.
+**Objective:** Upgrade core models to an end-to-end **Dual Transformer** deep learning architecture (**FT-Transformer** for tabular anomaly detection + **Multi-Head Relational Graph Transformer** for topological risk propagation). Maintains $<10\text{ms}$ CPU inference on Acer Aspire Lite, ultra-compact disk storage ($<5\text{MB}$ total), native attention heatmaps, and 100% pipeline compatibility.
 
 ---
 
-### ML-1 — Tabular Variational Autoencoder (VAE) with Gaussian Priors & ELBO Loss
+### ML-1 — Tabular FT-Transformer (Feature Tokenizer Transformer)
 
 **File:** [`backend/scripts/train_autoencoder.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/train_autoencoder.py) & [`backend/scripts/explain_autoencoder.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/explain_autoencoder.py)
 
 **Mathematical Formulation:**
-- Encoder outputs mean $\mu$ and log-variance $\log(\sigma^2)$ of latent space $Z \in \mathbb{R}^{16}$.
-- Reparameterization trick: $Z = \mu + \epsilon \odot \sigma$ where $\epsilon \sim \mathcal{N}(0, I)$.
-- Decoder reconstructs $\hat{X} \in \mathbb{R}^{18}$ from $Z$.
-- **Loss function (ELBO):**
-  $$\mathcal{L}_{\text{VAE}} = \text{MSE}(X, \hat{X}) + \beta \cdot \text{KL}\left(\mathcal{N}(\mu, \sigma^2) \,\|\, \mathcal{N}(0, I)\right)$$
-  $$\text{KL Loss} = -\frac{1}{2} \sum \left( 1 + \log(\sigma^2) - \mu^2 - \sigma^2 \right)$$
-  (with annealing factor $\beta = 0.001$ to balance reconstruction precision with prior regularization).
+- **Feature Tokenization:** Each of the 18 tabular features $x_i$ is projected into embedding space $e_i = x_i W_i + b_i \in \mathbb{R}^{32}$.
+- **Prepended `[CLS]` Token:** $E = [e_{\text{cls}}, e_1, e_2, \dots, e_{18}] \in \mathbb{R}^{19 \times 32}$.
+- **Multi-Head Self-Attention:** 2 Transformer Encoder layers ($N_{\text{heads}}=4$, $d_{\text{model}}=32$, $d_{\text{ff}}=64$, dropout=0.1).
+  $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
+- **Reconstruction / Anomaly Head:** Linear projection from `[CLS]` token output to reconstruct normalized input tensor $\hat{X} \in \mathbb{R}^{18}$.
+- **Anomaly Score:** Normalized Reconstruction MSE with native cross-feature attention weights.
+- **Weights File:** `models/ft_transformer_anomaly.pt` (~300–500 KB)
+- **Scaler File:** `models/ft_scaler.pkl` (~2 KB)
 
-**Anomaly Score:**
-$$\text{Score} = \text{Reconstruction Error (MSE)} + \beta \cdot \text{KL Divergence}$$
-
-- [ ] Implement `VariationalAutoencoder` PyTorch class with reparameterization in `train_autoencoder.py`
-- [ ] Update training loop with ELBO loss (MSE + KL-div)
-- [ ] Save upgraded weights to `models/vae_anomaly.pt` and `models/vae_scaler.pkl`
-- [ ] Update `backend/scripts/explain_autoencoder.py` to support VAE forward pass for SHAP `GradientExplainer`
+- [ ] Implement `FTTransformerAnomaly` PyTorch model class with Feature Tokenizer and Multi-Head Attention in `train_autoencoder.py`
+- [ ] Train on synthetic dataset (<30s CPU) and export weights to `models/ft_transformer_anomaly.pt` and `models/ft_scaler.pkl`
+- [ ] Update `backend/scripts/explain_autoencoder.py` to extract feature attention matrices alongside SHAP values
 
 ---
 
-### ML-2 — Multi-Relational Graph Neural Network (RGCN)
+### ML-2 — Multi-Head Relational Graph Transformer (`TransformerConv`)
 
 **File:** [`backend/app/ml/graphsage.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/ml/graphsage.py) & [`backend/scripts/train_graphsage.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/train_graphsage.py)
 
-**Relational Formulation:**
-- Distinguishes relation types across Bitcoin graph topology:
-  - Relation 0: `CO_SPEND` (deterministic entity cluster link)
-  - Relation 1: `TRANSFERRED_TO` / `TX_FLOW` (value movement)
-  - Relation 2: `PEELING_CHAIN` (obfuscation hop)
-- Layer definition: `torch_geometric.nn.RGCNConv(in_channels, out_channels, num_relations=3)`
-- Preserves Focal Loss ($\gamma = 2.0$, $\alpha = \text{neg/pos}$) for extreme class imbalance.
+**Relational Graph Attention Formulation:**
+- Replaces static neighbor aggregation with Multi-Head Self-Attention over graph topology using `torch_geometric.nn.TransformerConv`:
+  $$h_i^{(l+1)} = W_1 h_i^{(l)} + \sum_{j \in \mathcal{N}(i)} \alpha_{i,j} W_2 h_j^{(l)}$$
+  $$\alpha_{i,j} = \text{softmax}_j \left( \frac{(W_3 h_i)^T (W_4 h_j + W_e e_{i,j})}{\sqrt{d}} \right)$$
+- **Multi-Relation Edge Encoding:** Injects edge types (`CO_SPEND`, `TRANSFERRED_TO`, `PEELING_CHAIN`) as relational edge embeddings $W_e e_{i,j}$.
+- **Loss:** Focal Loss ($\gamma = 2.0$, $\alpha = \text{neg/pos}$) for extreme class imbalance.
+- **Weights File:** `models/graph_transformer_risk.pt` (~500 KB – 1.2 MB)
+- **Lookup File:** `models/graph_address_map.pkl` (~1.5 MB – 2.5 MB)
 
-- [ ] Implement `RelationalGNN` PyTorch Geometric model class in `backend/app/ml/graphsage.py`
-- [ ] Update `train_graphsage.py` to extract multi-relational `edge_type` tensor alongside `edge_index`
-- [ ] Train RGCN model on CPU (<60s) and export weights to `models/rgcn_risk.pt` and `models/rgcn_address_map.pkl`
+- [ ] Implement `RelationalGraphTransformer` PyTorch Geometric model class using `TransformerConv` in `backend/app/ml/graphsage.py`
+- [ ] Update `train_graphsage.py` to train Graph Transformer on CPU (<60s) with edge features
+- [ ] Export weights to `models/graph_transformer_risk.pt` and lookup map to `models/graph_address_map.pkl`
 
 ---
 
 ### ML-3 — Retrain & Verify Pipeline Invariants
 
-- [ ] Run `python backend/scripts/train_autoencoder.py` → verify anomaly scores calibrate cleanly to $[0, 1]$
-- [ ] Run `python backend/scripts/train_graphsage.py` → verify test set F1 $\ge 0.85$ and risk scores populate PostgreSQL + Neo4j
+- [ ] Run `python backend/scripts/train_autoencoder.py` → verify FT-Transformer anomaly scores calibrate cleanly to $[0, 1]$ in PostgreSQL
+- [ ] Run `python backend/scripts/train_graphsage.py` → verify Graph Transformer test set F1 $\ge 0.88$ and risk scores populate PostgreSQL + Neo4j
 - [ ] Run `python backend/scripts/build_evidence_trails.py` → verify composite scores and plain-English narratives update seamlessly
 - [ ] Verify `pytest backend/tests/` passes 100% with 0 regressions
 
@@ -347,11 +345,11 @@ $$\text{Score} = \text{Reconstruction Error (MSE)} + \beta \cdot \text{KL Diverg
 - [ ] `11.4` `IngestModal.tsx` — auto-calls sync after SUCCESS with try/catch fallback
 - [ ] `11.5` `EntityDrawer.tsx` — provisional mode renders · pre-indexed wallets unaffected
 
-### Stage 3: Model Architecture Upgrade (VAE & RGCN)
-- [ ] `ML-1` `train_autoencoder.py` — VAE architecture + ELBO loss implementation (`models/vae_anomaly.pt`, `models/vae_scaler.pkl`)
-- [ ] `ML-2` `graphsage.py` & `train_graphsage.py` — Relational GNN (`RGCNConv`) with multi-relation edge types (`models/rgcn_risk.pt`, `models/rgcn_address_map.pkl`)
-- [ ] `ML-3` Retrain models on synthetic + Ransomwhere dataset (<60s on CPU) and export `.pt`/`.pkl`
-- [ ] `ML-4` Verify SHAP + GNNExplainer compatibility and run full test suite with 0 regressions
+### Stage 3: Model Architecture Upgrade (Dual Transformer SOTA)
+- [ ] `ML-1` `train_autoencoder.py` — FT-Transformer implementation (`models/ft_transformer_anomaly.pt`, `models/ft_scaler.pkl`)
+- [ ] `ML-2` `graphsage.py` & `train_graphsage.py` — Multi-Head Relational Graph Transformer (`models/graph_transformer_risk.pt`, `models/graph_address_map.pkl`)
+- [ ] `ML-3` Retrain models on synthetic + Ransomwhere dataset (<60s on CPU) and export `.pt`/`.pkl` artifacts
+- [ ] `ML-4` Verify Attention Heatmaps + SHAP + GNNExplainer compatibility and run full test suite with 0 regressions
 
 ---
 
