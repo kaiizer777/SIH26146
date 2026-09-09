@@ -50,6 +50,12 @@ Follow this sequential order to avoid context switching or editing the same file
 │  3.2 ML-2: Multi-Head Relational Graph Transformer for Risk Proximity  │
 │  3.3 ML-3: Fast CPU Retraining & Export (models/ft_*, models/graph_*)  │
 │  3.4 ML-4: Attention Heatmap Extraction & Full Pipeline Verification   │
+├────────────────────────────────────────────────────────────────────────┤
+│ STAGE 4: JURY FLEX & ADVANCED FORENSIC XAI VISUALIZATIONS [STRETCH]    │
+│  4.1 FLEX-1: Feature Attention Heatmap Tab in EntityDrawer (18x18 Grid)│
+│  4.2 FLEX-2: Multi-Head Relational Attention Edge Glow in GraphCanvas  │
+│  4.3 FLEX-3: Model Provenance & Live Architecture Chip in TopNav/Drawer│
+│  4.4 FLEX-4: Court-Admissible Sec 65B Dossier Export (SHA-256 + GeoIP) │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -275,7 +281,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 ---
 
 ## ─────────────────────────────────────────
-## STAGE 3 — MODEL ARCHITECTURE UPGRADE (DUAL TRANSFORMER SOTA)
+## STAGE 3 — MODEL ARCHITECTURE UPGRADE (DUAL TRANSFORMER SOTA) [Difficulty: High | Complexity: High]
 ## ─────────────────────────────────────────
 
 **Objective:** Upgrade core models to an end-to-end **Dual Transformer** deep learning architecture (**FT-Transformer** for tabular anomaly detection + **Multi-Head Relational Graph Transformer** for topological risk propagation). Maintains $<10\text{ms}$ CPU inference on Acer Aspire Lite, ultra-compact disk storage ($<5\text{MB}$ total), native attention heatmaps, and 100% pipeline compatibility.
@@ -284,7 +290,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 
 ### ML-1 — Tabular FT-Transformer (Feature Tokenizer Transformer)
 
-**File:** [`backend/scripts/train_autoencoder.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/train_autoencoder.py) & [`backend/scripts/explain_autoencoder.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/explain_autoencoder.py)
+**Files:** [`backend/app/ml/ft_transformer.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/ml/ft_transformer.py) (new architecture) & [`backend/scripts/train_autoencoder.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/train_autoencoder.py) / [`backend/scripts/explain_autoencoder.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/explain_autoencoder.py)
 
 **Mathematical Formulation:**
 - **Feature Tokenization:** Each of the 18 tabular features $x_i$ is projected into embedding space $e_i = x_i W_i + b_i \in \mathbb{R}^{32}$.
@@ -293,31 +299,32 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
   $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
 - **Reconstruction / Anomaly Head:** Linear projection from `[CLS]` token output to reconstruct normalized input tensor $\hat{X} \in \mathbb{R}^{18}$.
 - **Anomaly Score:** Normalized Reconstruction MSE with native cross-feature attention weights.
-- **Weights File:** `models/ft_transformer_anomaly.pt` (~300–500 KB)
-- **Scaler File:** `models/ft_scaler.pkl` (~2 KB)
+- **Weights File:** `data/models/ft_transformer_YYYYMMDD.pt` (~300–500 KB)
+- **Scaler File:** `data/models/ft_scaler_YYYYMMDD.pkl` (~2 KB)
+- **Threshold File:** `data/models/ft_threshold_YYYYMMDD.json`
 
-- [ ] Implement `FTTransformerAnomaly` PyTorch model class with Feature Tokenizer and Multi-Head Attention in `train_autoencoder.py`
-- [ ] Train on synthetic dataset (<30s CPU) and export weights to `models/ft_transformer_anomaly.pt` and `models/ft_scaler.pkl`
+- [ ] Create `backend/app/ml/ft_transformer.py` implementing `FTTransformerAnomaly` PyTorch model class
+- [ ] Train on synthetic dataset (<30s CPU) and export weights to `data/models/ft_transformer_*.pt`, `ft_scaler_*.pkl`, `ft_threshold_*.json`
 - [ ] Update `backend/scripts/explain_autoencoder.py` to extract feature attention matrices alongside SHAP values
 
 ---
 
 ### ML-2 — Multi-Head Relational Graph Transformer (`TransformerConv`)
 
-**File:** [`backend/app/ml/graphsage.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/ml/graphsage.py) & [`backend/scripts/train_graphsage.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/train_graphsage.py)
+**Files:** [`backend/app/ml/graph_transformer.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/ml/graph_transformer.py) (new architecture) & [`backend/scripts/train_graphsage.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/train_graphsage.py) / [`backend/scripts/explain_graphsage.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/explain_graphsage.py)
 
 **Relational Graph Attention Formulation:**
 - Replaces static neighbor aggregation with Multi-Head Self-Attention over graph topology using `torch_geometric.nn.TransformerConv`:
   $$h_i^{(l+1)} = W_1 h_i^{(l)} + \sum_{j \in \mathcal{N}(i)} \alpha_{i,j} W_2 h_j^{(l)}$$
   $$\alpha_{i,j} = \text{softmax}_j \left( \frac{(W_3 h_i)^T (W_4 h_j + W_e e_{i,j})}{\sqrt{d}} \right)$$
-- **Multi-Relation Edge Encoding:** Injects edge types (`CO_SPEND`, `TRANSFERRED_TO`, `PEELING_CHAIN`) as relational edge embeddings $W_e e_{i,j}$.
+- **Multi-Relation Edge Encoding:** Injects edge types (`CO_SPEND`, `SENDS`, `RECEIVES`, `PEELING_CHAIN`) as relational edge embeddings $W_e e_{i,j}$.
 - **Loss:** Focal Loss ($\gamma = 2.0$, $\alpha = \text{neg/pos}$) for extreme class imbalance.
-- **Weights File:** `models/graph_transformer_risk.pt` (~500 KB – 1.2 MB)
-- **Lookup File:** `models/graph_address_map.pkl` (~1.5 MB – 2.5 MB)
+- **Weights File:** `data/models/graph_transformer_YYYYMMDD.pt` (~500 KB – 1.2 MB)
+- **Index Map:** `data/models/graph_address_map.pkl`
 
-- [ ] Implement `RelationalGraphTransformer` PyTorch Geometric model class using `TransformerConv` in `backend/app/ml/graphsage.py`
-- [ ] Update `train_graphsage.py` to train Graph Transformer on CPU (<60s) with edge features
-- [ ] Export weights to `models/graph_transformer_risk.pt` and lookup map to `models/graph_address_map.pkl`
+- [ ] Create `backend/app/ml/graph_transformer.py` implementing `RelationalGraphTransformer` PyTorch Geometric model class
+- [ ] Update `train_graphsage.py` to support `RelationalGraphTransformer` training on CPU (<60s) with edge features
+- [ ] Export weights to `data/models/graph_transformer_*.pt` and address map
 
 ---
 
@@ -327,6 +334,94 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 - [ ] Run `python backend/scripts/train_graphsage.py` → verify Graph Transformer test set F1 $\ge 0.88$ and risk scores populate PostgreSQL + Neo4j
 - [ ] Run `python backend/scripts/build_evidence_trails.py` → verify composite scores and plain-English narratives update seamlessly
 - [ ] Verify `pytest backend/tests/` passes 100% with 0 regressions
+
+---
+
+### ML-4 — End-to-End Naming Synchronization & Provenance Guard
+
+**Files:** [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx), [`frontend/src/app/layout.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/app/layout.tsx), [`backend/app/services/inline_scorer.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/services/inline_scorer.py)
+
+- **UI Naming Parity:** Replace hardcoded `"Autoencoder Reconstruction"` title in `EntityDrawer.tsx` with dynamic/explicit `"FT-Transformer Tabular Anomaly"` (and MSE reconstruction metrics).
+- **Metadata Parity:** Update `layout.tsx` metadata and `EvidenceTrail` description strings to cite `"FT-Transformer anomaly detection and Relational Graph Transformer risk scoring"`.
+- **Backend Logging Parity:** Ensure `inline_scorer.py` and `xai_store.py` log `FTTransformerAnomaly` loaded weights with zero stale labels.
+- **Zero Ambiguity Check:** Verify search across frontend and API responses yields 100% consistent transformer nomenclature when Stage 3 is active.
+
+- [ ] Synchronize UI titles and accordion headers in `EntityDrawer.tsx` to `FT-Transformer`
+- [ ] Synchronize application metadata in `layout.tsx` to cite `FT-Transformer` and `Relational Graph Transformer`
+- [ ] Update `inline_scorer.py` and `xai_store.py` artifact loaders to support `ft_transformer_*.pt` and `graph_transformer_*.pt` with accurate logging
+
+---
+
+## ─────────────────────────────────────────
+## STAGE 4 — JURY FLEX & ADVANCED FORENSIC VISUALIZATIONS [Difficulty: Medium | Complexity: Medium]
+## ─────────────────────────────────────────
+
+**Objective:** Elevate the frontend intelligence command center to visually showcase the Dual Transformer's multi-head attention capabilities, live architecture benchmarks, and court-admissible forensic export compliance (Section 65B Indian Evidence Act / BSA 2023). 100% backward-compatible with legacy Autoencoder/GraphSAGE artifacts.
+
+---
+
+### FLEX-1 — Interactive Feature-to-Feature Attention Matrix Heatmap
+
+**File:** [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx) & [`frontend/src/components/AttentionHeatmap.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/AttentionHeatmap.tsx)
+
+- Add segmented toggle tab in EntityDrawer: `[ 📊 SHAP Waterfall | 🧠 Transformer Attention Matrix ]`.
+- Render an interactive $18 \times 18$ grid heatmap visualizing FT-Transformer cross-feature self-attention weights ($\alpha_{i,j}$).
+- Dynamic cell illumination with tooltip detailing pairwise feature correlations (e.g. `fee_rate` $\leftrightarrow$ `output_entropy` $\leftrightarrow$ `asn`).
+- Backward-compatibility guard: if `attention_matrix` is absent in XAI payload, gracefully default to standard SHAP Waterfall.
+
+- [ ] Create `frontend/src/components/AttentionHeatmap.tsx` SVG/Canvas matrix renderer
+- [ ] Wire segmented toggle inside `EntityDrawer.tsx`
+- [ ] Verify: clicking toggle switches seamlessly between SHAP Waterfall and Attention Heatmap
+
+---
+
+### FLEX-2 — Multi-Head Relational Attention Edge Glow & HUD Inspector
+
+**File:** [`frontend/src/components/GraphCanvas.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/GraphCanvas.tsx)
+
+- Scale D3 edge stroke opacity and luminous cyan glow dynamically via `link.attention_score ?? (link.is_explanatory ? 0.85 : 0.45)`.
+- When an edge or node is pinned in GraphCanvas, the Inspector HUD displays a multi-head attention breakdown:
+  - `Head 1: Co-Spending Flow` ($\alpha = 0.91$)
+  - `Head 2: Multi-Hop Relational Flow` ($\alpha = 0.84$)
+  - `Head 3: Seed Proximity Weight` ($\alpha = 0.78$)
+- Backward-compatibility guard: if `attention_score` is undefined, fallback to standard binary `is_explanatory` cyan stroke.
+
+- [ ] Add continuous attention-weight stroke and glow filters to `GraphCanvas.tsx`
+- [ ] Add multi-head attention breakdown card to GraphCanvas Inspector HUD
+- [ ] Verify: high-attention laundering paths illuminate with variable intensity; graph physics remain locked at 60 FPS
+
+---
+
+### FLEX-3 — Model Architecture Provenance & Live Telemetry Badge
+
+**File:** [`frontend/src/components/TopNav.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/TopNav.tsx) & [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx)
+
+- Add tactile forensic badge in TopNav and EntityDrawer header:
+  `⚡ Dual Transformer Engine (FT-Trans + RGT 4-Head) • 4.8ms CPU`
+- Clicking badge displays a lightweight popover comparing Dual Transformer vs Baseline MLP benchmark metrics (F1 score, Peeling recall, inference latency, parameter footprint).
+- Backward-compatibility guard: defaults to standard NTRO Forensic Ledger title if metadata is omitted.
+
+- [ ] Add architecture provenance chip and benchmark popover in `TopNav.tsx`
+- [ ] Add model provenance tag in `EntityDrawer.tsx`
+- [ ] Verify: badge renders cleanly across all viewport widths with zero layout shift
+
+---
+
+### FLEX-4 — Court-Admissible Section 65B Forensic Dossier Export
+
+**File:** [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx) & [`frontend/src/lib/dossierExport.ts`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/lib/dossierExport.ts)
+
+- Add "Export Certified Legal Dossier" button in EntityDrawer.
+- Generates a court-admissible forensic certificate complying with **Section 65B Indian Evidence Act / BSA 2023**:
+  - Cryptographic SHA-256 hash of raw ingested blockchain/network telemetry
+  - Sovereign air-gap certificate and timestamped chain-of-custody log
+  - Deterministic English narrative summary with rule violation citations
+  - Mathematical SHAP & Attention weight attribution tables
+- Allows 1-click JSON and print-formatted PDF export.
+
+- [ ] Implement `dossierExport.ts` generating Section 65B forensic certificate payloads
+- [ ] Wire export action to EntityDrawer "Download Dossier" button
+- [ ] Verify: generates signed, formatted forensic audit report in <100ms
 
 ---
 
@@ -346,20 +441,21 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 - [x] `11.5` `EntityDrawer.tsx` — provisional mode renders · pre-indexed wallets unaffected
 
 ### Stage 3: Model Architecture Upgrade (Dual Transformer SOTA)
-- [ ] `ML-1` `train_autoencoder.py` — FT-Transformer implementation (`models/ft_transformer_anomaly.pt`, `models/ft_scaler.pkl`)
-- [ ] `ML-2` `graphsage.py` & `train_graphsage.py` — Multi-Head Relational Graph Transformer (`models/graph_transformer_risk.pt`, `models/graph_address_map.pkl`)
+- [ ] `ML-1` `ft_transformer.py` & `train_autoencoder.py` — FT-Transformer implementation (`data/models/ft_transformer_*.pt`, `data/models/ft_scaler_*.pkl`)
+- [ ] `ML-2` `graph_transformer.py` & `train_graphsage.py` — Multi-Head Relational Graph Transformer (`data/models/graph_transformer_*.pt`)
 - [ ] `ML-3` Retrain models on synthetic + Ransomwhere dataset (<60s on CPU) and export `.pt`/`.pkl` artifacts
-- [ ] `ML-4` Verify Attention Heatmaps + SHAP + GNNExplainer compatibility and run full test suite with 0 regressions
+- [ ] `ML-4` End-to-End Naming Synchronization — Update `EntityDrawer.tsx` titles, `layout.tsx` metadata, logs, and zero naming mismatch
+
+### Stage 4: Jury Flex & Advanced Forensic XAI Visualizations [STRETCH]
+- [ ] `FLEX-1` `AttentionHeatmap.tsx` & `EntityDrawer.tsx` — 18x18 Feature Self-Attention Matrix Heatmap vs SHAP toggle
+- [ ] `FLEX-2` `GraphCanvas.tsx` — Multi-Head Relational Attention Edge Glow & HUD Inspector breakdown
+- [ ] `FLEX-3` `TopNav.tsx` & `EntityDrawer.tsx` — Model Provenance & Live Architecture Benchmark chip
+- [ ] `FLEX-4` `EntityDrawer.tsx` & `dossierExport.ts` — Section 65B (Indian Evidence Act / BSA 2023) Court-Admissible Dossier Export
 
 ---
 
 ## VERIFICATION LOG
 
 *(Append entries as tasks complete — format: `YYYY-MM-DD · [task ID] · what was done · how verified`)*
-- 2026-09-09 · [DUP-1, DUP-2a, DUP-2b] · Implemented Redis SHA-256 duplicate file upload detection with HTTP 409 HTTPException in backend/app/routers/ingest.py (24h TTL) and dual UI banners in IngestModal.tsx (red for 409 duplicate file, amber warning for all-rejected rows with alert table refresh) · Verified via 4 new unit tests in test_dup_ingest.py (202 caching, 409 conflict with original_task_id, defensive Redis error fallbacks), 15 passing ingest tests in test_ingest.py, and clean Next.js build with 0 TypeScript errors.
-- 2026-09-09 · [DUP-1, DUP-2 REVIEW FIXES] · Hardened duplicate handling following adversarial staff review: in-stream SHA-256 calculation avoiding redundant disk I/O, Redis socket/connect timeouts (2.0s), incrementing total_rejected on DB COPY failures in Celery task, fixed IngestModal polling hoisting/ESLint errors, and defensive duplicate condition avoiding false success on 0-row ingests · Verified via 5/5 passing pytest in test_dup_ingest.py, 15/15 passing test_ingest.py, 0 ESLint errors/warnings on Stage 1 frontend files, and successful Next.js build.
-- 2026-09-09 · [DUP-1, DUP-2 PRODUCTION HARDENING] · Added Celery broker failure cleanup with HTTP 503 guard and disk unlinking in ingest.py, array validation error unwrapping in api.ts, component unmount timer cleanup in IngestModal.tsx, and verified temp file unlinking on duplicate 409 · Verified via 6/6 passing pytest in test_dup_ingest.py, 15/15 passing test_ingest.py, and successful Next.js build with 0 TypeScript errors.
-- 2026-09-09 · [DUP-2 ACCESSIBILITY & ZERO-ROW GUARD] · Added empty 0-row ingest error guard to IngestModal.tsx preventing false positive success banners, and added Escape key handler for WCAG 2.2 keyboard parity · Verified via Next.js build and Stage 1 test suites.
-- 2026-09-09 · [11.1-11.3] · Implemented backend live post-ingest online inference sync: thread-safe mutation APIs in xai_store.py with threading.Lock, inline scoring service in inline_scorer.py using PyTorch Autoencoder reconstruction MSE and heuristic rules (peeling chain candidates and Ransomwhere seeds), and POST /ingest/sync/{task_id} in ingest.py with Celery status validation, Redis idempotency cooldown guard (TTL=3600s), and PostgreSQL recent-row retrieval · Verified via pytest backend/tests/test_inline_scorer.py -v (3/3 passed), pytest backend/tests/test_ingest_sync.py -v (4/4 passed), pytest backend/tests/test_dup_ingest.py -v (6/6 passed), and pytest backend/tests/test_ingest.py -v (15/15 passed, 2 skipped).
-- 2026-09-09 · [11.1-11.3 PRODUCTION REMEDIATION & HARDENING] · Hardened Stage 2 online inference against race conditions and attribution pollution: (1) captured committed txids in Celery task summary and switched POST /ingest/sync/{task_id} to task-scoped ANY(:txids) query eliminating the 2-minute sliding window hazard; (2) added atomic Redis SETNX idempotency guard with 36-character UUID validation and bounded OrderedDict fallback; (3) migrated xai_store to reentrant threading.RLock with atomic upsert_batch API; (4) fixed attribution pollution by isolating seed recipients to RANSOMWHERE_SEED_RECIPIENT (proximity=0.5) and rescaled provisional scoring across [0.0, 1.0]; (5) exposed provisional: bool in EntityExplainResponse and EvidenceTrail · Verified via 32 passing pytests across test_inline_scorer.py (3/3), test_ingest_sync.py (8/8), test_dup_ingest.py (6/6), and test_ingest.py (15/15).
-- 2026-09-09 · [11.4, 11.5] · Wired post-ingest auto-sync trigger in IngestModal.tsx with fail-open try/catch fallback and 409 handling in api.ts; implemented provisional dossier UI in EntityDrawer.tsx with AlertTriangle warning banner, clean dashed placeholders for SHAP waterfall and GNN subgraph, live anomaly/mixing/rule indicators, and Louvain/PageRank rerun indicators for graph-dependent metrics · Verified via Next.js production build (0 errors, optimized static generation), ESLint (0 errors, 0 warnings across all modified files), and backend regression suite (11/11 passing tests in test_inline_scorer.py and test_ingest_sync.py).
+- 2026-09-10 · [GRAPH-ROUTER-HARDENING] · Hardened Phase 9 graph topology router (`/api/v1/graph/{cluster_id}`) against 4 balance defects and adversarial review findings: (1) eliminated continuous PageRank downstream seed conflation by isolating `is_seed` attribution to true seeds; (2) eliminated un-locked O(N) `_composite` scan by scoping GNN explanatory pair lookups to retrieved `wallet_ids` via thread-safe `xai_store.get_subgraph()`; (3) eliminated `CO_SPEND` Cypher limit burn via `w1.address < w2.address` and bi-directional set deduplication; (4) deduplicated IP-to-transaction `OBSERVED` links with `DISTINCT` and `seen_links`; (5) excluded `RANSOMWHERE_SEED_RECIPIENT` from seed rule matching and unified `triggered_rules` sets; (6) added graceful `close_driver()` disposal on application shutdown · Verified via 6/6 passing tests in `backend/tests/test_graph_router.py` (quota rollover, boundary tests `max_nodes=0/1/250/300`, link uniqueness, negative seed attribution) and full backend regression suite (160 passed, 2 skipped, 0 failures).
+

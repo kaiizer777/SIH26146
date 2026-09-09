@@ -119,6 +119,7 @@ async def lifespan(app: FastAPI):
         xai_store.verdict_counts(),
     )
     yield
+    await graph_router.close_driver()
     logger.info("Shutting down — XAI store released.")
 
 
