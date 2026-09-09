@@ -465,8 +465,8 @@ interface SearchBarProps {
 
 function SearchBar({ value, onChange, inputRef }: SearchBarProps) {
   return (
-    <div className="relative flex items-center w-full">
-      <div className="absolute left-3 text-slate-400 pointer-events-none flex items-center">
+    <div className="relative flex items-center w-full group">
+      <div className="absolute left-3 text-slate-400 group-focus-within:text-sky-600 pointer-events-none flex items-center transition-colors">
         <Search className="w-3.5 h-3.5" />
       </div>
       <input
@@ -476,12 +476,12 @@ function SearchBar({ value, onChange, inputRef }: SearchBarProps) {
         placeholder="Search by Bitcoin address prefix… (/ or Ctrl+K)"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-8.5 pl-9 pr-8 text-xs border border-slate-200/90 rounded-md bg-slate-50/70 text-slate-900 crypto-mono placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 shadow-2xs transition-all"
+        className="tactile-input w-full h-8.5 pl-9 pr-8 text-xs rounded-md crypto-mono font-medium placeholder:font-normal placeholder:text-slate-400"
       />
       {value && (
         <button
           onClick={() => onChange("")}
-          className="absolute right-2.5 text-slate-400 hover:text-slate-600 transition-colors p-0.5 rounded"
+          className="absolute right-2.5 text-slate-400 hover:text-slate-700 transition-colors p-0.5 rounded hover:bg-slate-100 cursor-pointer"
           aria-label="Clear search"
         >
           <X className="w-3.5 h-3.5" />

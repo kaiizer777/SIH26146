@@ -273,6 +273,29 @@ input[type="range"].custom-slider::-webkit-slider-thumb:active {
 }
 
 /* =========================================================
+   Tactile High-Precision Input Bars (Linear / Stripe Grade)
+   ========================================================= */
+
+.tactile-input {
+  background-color: #ffffff;
+  border: 1px solid #94a3b8;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04), inset 0 1px 1px 0 rgba(255, 255, 255, 0.8);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out, background-color 150ms ease-out, width 180ms ease-out;
+}
+
+.tactile-input:focus,
+.tactile-input:focus-visible {
+  outline: none !important;
+  background-color: #ffffff;
+  border-color: #0284c7 !important;
+  box-shadow:
+    0 0 0 1px #0284c7,
+    0 0 0 4px rgba(2, 132, 199, 0.15),
+    0 1px 2px 0 rgba(15, 23, 42, 0.06) !important;
+}
+
+/* =========================================================
    Focus ring standard
    ========================================================= */
 
@@ -280,3 +303,10 @@ input[type="range"].custom-slider::-webkit-slider-thumb:active {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+

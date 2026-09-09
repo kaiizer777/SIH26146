@@ -692,14 +692,14 @@ export default function GraphCanvas({
         {/* Right: Search Input + Compact Horizontal Navigation Tools */}
         <div className="pointer-events-auto flex items-center gap-2">
           {/* Quick Search */}
-          <div className="relative flex items-center">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 pointer-events-none" />
+          <div className="relative flex items-center group">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 group-focus-within:text-sky-600 transition-colors pointer-events-none" />
             <input
               type="text"
               placeholder="Search address in graph…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-36 sm:w-44 focus:w-56 h-8 pl-8 pr-6 text-[11px] crypto-mono rounded-lg border border-slate-200/90 bg-white/95 backdrop-blur-md text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500 shadow-card transition-all"
+              className="tactile-input w-36 sm:w-44 focus:w-56 h-8 pl-8 pr-6 text-[11px] crypto-mono rounded-lg text-slate-800 placeholder:text-slate-400"
             />
             {searchQuery && (
               <button

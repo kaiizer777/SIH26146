@@ -368,11 +368,13 @@ export default function FilterSidebar({
               </span>
             )}
           </div>
-          <div className="relative">
+          <div className="relative group">
             <div
               className={clsx(
                 "absolute left-2.5 top-1/2 -translate-y-1/2 transition-colors pointer-events-none",
-                filters.clusterId ? "text-sky-600" : "text-slate-400",
+                filters.clusterId
+                  ? "text-sky-600"
+                  : "text-slate-400 group-focus-within:text-sky-600",
               )}
             >
               <Hash className="w-3.5 h-3.5 stroke-[2.2]" />
@@ -385,7 +387,7 @@ export default function FilterSidebar({
               onChange={(e) =>
                 onChange({ ...filters, clusterId: e.target.value.trim() })
               }
-              className="w-full h-8.5 pl-8 pr-7 text-xs border border-slate-200/90 rounded-md bg-white text-slate-900 crypto-mono font-semibold placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-2xs transition-all"
+              className="tactile-input w-full h-8.5 pl-8 pr-7 text-xs rounded-md text-slate-900 crypto-mono font-semibold placeholder:font-normal placeholder:text-slate-400"
             />
             {filters.clusterId && (
               <button
