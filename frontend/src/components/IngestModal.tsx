@@ -58,6 +58,16 @@ export default function IngestModal({
     onClose();
   }, [reset, onClose]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && stage !== "uploading" && stage !== "polling") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleClose, stage]);
+
   const pollStatus = useCallback(
     function poll(taskId: string, attempts: number) {
       if (attempts > 120) {
@@ -102,6 +112,11 @@ export default function IngestModal({
               toast.warning(warnMsg);
               // Still trigger onSuccess() so existing alert data is visible and refreshed
               onSuccess();
+            } else if (inserted === 0 && rejected === 0 && received === 0) {
+              setStage("error");
+              const emptyMsg = "No transaction records found in uploaded file.";
+              setErrorMsg(emptyMsg);
+              toast.error(emptyMsg);
             } else {
               setStage("success");
               setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
