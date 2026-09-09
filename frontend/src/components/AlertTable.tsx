@@ -123,7 +123,7 @@ export default function AlertTable({
   searchValue,
   onSearchChange,
 }: AlertTableProps) {
-  const [focusIdx, setFocusIdx] = useState<number>(-1);
+  const [, setFocusIdx] = useState<number>(-1);
   const tableRef = useRef<HTMLTableElement>(null);
   const sentinelRef = useRef<HTMLTableRowElement>(null);
 

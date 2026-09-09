@@ -150,19 +150,24 @@ def test_spot_check_txid_amounts(neo4j_svc, pg_conn):
         for row in rows:
             txid = row["txid"]
 
-            # SENDS: each input wallet → transaction
+            # SENDS: each input wallet → transaction (sum if same addr appears multiple times)
             inp_addrs = row["input_addresses"] or []
             inp_amts = row["input_amounts"] or []
-            pg_sends = {
-                addr: round(_dec_to_float(amt), 8)
-                for addr, amt in zip(inp_addrs, inp_amts)
-            }
+            pg_sends: dict[str, float] = {}
+            for addr, amt in zip(inp_addrs, inp_amts):
+                v = round(_dec_to_float(amt), 8)
+                pg_sends[addr] = round(pg_sends.get(addr, 0.0) + v, 8)
+
             sends_result = session.run(
                 "MATCH (w:Wallet)-[r:SENDS]->(t:Transaction {txid: $txid}) "
                 "RETURN w.address AS addr, r.amount AS amount",
                 txid=txid,
             ).data()
-            neo4j_sends = {rec["addr"]: round(float(rec["amount"]), 8) for rec in sends_result}
+            neo4j_sends: dict[str, float] = {}
+            for rec in sends_result:
+                v = round(float(rec["amount"]), 8)
+                addr = rec["addr"]
+                neo4j_sends[addr] = round(neo4j_sends.get(addr, 0.0) + v, 8)
 
             assert pg_sends == neo4j_sends, (
                 f"SENDS mismatch for txid={txid}\n  PG:    {pg_sends}\n  Neo4j: {neo4j_sends}"

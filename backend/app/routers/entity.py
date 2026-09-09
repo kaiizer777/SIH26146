@@ -15,6 +15,8 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from neo4j import AsyncDriver, AsyncGraphDatabase
+
 from app.config import settings
 from app.schemas.entity import (
     EntityExplainResponse,
@@ -31,6 +33,141 @@ from app.services.db import SessionLocal
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/entity", tags=["entity"])
+
+# ---------------------------------------------------------------------------
+# Neo4j async driver (module-level, one per process)
+# ---------------------------------------------------------------------------
+
+_neo4j_driver: Optional[AsyncDriver] = None
+
+
+def _get_neo4j_driver() -> AsyncDriver:
+    global _neo4j_driver
+    if _neo4j_driver is None:
+        _neo4j_driver = AsyncGraphDatabase.driver(
+            settings.neo4j_uri,
+            auth=(settings.neo4j_user, settings.neo4j_password),
+        )
+    return _neo4j_driver
+
+
+async def _fetch_topological_subgraph_from_neo4j(address: str) -> Optional[GnnSubgraph]:
+    """Fetch 1-hop / 2-hop topological neighbors from Neo4j when offline GNNExplainer mask is absent."""
+    try:
+        driver = _get_neo4j_driver()
+        async with driver.session(database=settings.neo4j_database) as session:
+            cypher = """
+            MATCH (w:Wallet {address: $addr})
+            OPTIONAL MATCH (w)-[r_co:CO_SPEND]-(peer:Wallet)
+            WITH w, collect(DISTINCT peer)[..10] AS cospenders
+            OPTIONAL MATCH (payer:Wallet)-[:SENDS]->(:Transaction)-[:RECEIVES]->(w)
+            WITH w, cospenders, collect(DISTINCT payer)[..10] AS payers
+            OPTIONAL MATCH (w)-[:SENDS]->(:Transaction)-[:RECEIVES]->(payee:Wallet)
+            WITH w, cospenders, payers, collect(DISTINCT payee)[..10] AS payees
+            RETURN w, cospenders, payers, payees
+            """
+            result = await session.run(cypher, addr=address)
+            record = await result.single()
+            if not record or not record["w"]:
+                return None
+
+            target_node = record["w"]
+            cospenders = [c for c in (record["cospenders"] or []) if c]
+            payers = [p for p in (record["payers"] or []) if p]
+            payees = [py for py in (record["payees"] or []) if py]
+
+            if not cospenders and not payers and not payees:
+                return None
+
+            nodes_dict: dict[str, GnnSubgraphNode] = {}
+            edges_list: list[GnnSubgraphEdge] = []
+            seen_edges: set[tuple[str, str, str]] = set()
+
+            def _get_risk(a: str, props: dict) -> Optional[float]:
+                comp = xai_store.get_composite(a)
+                if comp and comp.get("risk_score") is not None:
+                    try:
+                        return float(comp["risk_score"])
+                    except (ValueError, TypeError):
+                        pass
+                if props.get("risk_score") is not None:
+                    try:
+                        return float(props["risk_score"])
+                    except (ValueError, TypeError):
+                        pass
+                return None
+
+            def _add_edge(src: str, tgt: str, rel: str, imp: float) -> None:
+                key = (src, tgt, rel)
+                if key not in seen_edges:
+                    seen_edges.add(key)
+                    edges_list.append(GnnSubgraphEdge(
+                        source=src,
+                        target=tgt,
+                        edge_type=rel,
+                        importance=imp,
+                    ))
+
+            target_addr = address
+            target_props = dict(target_node.items())
+            nodes_dict[target_addr] = GnnSubgraphNode(
+                id=target_addr,
+                label=f"{target_addr[:6]}…{target_addr[-4:]}" if len(target_addr) > 10 else target_addr,
+                node_type="wallet",
+                risk_score=_get_risk(target_addr, target_props),
+                importance=1.0,
+            )
+
+            for peer in cospenders:
+                p_props = dict(peer.items())
+                p_addr = p_props.get("address")
+                if not p_addr:
+                    continue
+                if p_addr not in nodes_dict:
+                    nodes_dict[p_addr] = GnnSubgraphNode(
+                        id=p_addr,
+                        label=f"{p_addr[:6]}…{p_addr[-4:]}" if len(p_addr) > 10 else p_addr,
+                        node_type="wallet",
+                        risk_score=_get_risk(p_addr, p_props),
+                        importance=0.5,
+                    )
+                _add_edge(target_addr, p_addr, "CO_SPEND", 0.5)
+
+            for payer in payers:
+                p_props = dict(payer.items())
+                p_addr = p_props.get("address")
+                if not p_addr:
+                    continue
+                if p_addr not in nodes_dict:
+                    nodes_dict[p_addr] = GnnSubgraphNode(
+                        id=p_addr,
+                        label=f"{p_addr[:6]}…{p_addr[-4:]}" if len(p_addr) > 10 else p_addr,
+                        node_type="wallet",
+                        risk_score=_get_risk(p_addr, p_props),
+                        importance=0.4,
+                    )
+                _add_edge(p_addr, target_addr, "SENDS_TO", 0.4)
+
+            for payee in payees:
+                p_props = dict(payee.items())
+                p_addr = p_props.get("address")
+                if not p_addr:
+                    continue
+                if p_addr not in nodes_dict:
+                    nodes_dict[p_addr] = GnnSubgraphNode(
+                        id=p_addr,
+                        label=f"{p_addr[:6]}…{p_addr[-4:]}" if len(p_addr) > 10 else p_addr,
+                        node_type="wallet",
+                        risk_score=_get_risk(p_addr, p_props),
+                        importance=0.4,
+                    )
+                _add_edge(target_addr, p_addr, "RECEIVES_FROM", 0.4)
+
+            return GnnSubgraph(nodes=list(nodes_dict.values()), edges=edges_list)
+    except Exception as exc:
+        logger.warning("Neo4j topological subgraph fallback failed for %s: %s", address[:8] + "...", exc)
+        return None
+
 
 # ---------------------------------------------------------------------------
 # Human-readable SHAP feature label map
@@ -208,7 +345,7 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
     # --- GNN subgraph ---
     gnn_subgraph: Optional[GnnSubgraph] = None
     raw_gnn = xai_store.get_subgraph(address)
-    if raw_gnn:
+    if raw_gnn and raw_gnn.get("nodes"):
         gnn_nodes = [
             GnnSubgraphNode(
                 id=n.get("address", ""),
@@ -223,12 +360,14 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
             GnnSubgraphEdge(
                 source=e.get("source", ""),
                 target=e.get("target", ""),
-                edge_type=e.get("type"),
-                importance=e.get("importance"),
+                edge_type=e.get("type") or e.get("edge_type"),
+                importance=e.get("edge_importance") if e.get("edge_importance") is not None else e.get("importance"),
             )
             for e in raw_gnn.get("edges", [])
         ]
         gnn_subgraph = GnnSubgraph(nodes=gnn_nodes, edges=gnn_edges)
+    else:
+        gnn_subgraph = await _fetch_topological_subgraph_from_neo4j(address)
 
     # --- Narrative ---
     narrative = _build_narrative(address, composite, evidence_raw)

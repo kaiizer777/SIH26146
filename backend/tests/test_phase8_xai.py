@@ -250,18 +250,20 @@ class TestCompositeScores:
 
     def test_components_present(self):
         data = _load_json(COMPOSITE_PATH)
-        required_components = {"risk_gnn", "anomaly_norm", "mixing_flag", "cluster_size_norm"}
+        required_components = {"risk_score", "anomaly_score", "rule_bonus", "mixing_indicator"}
         sample = list(data.values())[:10]
         for record in sample:
-            assert "components" in record
-            missing = required_components - record["components"].keys()
+            missing = required_components - record.keys()
             assert not missing, f"Missing composite components: {missing}"
 
     def test_components_bounded(self):
         data = _load_json(COMPOSITE_PATH)
         for addr, record in list(data.items())[:50]:
-            comps = record["components"]
-            for key, val in comps.items():
+            assert record["anomaly_score"] >= 0.0, (
+                f"Component anomaly_score={record['anomaly_score']} < 0 for {addr[:20]}..."
+            )
+            for key in ("risk_score", "rule_bonus", "mixing_indicator"):
+                val = record[key]
                 assert 0.0 <= val <= 1.0, (
                     f"Component {key}={val} out of [0,1] for {addr[:20]}..."
                 )
@@ -277,7 +279,7 @@ class TestCompositeScores:
 )
 class TestCrossLayerConsistency:
     def test_composite_risk_gnn_matches_trail_risk_score(self):
-        """XAI-D composite.components.risk_gnn must equal XAI-C trail.risk_score."""
+        """XAI-D composite.risk_score must equal XAI-C trail.risk_score."""
         trails = _load_json(TRAILS_PATH)
         composites = _load_json(COMPOSITE_PATH)
 
@@ -287,10 +289,10 @@ class TestCrossLayerConsistency:
 
         for addr in common:
             trail_rs = round(float(trails[addr]["risk_score"]), 4)
-            comp_gnn = round(float(composites[addr]["components"]["risk_gnn"]), 4)
+            comp_gnn = round(float(composites[addr]["risk_score"]), 4)
             assert abs(trail_rs - comp_gnn) < 0.0001, (
-                f"risk_gnn mismatch for {addr[:20]}...: "
-                f"trail.risk_score={trail_rs} vs composite.risk_gnn={comp_gnn}"
+                f"risk_score mismatch for {addr[:20]}...: "
+                f"trail.risk_score={trail_rs} vs composite.risk_score={comp_gnn}"
             )
 
     def test_all_composite_wallets_have_trail(self):

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { Table, Network } from "lucide-react";
 import { clsx } from "clsx";

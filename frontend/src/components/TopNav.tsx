@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Shield, Radio, Database, Upload, Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Shield, Database, Upload, Search } from "lucide-react";
 
 interface TopNavProps {
   totalIndexed: number;

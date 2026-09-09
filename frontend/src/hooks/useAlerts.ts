@@ -74,10 +74,9 @@ export function useAlerts({
 
   // Reset and refetch when filters change
   useEffect(() => {
-    setOffset(0);
-
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
+      setOffset(0);
       doFetch(0, false);
     }, debounceMs);
 
@@ -90,13 +89,13 @@ export function useAlerts({
   const refresh = useCallback(() => {
     setOffset(0);
     doFetch(0, false);
-  }, [doFetch]);
+  }, [doFetch, setOffset]);
 
   const loadMore = useCallback(() => {
     const nextOffset = offset + pageSize;
     setOffset(nextOffset);
     doFetch(nextOffset, true);
-  }, [offset, pageSize, doFetch]);
+  }, [offset, pageSize, doFetch, setOffset]);
 
   const hasMore = items.length < total;
 

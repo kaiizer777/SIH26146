@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { clsx } from "clsx";
 import type { ShapAttribution } from "@/lib/api";
 
 interface ShapWaterfallProps {
