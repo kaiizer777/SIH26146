@@ -179,7 +179,13 @@ async function apiFetch<T>(
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = body.detail ?? detail;
+      if (typeof body.detail === "string") {
+        detail = body.detail;
+      } else if (body.detail && typeof body.detail === "object") {
+        detail = body.detail.detail || JSON.stringify(body.detail);
+      } else if (body.message) {
+        detail = body.message;
+      }
     } catch {}
     throw new ApiError(res.status, detail);
   }
@@ -232,7 +238,13 @@ export async function uploadIngestFile(file: File): Promise<IngestResponse> {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = body.detail ?? detail;
+      if (typeof body.detail === "string") {
+        detail = body.detail;
+      } else if (body.detail && typeof body.detail === "object") {
+        detail = body.detail.detail || JSON.stringify(body.detail);
+      } else if (body.message) {
+        detail = body.message;
+      }
     } catch {}
     throw new ApiError(res.status, detail);
   }

@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { clsx } from "clsx";
-import { Upload, X, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, X, FileText, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { uploadIngestFile, fetchIngestStatus, ApiError } from "@/lib/api";
 
@@ -12,7 +12,14 @@ interface IngestModalProps {
   onSuccess: () => void; // triggers alert table refresh
 }
 
-type Stage = "idle" | "uploading" | "polling" | "success" | "error";
+type Stage =
+  | "idle"
+  | "uploading"
+  | "polling"
+  | "success"
+  | "warning"
+  | "error"
+  | "duplicate";
 
 const ACCEPTED = ".csv,.json,.xml";
 
@@ -37,6 +44,7 @@ export default function IngestModal({
     setSelectedFile(null);
     setStatusText("");
     setErrorMsg("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
   const handleClose = useCallback(() => {
@@ -58,6 +66,15 @@ export default function IngestModal({
         setStatusText("Processing…");
         pollStatus(task_id, 0);
       } catch (err) {
+        if (err instanceof ApiError && err.status === 409) {
+          // DUP-2a: 409 Duplicate file detected — do NOT poll, do NOT call onSuccess()
+          const dupMsg =
+            "This file has already been uploaded. Use a different file or wait 24 hours to re-upload.";
+          setErrorMsg(dupMsg);
+          setStage("duplicate");
+          toast.error(dupMsg);
+          return;
+        }
         const msg =
           err instanceof ApiError ? err.detail : "Upload failed. Check file format.";
         setErrorMsg(msg);
@@ -92,15 +109,34 @@ export default function IngestModal({
           pollStatus(taskId, attempts + 1);
         } else if (status.status === "SUCCESS") {
           setProgress(100);
-          setStage("success");
           const result = status.result as Record<string, number> | undefined;
-          const inserted = result?.total_inserted ?? "?";
-          setStatusText(`Successfully ingested ${inserted.toLocaleString?.()} rows`);
-          toast.success(`Batch ingested: ${inserted} rows processed`);
-          setTimeout(() => {
+          const inserted = Number(
+            result?.total_inserted ?? result?.inserted ?? result?.rows_inserted ?? 0
+          );
+          const rejected = Number(
+            result?.total_rejected ?? result?.rejected ?? result?.rows_rejected ?? 0
+          );
+          const received = Number(
+            result?.total_received ?? result?.received ?? (inserted + rejected)
+          );
+
+          if (inserted === 0 && rejected > 0 && rejected === received) {
+            // DUP-2b: All rows rejected as duplicates (txid already exists in Postgres)
+            setStage("warning");
+            const warnMsg = `No new transactions inserted — all ${rejected.toLocaleString()} rows were rejected as duplicates (txid already exists). The alert table reflects existing data.`;
+            setStatusText(warnMsg);
+            toast.warning(warnMsg);
+            // Still trigger onSuccess() so existing alert data is visible and refreshed
             onSuccess();
-            handleClose();
-          }, 1500);
+          } else {
+            setStage("success");
+            setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
+            toast.success(`Batch ingested: ${inserted} rows processed`);
+            setTimeout(() => {
+              onSuccess();
+              handleClose();
+            }, 1500);
+          }
         } else if (status.status === "FAILURE") {
           setErrorMsg(status.error ?? "Celery task failed");
           setStage("error");
@@ -258,7 +294,71 @@ export default function IngestModal({
             </div>
           )}
 
-          {/* Error */}
+          {/* All-Rejected Warning Banner (DUP-2b) */}
+          {stage === "warning" && (
+            <div className="flex flex-col gap-3">
+              <div
+                id="ingest-duplicate-warning-banner"
+                role="alert"
+                className="flex items-start gap-3 px-3.5 py-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900"
+              >
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-amber-900">
+                    Duplicate Transactions Detected
+                  </p>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    {statusText}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  onClick={reset}
+                  className="text-xs px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-50 transition-colors text-slate-700 font-medium"
+                >
+                  Upload Another File
+                </button>
+                <button
+                  id="ingest-warning-dismiss-btn"
+                  onClick={handleClose}
+                  className="text-xs px-4 py-1.5 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors font-medium shadow-sm"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Duplicate Upload Detected (DUP-2a) */}
+          {stage === "duplicate" && (
+            <div className="flex flex-col gap-3">
+              <div
+                id="ingest-duplicate-error-banner"
+                role="alert"
+                className="flex items-start gap-3 px-3.5 py-3 rounded-lg bg-red-50 border border-red-300 text-red-900"
+              >
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-red-800">
+                    Duplicate File Detected
+                  </p>
+                  <p className="text-xs text-red-700 leading-relaxed">
+                    {errorMsg}
+                  </p>
+                </div>
+              </div>
+              <button
+                id="ingest-try-another-file-btn"
+                onClick={reset}
+                className="text-xs px-4 py-2 bg-slate-900 text-white rounded hover:bg-slate-700 transition-colors self-start font-medium"
+              >
+                Select Another File
+              </button>
+            </div>
+          )}
+
+          {/* Generic Error */}
           {stage === "error" && (
             <div className="flex flex-col gap-3">
               <div className="flex items-start gap-3 px-3 py-3 rounded bg-red-50 border border-red-200">
@@ -274,7 +374,7 @@ export default function IngestModal({
               </div>
               <button
                 onClick={reset}
-                className="text-xs px-4 py-2 bg-slate-900 text-white rounded hover:bg-slate-700 transition-colors"
+                className="text-xs px-4 py-2 bg-slate-900 text-white rounded hover:bg-slate-700 transition-colors self-start"
               >
                 Try Another File
               </button>

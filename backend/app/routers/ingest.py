@@ -11,10 +11,12 @@ GET /ingest/status/{task_id}:
   - Returns Celery AsyncResult state plus progress/result/error payload.
 """
 
+import hashlib
 import logging
 import uuid
 from pathlib import Path
 
+import redis
 from celery.result import AsyncResult
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
@@ -38,6 +40,24 @@ _MAX_UPLOAD_BYTES = 500 * 1024 * 1024
 # File extensions used for the temp file (cosmetic only; format is detected
 # from content, not from this extension).
 _FORMAT_EXT: dict[str, str] = {"csv": ".csv", "json": ".json", "xml": ".xml"}
+
+_redis_client: redis.Redis | None = None
+
+
+def get_redis_client() -> redis.Redis | None:
+    """Return a shared Redis client, initializing lazily if needed.
+
+    Handles connection errors defensively so temporary Redis issues
+    do not crash the entire endpoint.
+    """
+    global _redis_client
+    if _redis_client is None:
+        try:
+            _redis_client = redis.from_url(settings.redis_url)
+        except Exception as exc:
+            logger.warning("Could not initialize Redis client from '%s': %s", settings.redis_url, exc)
+            return None
+    return _redis_client
 
 
 @router.post(
@@ -99,10 +119,66 @@ async def post_ingest(file: UploadFile) -> JSONResponse:
         "Saved upload to %s (%.2f MB), enqueuing task", temp_path, total_bytes / 1024 / 1024
     )
 
+    # --- Compute SHA-256 hash & check for duplicate upload (DUP-1) ---
+    hasher = hashlib.sha256()
+    try:
+        with open(temp_path, "rb") as fh:
+            while chunk := fh.read(65_536):
+                hasher.update(chunk)
+        file_hash = hasher.hexdigest()
+    except Exception as exc:
+        temp_path.unlink(missing_ok=True)
+        logger.exception("Failed to compute SHA-256 hash for %s: %s", temp_path, exc)
+        raise HTTPException(status_code=500, detail="Failed to verify upload integrity.")
+
+    redis_cli = get_redis_client()
+    if redis_cli is not None:
+        try:
+            existing_task_id = redis_cli.get(f"file_hash:{file_hash}")
+            if existing_task_id is not None:
+                temp_path.unlink(missing_ok=True)
+                orig_id = (
+                    existing_task_id.decode("utf-8")
+                    if isinstance(existing_task_id, bytes)
+                    else str(existing_task_id)
+                )
+                logger.warning(
+                    "Duplicate upload rejected: hash=%s original_task_id=%s",
+                    file_hash,
+                    orig_id,
+                )
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "detail": "Duplicate upload detected — this file was already ingested.",
+                        "original_task_id": orig_id,
+                    },
+                )
+        except HTTPException:
+            raise
+        except redis.RedisError as r_exc:
+            logger.warning(
+                "Redis error checking file_hash:%s: %s — proceeding without duplicate check",
+                file_hash,
+                r_exc,
+            )
+        except Exception as exc:
+            logger.warning("Unexpected error checking Redis duplicate key: %s — proceeding", exc)
+
     # --- Enqueue Celery task ---
     from app.tasks.ingest import process_ingest_file  # local import avoids circular at module load
 
     task = process_ingest_file.delay(str(temp_path), detected_fmt)
+
+    # Store file hash in Redis with a 24-hour TTL (86400 seconds)
+    if redis_cli is not None:
+        try:
+            redis_cli.set(f"file_hash:{file_hash}", task.id, ex=86400)
+            logger.info("Stored file_hash:%s in Redis (task_id=%s, ttl=86400s)", file_hash, task.id)
+        except redis.RedisError as r_exc:
+            logger.warning("Redis error storing file_hash:%s: %s", file_hash, r_exc)
+        except Exception as exc:
+            logger.warning("Unexpected error storing file hash in Redis: %s", exc)
 
     return JSONResponse(
         status_code=202,
