@@ -133,6 +133,14 @@ def test_score_batch_synthetic_10_tx():
     seed_rec = next(r for r in scored if r["address"] == KNOWN_SEED_ADDR)
     assert "RANSOMWHERE_SEED_INPUT" in seed_rec["triggered_rules"]
     assert seed_rec["composite_record"]["seed_wallet_proximity"] == 1.0
+    assert seed_rec["evidence_record"]["seed_wallet_proximity"] == 1.0
+
+    # Verify Ransomwhere seed recipient attribution isolation
+    seed_out_rec = next(r for r in scored if r["address"] == "addr_seed_out")
+    assert "RANSOMWHERE_SEED_RECIPIENT" in seed_out_rec["triggered_rules"]
+    assert "RANSOMWHERE_SEED_INPUT" not in seed_out_rec["triggered_rules"]
+    assert seed_out_rec["composite_record"]["seed_wallet_proximity"] == 0.5
+    assert seed_out_rec["evidence_record"]["seed_wallet_proximity"] == 0.5
 
 
 def test_map_verdict():

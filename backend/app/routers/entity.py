@@ -144,6 +144,7 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
     )
 
     # --- Evidence trail ---
+    is_provisional = bool(composite.get("provisional", False))
     chain_hops = int(composite.get("chain_hops", 0) or 0)
     pass_through = evidence_raw.get("pass_through_ratio") or composite.get("pass_through_ratio")
     evidence = EvidenceTrail(
@@ -161,6 +162,7 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
             (r for r in composite.get("triggered_rules", []) if "SEED" in r.upper() or "RANSOMWARE" in r.upper()),
             None,
         ),
+        provisional=is_provisional,
         extra={
             "seed_wallet_proximity": composite.get("seed_wallet_proximity", 0.0),
             "risk_score": composite.get("risk_score"),
@@ -240,4 +242,5 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
         shap_attributions=shap_attributions,
         gnn_subgraph=gnn_subgraph,
         summary_narrative=narrative,
+        provisional=is_provisional,
     )

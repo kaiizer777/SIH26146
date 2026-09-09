@@ -11,15 +11,17 @@ GET /ingest/status/{task_id}:
   - Returns Celery AsyncResult state plus progress/result/error payload.
 """
 
+import collections
 import hashlib
 import logging
-import uuid
-from pathlib import Path
+import pathlib
+import threading
 from typing import Any
+import uuid
 
 import redis
 from celery.result import AsyncResult
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, Path, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
@@ -36,7 +38,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
 # Ensure upload directory exists at import time.
-_UPLOAD_DIR = Path(settings.upload_dir)
+_UPLOAD_DIR = pathlib.Path(settings.upload_dir)
 _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Maximum upload size guard (500 MB).
@@ -246,7 +248,28 @@ async def get_ingest_status(task_id: str) -> TaskStatusResponse:
     return TaskStatusResponse(task_id=task_id, status=state)
 
 
-_fallback_synced_tasks: set[str] = set()
+_fallback_lock = threading.Lock()
+_fallback_synced_tasks: collections.OrderedDict[str, bool] = collections.OrderedDict()
+_MAX_FALLBACK_ENTRIES = 1000
+
+
+def _check_and_set_fallback(task_id: str) -> None:
+    """Thread-safe fallback idempotency check using a bounded OrderedDict."""
+    with _fallback_lock:
+        if task_id in _fallback_synced_tasks:
+            raise HTTPException(
+                status_code=409,
+                detail="Task already synced within cooldown window",
+            )
+        _fallback_synced_tasks[task_id] = True
+        if len(_fallback_synced_tasks) > _MAX_FALLBACK_ENTRIES:
+            _fallback_synced_tasks.popitem(last=False)  # pop oldest FIFO
+
+
+def _clear_fallback(task_id: str) -> None:
+    """Remove task_id from fallback cache on failure to allow retries."""
+    with _fallback_lock:
+        _fallback_synced_tasks.pop(task_id, None)
 
 
 @router.post(
@@ -254,16 +277,16 @@ _fallback_synced_tasks: set[str] = set()
     response_model=IngestSyncResponse,
     summary="Sync newly ingested transactions into in-memory XAI store",
 )
-async def post_ingest_sync(task_id: str) -> IngestSyncResponse:
+async def post_ingest_sync(
+    task_id: str = Path(..., pattern=r"^[0-9a-fA-F-]{36}$"),
+) -> IngestSyncResponse:
     """Score newly ingested transactions inline and upsert into the XAI store.
 
     1. Checks Celery task status (must be SUCCESS).
-    2. Enforces idempotency via Redis 'sync_done:{task_id}' (409 if already synced).
-    3. Queries PostgreSQL for rows inserted within the last 2 minutes.
-    4. Passes rows to inline_scorer.score_batch().
-    5. Upserts provisional records into in-memory xai_store, skipping addresses
-       that already have rich permanent dossiers.
-    6. Sets 'sync_done:{task_id}' in Redis (TTL=3600s) and returns counts.
+    2. Enforces idempotency via atomic Redis SETNX or thread-safe bounded fallback.
+    3. If total_inserted == 0, returns early without querying DB.
+    4. Queries PostgreSQL by task-scoped txids (with 5-minute fallback).
+    5. Scores batch inline and atomically upserts via xai_store.upsert_batch().
     """
     # 1. Status Check: inspect Celery task state
     result = AsyncResult(task_id, app=celery_app)
@@ -274,11 +297,13 @@ async def post_ingest_sync(task_id: str) -> IngestSyncResponse:
             detail=f"Task {task_id} not found or not in SUCCESS state (current state: {state})",
         )
 
-    # 2. Idempotency Guard: check Redis key sync_done:{task_id}
+    # 2. Idempotency Guard: atomic Redis SETNX with TTL=3600
     redis_cli = get_redis_client()
     if redis_cli is not None:
         try:
-            if redis_cli.get(f"sync_done:{task_id}") is not None:
+            # Atomic SETNX with TTL=3600
+            acquired = redis_cli.set(f"sync_done:{task_id}", "1", nx=True, ex=3600)
+            if not acquired:
                 raise HTTPException(
                     status_code=409,
                     detail="Task already synced within cooldown window",
@@ -287,53 +312,59 @@ async def post_ingest_sync(task_id: str) -> IngestSyncResponse:
             raise
         except Exception as exc:
             logger.warning("Redis error checking sync_done:%s: %s — checking fallback", task_id, exc)
-            if task_id in _fallback_synced_tasks:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Task already synced within cooldown window",
-                )
+            _check_and_set_fallback(task_id)
     else:
-        if task_id in _fallback_synced_tasks:
-            raise HTTPException(
-                status_code=409,
-                detail="Task already synced within cooldown window",
-            )
+        _check_and_set_fallback(task_id)
 
-    # 3. PostgreSQL Query: retrieve newly ingested rows
+    # 3. Inspect task result
+    task_data = result.result if isinstance(result.result, dict) else {}
+    if task_data.get("total_inserted", 0) == 0:
+        return IngestSyncResponse(scored=0, upserted=0, skipped_existing=0)
+
+    # 4. PostgreSQL Query: retrieve task-scoped rows
+    txids = task_data.get("txids", [])
     rows: list[dict[str, Any]] = []
     try:
         async with SessionLocal() as db:
-            query_res = await db.execute(
-                text("SELECT * FROM transactions WHERE ingested_at > NOW() - INTERVAL '2 minutes'")
-            )
+            if txids:
+                query_res = await db.execute(
+                    text("SELECT * FROM transactions WHERE txid = ANY(:txids)"),
+                    {"txids": txids},
+                )
+            else:
+                query_res = await db.execute(
+                    text("SELECT * FROM transactions WHERE ingested_at > NOW() - INTERVAL '5 minutes'")
+                )
             rows = [dict(r._mapping) for r in query_res.fetchall()]
     except Exception as exc:
-        logger.warning("Failed querying recent transactions from database for sync: %s", exc)
-        rows = []
+        logger.exception("Database query failed during transaction sync for task %s: %s", task_id, exc)
+        if redis_cli is not None:
+            try:
+                redis_cli.delete(f"sync_done:{task_id}")
+            except Exception as r_err:
+                logger.warning("Failed to delete sync_done:%s from Redis: %s", task_id, r_err)
+        _clear_fallback(task_id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database query failed during transaction sync: {exc}",
+        )
 
-    # 4. Scoring & Upsert: pass rows through inline_scorer.score_batch()
-    scored_records = inline_scorer.score_batch(rows)
-    upserted = 0
-    skipped_existing = 0
-
-    for item in scored_records:
-        addr = item["address"]
-        existing = xai_store.get_composite(addr)
-        if existing is not None and not existing.get("provisional", False):
-            skipped_existing += 1
-        else:
-            xai_store.upsert_composite(addr, item["composite_record"])
-            xai_store.upsert_evidence(addr, item["evidence_record"])
-            upserted += 1
-
-    # 5. Set idempotency key in Redis (and fallback cache) with TTL=3600
-    if redis_cli is not None:
-        try:
-            redis_cli.set(f"sync_done:{task_id}", "1", ex=3600)
-            logger.info("Stored sync_done:%s in Redis (ttl=3600s)", task_id)
-        except Exception as exc:
-            logger.warning("Redis error storing sync_done:%s: %s", task_id, exc)
-    _fallback_synced_tasks.add(task_id)
+    # 5. Scoring & Atomic Batch Upsert
+    try:
+        scored_records = inline_scorer.score_batch(rows)
+        upserted, skipped_existing = xai_store.upsert_batch(scored_records)
+    except Exception as exc:
+        logger.exception("Scoring or XAI store upsert failed for task %s: %s", task_id, exc)
+        if redis_cli is not None:
+            try:
+                redis_cli.delete(f"sync_done:{task_id}")
+            except Exception as r_err:
+                logger.warning("Failed to delete sync_done:%s from Redis: %s", task_id, r_err)
+        _clear_fallback(task_id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Scoring/store update failed during sync: {exc}",
+        )
 
     return IngestSyncResponse(
         scored=len(rows),

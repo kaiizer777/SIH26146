@@ -1,13 +1,16 @@
 """Unit and Integration tests for Sub-task 11.3: POST /ingest/sync/{task_id}.
 
 Tests verify:
-1. Status check: task not found or not SUCCESS returns HTTP 404.
-2. First sync call returns HTTP 200 with { "scored": N, "upserted": N, "skipped_existing": N }.
-3. Immediate duplicate call returns HTTP 409 ("Task already synced within cooldown window").
-4. GET /api/v1/entity/{new_wallet_address}/explain immediately serves the provisional
-   record from memory (HTTP 200 instead of 404).
-5. Pre-existing non-provisional addresses in xai_store are skipped (counted in skipped_existing)
-   and not overwritten by lightweight provisional records.
+1. UUID validation: malformed task_id returns HTTP 422.
+2. Status check: task not found or not SUCCESS returns HTTP 404.
+3. Atomic SETNX: duplicate call returns 409 when redis.set(..., nx=True) returns False/None.
+4. First sync call returns HTTP 200 with { "scored": N, "upserted": N, "skipped_existing": N }.
+5. Immediate duplicate call returns HTTP 409 ("Task already synced within cooldown window").
+6. DB query error returns HTTP 500, unlinks sync_done in Redis, and permits retry.
+7. Zero rows inserted returns HTTP 200 with 0s without querying DB.
+8. GET /api/v1/entity/{new_wallet_address}/explain immediately serves the provisional
+   record from memory (HTTP 200 with provisional: True).
+9. Pre-existing non-provisional addresses in xai_store are skipped and preserved.
 """
 
 from __future__ import annotations
@@ -45,20 +48,106 @@ def reset_fallback_synced():
 class TestIngestSyncEndpoint:
     """Test suite for POST /ingest/sync/{task_id}."""
 
+    def test_sync_invalid_uuid_returns_422(self):
+        """When task_id is not a 36-char UUID, path validation returns HTTP 422."""
+        resp = client.post("/ingest/sync/non-existent-task-123", headers=AUTH_HEADERS)
+        assert resp.status_code == 422
+
     def test_sync_task_not_found_or_not_success_returns_404(self):
         """When Celery task is PENDING or not in SUCCESS, return HTTP 404."""
         mock_result = MagicMock()
         mock_result.state = "PENDING"
+        valid_uuid = "00000000-0000-0000-0000-000000000000"
 
         with patch("app.routers.ingest.AsyncResult", return_value=mock_result):
-            resp = client.post("/ingest/sync/non-existent-task-123", headers=AUTH_HEADERS)
+            resp = client.post(f"/ingest/sync/{valid_uuid}", headers=AUTH_HEADERS)
             assert resp.status_code == 404
             assert "not in SUCCESS state" in resp.json()["detail"]
+
+    def test_sync_redis_setnx_collision_returns_409(self):
+        """When Redis SETNX fails to acquire key (already exists), return HTTP 409."""
+        mock_result = MagicMock()
+        mock_result.state = "SUCCESS"
+        mock_redis = MagicMock()
+        mock_redis.set.return_value = None  # nx=True returns None when key exists
+
+        task_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+
+        with (
+            patch("app.routers.ingest.AsyncResult", return_value=mock_result),
+            patch("app.routers.ingest.get_redis_client", return_value=mock_redis),
+        ):
+            resp = client.post(f"/ingest/sync/{task_id}", headers=AUTH_HEADERS)
+            assert resp.status_code == 409
+            assert "already synced within cooldown window" in resp.json()["detail"]
+            mock_redis.set.assert_called_once_with(f"sync_done:{task_id}", "1", nx=True, ex=3600)
+
+    def test_sync_zero_inserted_rows_returns_immediately_without_db_query(self):
+        """When total_inserted == 0 in task summary, returns 200 with 0s without querying DB."""
+        mock_result = MagicMock()
+        mock_result.state = "SUCCESS"
+        mock_result.result = {"total_inserted": 0, "total_received": 10, "total_rejected": 10}
+
+        task_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+
+        with (
+            patch("app.routers.ingest.AsyncResult", return_value=mock_result),
+            patch("app.routers.ingest.get_redis_client", return_value=None),
+            patch("app.routers.ingest.SessionLocal") as mock_session_local,
+        ):
+            resp = client.post(f"/ingest/sync/{task_id}", headers=AUTH_HEADERS)
+            assert resp.status_code == 200
+            assert resp.json() == {"scored": 0, "upserted": 0, "skipped_existing": 0}
+            mock_session_local.assert_not_called()
+
+    def test_sync_db_query_error_returns_500_and_deletes_redis_key(self):
+        """When DB query fails, return HTTP 500, rollback Redis key, and allow retry."""
+        mock_result = MagicMock()
+        mock_result.state = "SUCCESS"
+        mock_result.result = {"total_inserted": 1, "txids": ["txid_failing_query"]}
+
+        mock_redis = MagicMock()
+        redis_store: dict[str, str] = {}
+
+        def fake_set(key: str, val: str, nx=None, ex=None):
+            if nx and key in redis_store:
+                return None
+            redis_store[key] = val
+            return True
+
+        def fake_delete(key: str):
+            redis_store.pop(key, None)
+
+        mock_redis.set.side_effect = fake_set
+        mock_redis.delete.side_effect = fake_delete
+
+        fake_session = AsyncMock()
+        fake_session.execute.side_effect = RuntimeError("PostgreSQL connection terminated unexpectedly")
+        fake_session_cm = AsyncMock()
+        fake_session_cm.__aenter__.return_value = fake_session
+        fake_session_cm.__aexit__.return_value = None
+
+        task_id = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+
+        with (
+            patch("app.routers.ingest.AsyncResult", return_value=mock_result),
+            patch("app.routers.ingest.get_redis_client", return_value=mock_redis),
+            patch("app.routers.ingest.SessionLocal", return_value=fake_session_cm),
+        ):
+            resp = client.post(f"/ingest/sync/{task_id}", headers=AUTH_HEADERS)
+            assert resp.status_code == 500
+            assert "Database query failed during transaction sync" in resp.json()["detail"]
+
+            # Key must have been deleted to permit retry
+            mock_redis.delete.assert_called_with(f"sync_done:{task_id}")
+            assert f"sync_done:{task_id}" not in redis_store
 
     def test_sync_first_call_succeeds_and_duplicate_returns_409(self):
         """First sync call returns 200 with counts; duplicate call returns 409."""
         mock_result = MagicMock()
         mock_result.state = "SUCCESS"
+        sample_txid = "aa" * 32
+        mock_result.result = {"total_inserted": 1, "txids": [sample_txid]}
 
         # Mock Redis client
         mock_redis = MagicMock()
@@ -67,8 +156,11 @@ class TestIngestSyncEndpoint:
         def fake_get(key: str):
             return redis_store.get(key)
 
-        def fake_set(key: str, val: str, ex=None):
+        def fake_set(key: str, val: str, nx=None, ex=None):
+            if nx and key in redis_store:
+                return None
             redis_store[key] = val
+            return True
 
         mock_redis.get.side_effect = fake_get
         mock_redis.set.side_effect = fake_set
@@ -76,7 +168,7 @@ class TestIngestSyncEndpoint:
         # Sample rows returned from DB
         sample_rows = [
             {
-                "txid": "aa" * 32,
+                "txid": sample_txid,
                 "ts": "2026-09-09T01:00:00Z",
                 "src_ip": "1.2.3.4",
                 "dst_ip": "5.6.7.8",
@@ -104,7 +196,7 @@ class TestIngestSyncEndpoint:
         fake_session_cm.__aenter__.return_value = fake_session
         fake_session_cm.__aexit__.return_value = None
 
-        task_id = "test-sync-task-uuid-001"
+        task_id = "11111111-1111-1111-1111-111111111111"
 
         with (
             patch("app.routers.ingest.AsyncResult", return_value=mock_result),
@@ -119,6 +211,12 @@ class TestIngestSyncEndpoint:
             assert data1["upserted"] == 3  # 1 in + 2 out = 3 unique addresses
             assert data1["skipped_existing"] == 0
 
+            # Verify query used task-scoped txids
+            args, kwargs = fake_session.execute.call_args
+            assert "txid = ANY(:txids)" in str(args[0])
+            params = kwargs.get("params") or (args[1] if len(args) > 1 else None)
+            assert params == {"txids": [sample_txid]}
+
             # Verify sync_done was set in Redis
             assert redis_store.get(f"sync_done:{task_id}") == "1"
 
@@ -128,17 +226,19 @@ class TestIngestSyncEndpoint:
             assert "already synced" in resp2.json()["detail"]
 
     def test_sync_serves_provisional_entity_explain_immediately(self):
-        """Newly synced wallet serves GET /api/v1/entity/{address}/explain immediately."""
+        """Newly synced wallet serves GET /api/v1/entity/{address}/explain with provisional=True."""
         new_wallet = "bc1q_live_synced_wallet_xyz"
         mock_result = MagicMock()
         mock_result.state = "SUCCESS"
+        sample_txid = "bb" * 32
+        mock_result.result = {"total_inserted": 1, "txids": [sample_txid]}
 
         # Verify wallet does not exist prior to sync
         assert xai_store.get_composite(new_wallet) is None
 
         sample_rows = [
             {
-                "txid": "bb" * 32,
+                "txid": sample_txid,
                 "ts": "2026-09-09T02:00:00Z",
                 "src_ip": "1.2.3.4",
                 "dst_ip": "5.6.7.8",
@@ -166,7 +266,7 @@ class TestIngestSyncEndpoint:
         fake_session_cm.__aenter__.return_value = fake_session
         fake_session_cm.__aexit__.return_value = None
 
-        task_id = "test-sync-task-uuid-002"
+        task_id = "22222222-2222-2222-2222-222222222222"
 
         with (
             patch("app.routers.ingest.AsyncResult", return_value=mock_result),
@@ -189,6 +289,8 @@ class TestIngestSyncEndpoint:
             assert explain_data["address"] == new_wallet
             assert explain_data["composite_score"] >= 0.0
             assert explain_data["verdict"] in {"CRITICAL", "HIGH", "MEDIUM", "LOW"}
+            assert explain_data["provisional"] is True
+            assert explain_data["evidence_trail"]["provisional"] is True
             assert explain_data["evidence_trail"]["anomaly_score"] is not None
 
     def test_sync_preserves_existing_rich_dossiers(self):
@@ -208,10 +310,12 @@ class TestIngestSyncEndpoint:
 
         mock_result = MagicMock()
         mock_result.state = "SUCCESS"
+        sample_txid = "cc" * 32
+        mock_result.result = {"total_inserted": 1, "txids": [sample_txid]}
 
         sample_rows = [
             {
-                "txid": "cc" * 32,
+                "txid": sample_txid,
                 "ts": "2026-09-09T03:00:00Z",
                 "src_ip": "1.2.3.4",
                 "dst_ip": "5.6.7.8",
@@ -239,7 +343,7 @@ class TestIngestSyncEndpoint:
         fake_session_cm.__aenter__.return_value = fake_session
         fake_session_cm.__aexit__.return_value = None
 
-        task_id = "test-sync-task-uuid-003"
+        task_id = "33333333-3333-3333-3333-333333333333"
 
         with (
             patch("app.routers.ingest.AsyncResult", return_value=mock_result),

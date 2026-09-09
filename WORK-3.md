@@ -338,10 +338,10 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 - [x] `DUP-2b` `IngestModal.tsx` — orange warning on all-rejected Celery result
 
 ### Stage 2: Phase 11 `[STRETCH]`
-- [x] `11.1` `xai_store.py` — `upsert_composite` + `upsert_evidence` with `threading.Lock`
-- [x] `11.2` `inline_scorer.py` — reuses `feature_extractor.py`, `score_batch()` implemented
+- [x] `11.1` `xai_store.py` — `upsert_composite`, `upsert_evidence`, and atomic `upsert_batch` with `threading.RLock`
+- [x] `11.2` `inline_scorer.py` — clean forensic attribution, rescaled provisional scoring, `score_batch()` implemented
 - [x] `11.2` `test_inline_scorer.py` — unit test passes (`pytest -v`)
-- [x] `11.3` `POST /ingest/sync/{task_id}` — 200 on first call · 409 on repeat · new wallet dossier returns 200
+- [x] `11.3` `POST /ingest/sync/{task_id}` — atomic SETNX, task-scoped txid query, DB 500 guard, UUID validation, new wallet dossier returns 200 with provisional: True
 - [ ] `11.4` `IngestModal.tsx` — auto-calls sync after SUCCESS with try/catch fallback
 - [ ] `11.5` `EntityDrawer.tsx` — provisional mode renders · pre-indexed wallets unaffected
 
@@ -361,3 +361,4 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 - 2026-09-09 · [DUP-1, DUP-2 PRODUCTION HARDENING] · Added Celery broker failure cleanup with HTTP 503 guard and disk unlinking in ingest.py, array validation error unwrapping in api.ts, component unmount timer cleanup in IngestModal.tsx, and verified temp file unlinking on duplicate 409 · Verified via 6/6 passing pytest in test_dup_ingest.py, 15/15 passing test_ingest.py, and successful Next.js build with 0 TypeScript errors.
 - 2026-09-09 · [DUP-2 ACCESSIBILITY & ZERO-ROW GUARD] · Added empty 0-row ingest error guard to IngestModal.tsx preventing false positive success banners, and added Escape key handler for WCAG 2.2 keyboard parity · Verified via Next.js build and Stage 1 test suites.
 - 2026-09-09 · [11.1-11.3] · Implemented backend live post-ingest online inference sync: thread-safe mutation APIs in xai_store.py with threading.Lock, inline scoring service in inline_scorer.py using PyTorch Autoencoder reconstruction MSE and heuristic rules (peeling chain candidates and Ransomwhere seeds), and POST /ingest/sync/{task_id} in ingest.py with Celery status validation, Redis idempotency cooldown guard (TTL=3600s), and PostgreSQL recent-row retrieval · Verified via pytest backend/tests/test_inline_scorer.py -v (3/3 passed), pytest backend/tests/test_ingest_sync.py -v (4/4 passed), pytest backend/tests/test_dup_ingest.py -v (6/6 passed), and pytest backend/tests/test_ingest.py -v (15/15 passed, 2 skipped).
+- 2026-09-09 · [11.1-11.3 PRODUCTION REMEDIATION & HARDENING] · Hardened Stage 2 online inference against race conditions and attribution pollution: (1) captured committed txids in Celery task summary and switched POST /ingest/sync/{task_id} to task-scoped ANY(:txids) query eliminating the 2-minute sliding window hazard; (2) added atomic Redis SETNX idempotency guard with 36-character UUID validation and bounded OrderedDict fallback; (3) migrated xai_store to reentrant threading.RLock with atomic upsert_batch API; (4) fixed attribution pollution by isolating seed recipients to RANSOMWHERE_SEED_RECIPIENT (proximity=0.5) and rescaled provisional scoring across [0.0, 1.0]; (5) exposed provisional: bool in EntityExplainResponse and EvidenceTrail · Verified via 32 passing pytests across test_inline_scorer.py (3/3), test_ingest_sync.py (8/8), test_dup_ingest.py (6/6), and test_ingest.py (15/15).

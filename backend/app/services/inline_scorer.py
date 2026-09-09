@@ -254,44 +254,55 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     # 2. Rule evaluation and address aggregation
     # Map each address to aggregated stats across all transactions it appears in
     address_map: dict[str, dict[str, Any]] = {}
+    thresh = max(_threshold, 1e-8)
 
     for i, row in enumerate(rows):
         mse = float(mses[i])
+        norm_anomaly = min(mse / thresh, 1.0)
         in_addrs = _parse_addresses(row.get("input_addresses"))
         out_addrs = _parse_addresses(row.get("output_addresses"))
+        row_ts = row.get("ts")
 
-        row_rules: list[str] = []
-
-        # Seed overlap check
-        seed_in = any(a in _seeds for a in in_addrs)
-        seed_out = any(a in _seeds for a in out_addrs)
-        if seed_in:
-            row_rules.append("RANSOMWHERE_SEED_INPUT")
-        if seed_out:
-            row_rules.append("RANSOMWHERE_SEED_OUTPUT")
-
+        # Row-level conditions
         # Peeling chain candidate check: exactly 2 outputs, exactly 1 input
         is_candidate = (len(out_addrs) == 2 and len(in_addrs) == 1)
-        if is_candidate:
-            row_rules.append("PEELING_CHAIN_CANDIDATE")
-
-        # Provisional composite score formula
-        thresh = max(_threshold, 1e-8)
-        norm_anomaly = min(mse / thresh, 1.0)
-        rule_factor = 1.0 if row_rules else 0.0
-        prov_score = min(max(0.35 * norm_anomaly + 0.15 * rule_factor, 0.0), 1.0)
-
-        row_ts = row.get("ts")
+        has_seed_in = any(a in _seeds for a in in_addrs)
 
         # Combine all addresses involved in this transaction
         all_row_addrs = list(dict.fromkeys(in_addrs + out_addrs))
+
         for addr in all_row_addrs:
+            addr_rules: list[str] = []
+            addr_prox = 0.0
+
+            is_in = addr in in_addrs
+            is_out = addr in out_addrs
+            is_seed = addr in _seeds
+
+            if is_in and is_seed:
+                addr_rules.append("RANSOMWHERE_SEED_INPUT")
+                addr_prox = max(addr_prox, 1.0)
+            if is_out and is_seed:
+                addr_rules.append("RANSOMWHERE_SEED_OUTPUT")
+                addr_prox = max(addr_prox, 1.0)
+            if is_out and has_seed_in and not is_seed:
+                addr_rules.append("RANSOMWHERE_SEED_RECIPIENT")
+                addr_prox = max(addr_prox, 0.5)
+
+            if is_candidate:
+                addr_rules.append("PEELING_CHAIN_CANDIDATE")
+
+            rule_factor = 1.0 if addr_rules else 0.0
+            raw_prov = 0.35 * norm_anomaly + 0.15 * rule_factor
+            prov_score = min(max(raw_prov / 0.50, 0.0), 1.0)
+
             if addr not in address_map:
                 address_map[addr] = {
                     "anomaly_score": mse,
                     "provisional_score": prov_score,
-                    "rules": set(row_rules),
+                    "rules": set(addr_rules),
                     "is_mixing": is_candidate,
+                    "seed_proximity": addr_prox,
                     "ts": row_ts,
                 }
             else:
@@ -300,8 +311,10 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                     entry["anomaly_score"] = mse
                 if prov_score > entry["provisional_score"]:
                     entry["provisional_score"] = prov_score
-                entry["rules"].update(row_rules)
+                entry["rules"].update(addr_rules)
                 entry["is_mixing"] = entry["is_mixing"] or is_candidate
+                if addr_prox > entry["seed_proximity"]:
+                    entry["seed_proximity"] = addr_prox
                 if row_ts is not None and (entry["ts"] is None or str(row_ts) > str(entry["ts"])):
                     entry["ts"] = row_ts
 
@@ -315,6 +328,7 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
         verdict = map_verdict(score)
         percentile = compute_percentile(anomaly)
         is_mix = bool(agg["is_mixing"])
+        seed_prox = float(agg["seed_proximity"])
         ts_str = str(agg["ts"]) if agg["ts"] is not None else None
 
         composite_record = {
@@ -333,7 +347,7 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
             "cluster_size": 0,
             "chain_hops": 1 if is_mix else 0,
             "mixing_patterns": ["PEELING_CHAIN_CANDIDATE"] if is_mix else [],
-            "seed_wallet_proximity": 1.0 if any("SEED" in r for r in rules_list) else 0.0,
+            "seed_wallet_proximity": seed_prox,
         }
 
         evidence_record = {
@@ -342,7 +356,7 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
             "anomaly_score": anomaly,
             "anomaly_percentile": percentile,
             "anomaly_rank_percentile": percentile,
-            "seed_wallet_proximity": 1.0 if any("SEED" in r for r in rules_list) else 0.0,
+            "seed_wallet_proximity": seed_prox,
             "mixing_hops": None,
             "triggered_rules": rules_list,
             "provisional": True,

@@ -167,6 +167,7 @@ def run_ingest_pipeline(
     total_inserted = 0
     total_rejected = 0
     rejected_rows: list[dict[str, Any]] = []
+    inserted_txids: list[str] = []
 
     conn = None
     try:
@@ -227,6 +228,7 @@ def run_ingest_pipeline(
                     inserted = insert_fn(conn, batch)
                     conn.commit()
                     total_inserted += inserted
+                    inserted_txids.extend(r["txid"] for r in batch if "txid" in r)
                 except psycopg2.Error as db_exc:
                     logger.error(
                         "COPY failed for batch ending at row ~%d: %s",
@@ -252,6 +254,7 @@ def run_ingest_pipeline(
                 inserted = insert_fn(conn, batch)
                 conn.commit()
                 total_inserted += inserted
+                inserted_txids.extend(r["txid"] for r in batch if "txid" in r)
             except psycopg2.Error as db_exc:
                 logger.error("COPY failed for final batch: %s", db_exc)
                 try:
@@ -279,6 +282,7 @@ def run_ingest_pipeline(
         "total_inserted": total_inserted,
         "total_rejected": total_rejected,
         "rejected_sample": rejected_rows,
+        "txids": inserted_txids,
     }
     logger.info(
         "Ingest pipeline complete: received=%d inserted=%d rejected=%d",

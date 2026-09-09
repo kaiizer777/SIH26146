@@ -33,7 +33,7 @@ _shap: dict[str, list[dict[str, Any]]] = {}  # address → list of 18 feature at
 _subgraph: dict[str, dict[str, Any]] = {}  # address → GNN subgraph
 
 _loaded: bool = False
-_store_lock = threading.Lock()
+_store_lock = threading.RLock()
 
 
 def load() -> None:
@@ -64,6 +64,27 @@ def load() -> None:
 # ---------------------------------------------------------------------------
 # Public getters & mutation APIs
 # ---------------------------------------------------------------------------
+
+
+def upsert_batch(scored_items: list[dict[str, Any]]) -> tuple[int, int]:
+    """Atomically upsert scored items into composite and evidence stores.
+
+    Skips overwriting existing pre-indexed non-provisional dossiers.
+    Returns: (upserted_count, skipped_existing_count)
+    """
+    upserted = 0
+    skipped = 0
+    with _store_lock:
+        for item in scored_items:
+            addr = item["address"]
+            existing = _composite.get(addr)
+            if existing is not None and not existing.get("provisional", False):
+                skipped += 1
+            else:
+                _composite[addr] = item["composite_record"]
+                _evidence[addr] = item["evidence_record"]
+                upserted += 1
+    return upserted, skipped
 
 
 def upsert_composite(address: str, record: dict[str, Any]) -> None:

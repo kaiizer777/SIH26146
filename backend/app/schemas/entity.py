@@ -49,6 +49,7 @@ class EvidenceTrail(BaseModel):
     triggered_rules: list[str] = []
     mixing_patterns: list[str] = []
     seed_family: Optional[str] = None
+    provisional: bool = False
     extra: dict[str, Any] = {}
 
 
@@ -63,3 +64,4 @@ class EntityExplainResponse(BaseModel):
     shap_attributions: list[ShapAttribution]
     gnn_subgraph: Optional[GnnSubgraph] = None
     summary_narrative: str
+    provisional: bool = False
