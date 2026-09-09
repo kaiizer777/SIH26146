@@ -97,6 +97,8 @@ export interface EvidenceTrail {
   triggered_rules: string[];
   mixing_patterns: string[];
   seed_family: string | null;
+  seed_wallet_proximity?: number | null;
+  provisional?: boolean;
   extra: Record<string, unknown>;
 }
 
@@ -109,6 +111,7 @@ export interface EntityExplainResponse {
   shap_attributions: ShapAttribution[];
   gnn_subgraph: GnnSubgraph | null;
   summary_narrative: string;
+  provisional?: boolean;
 }
 
 export interface GraphNode {
@@ -269,4 +272,37 @@ export async function uploadIngestFile(file: File): Promise<IngestResponse> {
 
 export async function fetchIngestStatus(taskId: string): Promise<TaskStatusResponse> {
   return apiFetch<TaskStatusResponse>(`/ingest/status/${taskId}`);
+}
+
+export interface IngestSyncResult {
+  scored: number;
+  upserted: number;
+  skipped_existing: number;
+}
+
+export async function syncIngestTask(
+  taskId: string,
+): Promise<IngestSyncResult> {
+  const res = await fetch(`${API_BASE}/ingest/sync/${encodeURIComponent(taskId)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${API_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (res.status === 409) {
+    return { scored: 0, upserted: 0, skipped_existing: 0 };
+  }
+
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const body = await res.json();
+      detail = extractErrorDetail(body, detail);
+    } catch {}
+    throw new ApiError(res.status, detail);
+  }
+
+  return res.json() as Promise<IngestSyncResult>;
 }

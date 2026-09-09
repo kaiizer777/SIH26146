@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { Upload, X, FileText, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { uploadIngestFile, fetchIngestStatus, ApiError } from "@/lib/api";
+import { uploadIngestFile, fetchIngestStatus, syncIngestTask, ApiError } from "@/lib/api";
 
 interface IngestModalProps {
   isOpen: boolean;
@@ -121,6 +121,18 @@ export default function IngestModal({
               setStage("success");
               setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
               toast.success(`Batch ingested: ${inserted} rows processed`);
+
+              // Sub-task 11.4: Post-ingest online inference sync (fail-open)
+              try {
+                await syncIngestTask(taskId);
+              } catch (syncErr) {
+                console.warn(
+                  "[IngestModal] post-ingest sync request failed:",
+                  syncErr,
+                  "— proceeding anyway",
+                );
+              }
+
               pollTimerRef.current = setTimeout(() => {
                 onSuccess();
                 handleClose();

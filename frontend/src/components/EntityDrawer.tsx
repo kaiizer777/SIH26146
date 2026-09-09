@@ -209,6 +209,7 @@ export default function EntityDrawer({
   };
 
   const verdict = (data?.verdict ?? "LOW") as Verdict;
+  const isProvisional = data?.provisional === true;
 
   return (
     <>
@@ -288,6 +289,26 @@ export default function EntityDrawer({
           {/* Data */}
           {!isLoading && !error && data && (
             <div className="flex flex-col gap-4 p-5">
+              {/* Provisional Warning Banner */}
+              {isProvisional && (
+                <div
+                  id="drawer-provisional-banner"
+                  role="status"
+                  className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-3.5 flex items-start gap-3"
+                >
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                      Provisional Analysis
+                    </p>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      This entity was ingested in the current session. SHAP waterfall and GNN
+                      subgraph are available only for pre-indexed entities. Anomaly score and
+                      rule detections are live.
+                    </p>
+                  </div>
+                </div>
+              )}
               {/* Identity block */}
               <div className="flex items-start justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="min-w-0 flex-1">
@@ -397,8 +418,34 @@ export default function EntityDrawer({
                     onToggle={() => setMlRowOpen((o) => !o)}
                     className="h-full"
                   >
-                    <Row label="Cluster ID" value={data.evidence_trail.cluster_id ?? "—"} mono />
-                    <Row label="Cluster Size" value={data.evidence_trail.cluster_size?.toLocaleString() ?? "—"} mono />
+                    <Row
+                      label="Cluster ID"
+                      value={isProvisional ? "—" : (data.evidence_trail.cluster_id ?? "—")}
+                      mono
+                      tooltip={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
+                      subtitle={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
+                    />
+                    <Row
+                      label="Cluster Size"
+                      value={isProvisional ? "—" : (data.evidence_trail.cluster_size?.toLocaleString() ?? "—")}
+                      mono
+                      tooltip={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
+                    />
+                    <Row
+                      label="Seed Wallet Proximity"
+                      value={
+                        isProvisional
+                          ? "—"
+                          : typeof data.evidence_trail.seed_wallet_proximity === "number"
+                          ? data.evidence_trail.seed_wallet_proximity.toFixed(4)
+                          : typeof data.evidence_trail.extra?.seed_wallet_proximity === "number"
+                          ? Number(data.evidence_trail.extra.seed_wallet_proximity).toFixed(4)
+                          : "—"
+                      }
+                      mono
+                      tooltip={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
+                      subtitle={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
+                    />
                     <Row
                       label="Anomaly Rank"
                       value={
@@ -460,13 +507,28 @@ export default function EntityDrawer({
                   icon={<Layers className="w-4 h-4" />}
                 >
                   <Row
+                    label="Mixing Detected"
+                    value={data.evidence_trail.is_mixing ? "Yes" : "No"}
+                    highlight={data.evidence_trail.is_mixing}
+                  />
+                  <Row
                     label="Peeling Chain"
                     value={data.evidence_trail.is_peeling_chain ? "Detected" : "Not detected"}
                     highlight={data.evidence_trail.is_peeling_chain}
                   />
-                  {data.evidence_trail.chain_hops != null && (
-                    <Row label="Chain Hops" value={data.evidence_trail.chain_hops} mono />
-                  )}
+                  <Row
+                    label="Mixing Hops"
+                    value={
+                      isProvisional
+                        ? "—"
+                        : (data.evidence_trail.chain_hops != null
+                          ? data.evidence_trail.chain_hops
+                          : "—")
+                    }
+                    mono
+                    tooltip={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
+                    subtitle={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
+                  />
                   {data.evidence_trail.pass_through_ratio != null && (
                     <Row
                       label="Pass-Through Ratio"
@@ -517,9 +579,75 @@ export default function EntityDrawer({
                 <Accordion
                   title="SHAP Feature Attributions"
                   icon={<Activity className="w-4 h-4 text-sky-600" />}
-                  defaultOpen={data.shap_attributions.length > 0}
+                  defaultOpen={isProvisional || data.shap_attributions.length > 0}
                 >
-                  <ShapWaterfall attributions={data.shap_attributions} />
+                  {isProvisional ? (
+                    <div
+                      id="shap-provisional-placeholder"
+                      className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
+                    >
+                      <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
+                        SHAP attribution unavailable for newly ingested entities — run full pipeline retraining to compute.
+                      </p>
+                    </div>
+                  ) : (
+                    <ShapWaterfall attributions={data.shap_attributions} />
+                  )}
+                </Accordion>
+
+                {/* Topological Subgraph & GNN Explainer */}
+                <Accordion
+                  title="Topological Subgraph & GNN Explainer"
+                  icon={<Network className="w-4 h-4 text-indigo-600" />}
+                  defaultOpen={isProvisional || (data.gnn_subgraph != null && data.gnn_subgraph.nodes.length > 0)}
+                >
+                  {isProvisional ? (
+                    <div
+                      id="gnn-provisional-placeholder"
+                      className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
+                    >
+                      <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
+                        Topological subgraph and Louvain cluster analysis unavailable for provisional entities — requires Neo4j graph pipeline update.
+                      </p>
+                    </div>
+                  ) : data.gnn_subgraph && data.gnn_subgraph.nodes.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+                        <span>
+                          Sub-network Neighbors ({data.gnn_subgraph.nodes.length} nodes, {data.gnn_subgraph.edges.length} edges)
+                        </span>
+                      </div>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                        {data.gnn_subgraph.nodes.map((node) => (
+                          <div
+                            key={node.id}
+                            className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200 text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className="crypto-mono font-medium text-slate-800 truncate"
+                                title={node.id}
+                              >
+                                {node.label || node.id}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold uppercase">
+                                {node.node_type}
+                              </span>
+                            </div>
+                            {node.risk_score != null && (
+                              <span className="crypto-mono font-bold text-red-600">
+                                {node.risk_score.toFixed(3)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 italic text-xs py-2">
+                      No topological subgraph recorded for this entity
+                    </p>
+                  )}
                 </Accordion>
               </div>
             </div>
@@ -553,20 +681,31 @@ function Row({
   value,
   mono = false,
   highlight = false,
+  tooltip,
+  subtitle,
 }: {
   label: string;
   value: string | number;
   mono?: boolean;
   highlight?: boolean;
+  tooltip?: string;
+  subtitle?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-0.5">
-      <span className="text-slate-500 text-xs sm:text-sm font-medium">{label}</span>
+    <div className="flex items-center justify-between py-0.5" title={tooltip}>
+      <div className="flex flex-col">
+        <span className="text-slate-500 text-xs sm:text-sm font-medium">{label}</span>
+        {subtitle && (
+          <span className="text-[10px] text-amber-600 font-normal">{subtitle}</span>
+        )}
+      </div>
       <span
+        title={tooltip}
         className={clsx(
           "text-xs sm:text-sm font-semibold",
           mono && "crypto-mono",
           highlight ? "text-red-600 font-bold" : "text-slate-800",
+          tooltip && "cursor-help underline decoration-dotted decoration-slate-400",
         )}
       >
         {value}

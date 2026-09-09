@@ -251,8 +251,8 @@ try {
 onSuccess(); // always refresh alert table
 ```
 
-- [ ] Add sync call to `IngestModal.tsx` with the try/catch fallback
-- [ ] End-to-end test: upload CSV with a wallet NOT in 17,020 indexed set → after ingest SUCCESS → clicking that wallet in AlertTable opens a provisional dossier (not a 404)
+- [x] Add sync call to `IngestModal.tsx` with the try/catch fallback
+- [x] End-to-end test: upload CSV with a wallet NOT in 17,020 indexed set → after ingest SUCCESS → clicking that wallet in AlertTable opens a provisional dossier (not a 404)
 
 ---
 
@@ -268,9 +268,9 @@ When `response.provisional === true`:
 
 Check must be `response.provisional === true` strictly. All 17,020 pre-indexed wallets have no `provisional` field and must render the full dossier unchanged.
 
-- [ ] Add provisional mode rendering to `EntityDrawer.tsx`
-- [ ] Verify: provisional wallets show banner, placeholders for SHAP/GNN, partial evidence trail
-- [ ] Verify: pre-indexed wallets render full SHAP + GNN dossier without regression
+- [x] Add provisional mode rendering to `EntityDrawer.tsx`
+- [x] Verify: provisional wallets show banner, placeholders for SHAP/GNN, partial evidence trail
+- [x] Verify: pre-indexed wallets render full SHAP + GNN dossier without regression
 
 ---
 
@@ -342,8 +342,8 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 - [x] `11.2` `inline_scorer.py` — clean forensic attribution, rescaled provisional scoring, `score_batch()` implemented
 - [x] `11.2` `test_inline_scorer.py` — unit test passes (`pytest -v`)
 - [x] `11.3` `POST /ingest/sync/{task_id}` — atomic SETNX, task-scoped txid query, DB 500 guard, UUID validation, new wallet dossier returns 200 with provisional: True
-- [ ] `11.4` `IngestModal.tsx` — auto-calls sync after SUCCESS with try/catch fallback
-- [ ] `11.5` `EntityDrawer.tsx` — provisional mode renders · pre-indexed wallets unaffected
+- [x] `11.4` `IngestModal.tsx` — auto-calls sync after SUCCESS with try/catch fallback
+- [x] `11.5` `EntityDrawer.tsx` — provisional mode renders · pre-indexed wallets unaffected
 
 ### Stage 3: Model Architecture Upgrade (Dual Transformer SOTA)
 - [ ] `ML-1` `train_autoencoder.py` — FT-Transformer implementation (`models/ft_transformer_anomaly.pt`, `models/ft_scaler.pkl`)
@@ -362,3 +362,4 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 - 2026-09-09 · [DUP-2 ACCESSIBILITY & ZERO-ROW GUARD] · Added empty 0-row ingest error guard to IngestModal.tsx preventing false positive success banners, and added Escape key handler for WCAG 2.2 keyboard parity · Verified via Next.js build and Stage 1 test suites.
 - 2026-09-09 · [11.1-11.3] · Implemented backend live post-ingest online inference sync: thread-safe mutation APIs in xai_store.py with threading.Lock, inline scoring service in inline_scorer.py using PyTorch Autoencoder reconstruction MSE and heuristic rules (peeling chain candidates and Ransomwhere seeds), and POST /ingest/sync/{task_id} in ingest.py with Celery status validation, Redis idempotency cooldown guard (TTL=3600s), and PostgreSQL recent-row retrieval · Verified via pytest backend/tests/test_inline_scorer.py -v (3/3 passed), pytest backend/tests/test_ingest_sync.py -v (4/4 passed), pytest backend/tests/test_dup_ingest.py -v (6/6 passed), and pytest backend/tests/test_ingest.py -v (15/15 passed, 2 skipped).
 - 2026-09-09 · [11.1-11.3 PRODUCTION REMEDIATION & HARDENING] · Hardened Stage 2 online inference against race conditions and attribution pollution: (1) captured committed txids in Celery task summary and switched POST /ingest/sync/{task_id} to task-scoped ANY(:txids) query eliminating the 2-minute sliding window hazard; (2) added atomic Redis SETNX idempotency guard with 36-character UUID validation and bounded OrderedDict fallback; (3) migrated xai_store to reentrant threading.RLock with atomic upsert_batch API; (4) fixed attribution pollution by isolating seed recipients to RANSOMWHERE_SEED_RECIPIENT (proximity=0.5) and rescaled provisional scoring across [0.0, 1.0]; (5) exposed provisional: bool in EntityExplainResponse and EvidenceTrail · Verified via 32 passing pytests across test_inline_scorer.py (3/3), test_ingest_sync.py (8/8), test_dup_ingest.py (6/6), and test_ingest.py (15/15).
+- 2026-09-09 · [11.4, 11.5] · Wired post-ingest auto-sync trigger in IngestModal.tsx with fail-open try/catch fallback and 409 handling in api.ts; implemented provisional dossier UI in EntityDrawer.tsx with AlertTriangle warning banner, clean dashed placeholders for SHAP waterfall and GNN subgraph, live anomaly/mixing/rule indicators, and Louvain/PageRank rerun indicators for graph-dependent metrics · Verified via Next.js production build (0 errors, optimized static generation), ESLint (0 errors, 0 warnings across all modified files), and backend regression suite (11/11 passing tests in test_inline_scorer.py and test_ingest_sync.py).
