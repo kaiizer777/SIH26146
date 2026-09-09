@@ -177,13 +177,27 @@ body {
 }
 
 /* =========================================================
-   Dot-matrix background pattern (D3 graph canvas)
+   Tactical Radar Canvas Pattern (D3 graph canvas)
    ========================================================= */
 
 .dot-matrix-bg {
   background-color: #f8fafc;
-  background-image: radial-gradient(#cbd5e1 1.25px, transparent 1.25px);
-  background-size: 20px 20px;
+  background-image:
+    radial-gradient(circle at center, rgba(2, 132, 199, 0.04) 0%, transparent 70%),
+    linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+    radial-gradient(#94a3b8 1.1px, transparent 1.1px);
+  background-size: 100% 100%, 120px 120px, 120px 120px, 24px 24px;
+}
+
+@keyframes radar-reticle-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-radar-reticle {
+  transform-origin: center;
+  animation: radar-reticle-spin 16s linear infinite;
 }
 
 /* =========================================================

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { Table, Network } from "lucide-react";
 import { clsx } from "clsx";
@@ -98,6 +98,24 @@ export default function SurveillanceDashboard() {
 
   const { items, total, isLoading, error, refresh, loadMore, hasMore } =
     useAlerts({ ...alertParams, pageSize: 50 });
+
+  // Auto-populate Prime Cluster #516 when entering graph view with no cluster active
+  useEffect(() => {
+    if (view === "graph" && graphClusterId === null && !graphLoading) {
+      setGraphLoading(true);
+      setGraphClusterId(516);
+      fetchGraph(516, 150)
+        .then((g) => {
+          setGraphNodes(g.nodes);
+          setGraphLinks(g.links);
+        })
+        .catch(() => {
+          setGraphNodes([]);
+          setGraphLinks([]);
+        })
+        .finally(() => setGraphLoading(false));
+    }
+  }, [view, graphClusterId, graphLoading]);
 
   // ---------------------------------------------------------------------------
   // Entity selection
@@ -337,10 +355,10 @@ function ViewToggle({
       id={id}
       onClick={onClick}
       className={clsx(
-        "flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer select-none",
+        "flex items-center gap-1.5 h-7.5 px-3.5 rounded-md text-xs font-semibold transition-all cursor-pointer select-none",
         active
-          ? "bg-white text-slate-900 shadow-xs border border-slate-200/60"
-          : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 border border-transparent",
+          ? "bg-white text-slate-900 shadow-card border border-slate-200/90 font-bold"
+          : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 border border-transparent font-medium",
       )}
     >
       {icon}
