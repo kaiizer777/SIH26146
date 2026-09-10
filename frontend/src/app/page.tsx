@@ -268,19 +268,19 @@ export default function SurveillanceDashboard() {
         {/* Center canvas */}
         <main className="flex flex-col flex-1 overflow-hidden">
           {/* Enhanced Command Header Toolbar */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200/90 bg-white shrink-0">
+          <div className="flex items-center justify-between px-4 py-1.5 border-b border-slate-200/90 bg-white shrink-0">
             {/* View switcher segmented control */}
-            <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200/80 shadow-inner">
+            <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200/80 shadow-2xs">
               <ViewToggle
                 active={view === "table"}
-                icon={<Table className="w-3.5 h-3.5" />}
+                icon={<Table className="w-3.5 h-3.5 stroke-[2.2]" />}
                 label="Alerts Stream"
                 id="view-toggle-table"
                 onClick={() => setView("table")}
               />
               <ViewToggle
                 active={view === "graph"}
-                icon={<Network className="w-3.5 h-3.5" />}
+                icon={<Network className="w-3.5 h-3.5 stroke-[2.2]" />}
                 label="Cluster Topology"
                 id="view-toggle-graph"
                 onClick={() => setView("graph")}
@@ -288,13 +288,13 @@ export default function SurveillanceDashboard() {
             </div>
 
             {/* Live stream status + count */}
-            <div className="flex items-center gap-3">
-              <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500">
+            <div className="flex items-center gap-2.5">
+              <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-200/80 bg-emerald-50/70 text-[10.5px] text-emerald-800 font-bold crypto-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="crypto-mono font-medium">STREAM SYNCED</span>
+                <span>STREAM SYNCED</span>
               </div>
-              <span className="crypto-mono text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded-md shadow-2xs">
-                {total.toLocaleString()} entities
+              <span className="crypto-mono text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded shadow-2xs">
+                {total.toLocaleString()} <span className="text-[11px] font-medium text-slate-500">entities</span>
               </span>
             </div>
           </div>
@@ -379,10 +379,10 @@ function ViewToggle({
       id={id}
       onClick={onClick}
       className={clsx(
-        "flex items-center gap-1.5 h-7.5 px-3.5 rounded-md text-xs font-semibold transition-all cursor-pointer select-none",
+        "flex items-center gap-1.5 h-7 px-3 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer select-none",
         active
-          ? "bg-white text-slate-900 shadow-card border border-slate-200/90 font-bold"
-          : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 border border-transparent font-medium",
+          ? "bg-white text-slate-900 shadow-xs border border-slate-200/90 font-bold"
+          : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 border border-transparent font-medium",
       )}
     >
       {icon}

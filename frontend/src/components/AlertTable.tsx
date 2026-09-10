@@ -27,17 +27,17 @@ interface AlertTableProps {
 // ---------------------------------------------------------------------------
 
 const VERDICT_PILL: Record<Verdict, string> = {
-  CRITICAL: "pill-critical text-red-800",
-  HIGH: "pill-high text-orange-900",
-  MEDIUM: "pill-medium text-yellow-900",
-  LOW: "pill-low text-emerald-800",
+  CRITICAL: "bg-red-50 text-red-700 border border-red-200/90 shadow-2xs",
+  HIGH: "bg-orange-50 text-orange-700 border border-orange-200/90 shadow-2xs",
+  MEDIUM: "bg-amber-50 text-amber-800 border border-amber-200/90 shadow-2xs",
+  LOW: "bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs",
 };
 
 const VERDICT_DOT: Record<Verdict, string> = {
-  CRITICAL: "bg-red-600 ring-2 ring-red-300",
-  HIGH: "bg-orange-600 ring-2 ring-orange-300",
-  MEDIUM: "bg-amber-500 ring-2 ring-amber-300",
-  LOW: "bg-emerald-600 ring-2 ring-emerald-300",
+  CRITICAL: "bg-red-600",
+  HIGH: "bg-orange-600",
+  MEDIUM: "bg-amber-500",
+  LOW: "bg-emerald-600",
 };
 
 // ---------------------------------------------------------------------------
@@ -312,7 +312,7 @@ export default function AlertTable({
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-white">
       {/* Search Bar strip */}
-      <div className="px-4 py-2.5 border-b border-slate-200/90 bg-white shadow-2xs">
+      <div className="px-4 py-2 border-b border-slate-200/90 bg-white">
         <SearchBar
           value={searchValue}
           onChange={onSearchChange}
@@ -342,7 +342,7 @@ export default function AlertTable({
                 <th
                   key={name}
                   className={clsx(
-                    "py-2.5 px-3.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap select-none",
+                    "py-2 px-3.5 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 whitespace-nowrap select-none",
                     width,
                   )}
                 >
@@ -359,8 +359,8 @@ export default function AlertTable({
                   const isSelected = item.address === selectedAddress;
                   const verdict = item.verdict as Verdict;
                   const anomalyScore = item.anomaly_score ?? 0;
-                  // Anomaly intensity for micro-bar (normalized 0-1)
-                  const anomalyRatio = Math.min(1, Math.max(0, (anomalyScore - 0) / 4));
+                  // Non-linear proportional scale (preserves visual discrimination from 0.1 to 50+)
+                  const anomalyIntensity = Math.min(100, Math.max(6, Math.round((Math.log10(anomalyScore + 1) / 1.7) * 100)));
 
                   return (
                     <tr
@@ -371,17 +371,17 @@ export default function AlertTable({
                         onSelect(item);
                       }}
                       className={clsx(
-                        "group cursor-pointer transition-colors duration-100",
+                        "group cursor-pointer transition-colors duration-75",
                         isSelected
-                          ? "bg-sky-50/90 border-l-4 border-l-sky-600 font-medium"
-                          : "hover:bg-slate-50/90 border-l-4 border-l-transparent",
+                          ? "bg-sky-50/80 border-l-2 border-l-sky-600 font-medium"
+                          : "hover:bg-slate-50/80 border-l-2 border-l-transparent",
                       )}
                     >
                       {/* Risk Verdict */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <td className="py-2 px-3.5 whitespace-nowrap">
                         <span
                           className={clsx(
-                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-tight shadow-2xs",
+                            "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10.5px] font-bold tracking-tight shadow-2xs",
                             VERDICT_PILL[verdict],
                           )}
                         >
@@ -392,35 +392,37 @@ export default function AlertTable({
                             )}
                           />
                           <span>{verdict}</span>
-                          <span className="crypto-mono font-extrabold text-[11px] opacity-90 ml-0.5">
+                          <span className="crypto-mono font-black text-[10.5px] opacity-90 ml-0.5">
                             {item.composite_score.toFixed(3)}
                           </span>
                         </span>
                       </td>
 
                       {/* Address */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <td className="py-2 px-3.5 whitespace-nowrap">
                         <CopyableAddress address={item.address} />
                       </td>
 
                       {/* Anomaly Score with inline spark indicator */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <td className="py-2 px-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {/* Micro severity spark bar */}
                           <div
-                            className="w-10 h-1.5 rounded-full bg-slate-200/80 overflow-hidden shrink-0"
+                            className="w-12 h-1.5 rounded-full bg-slate-200/70 overflow-hidden shrink-0"
                             title={`Anomaly score: ${anomalyScore.toFixed(4)}`}
                           >
                             <div
                               className={clsx(
-                                "h-full rounded-full",
-                                anomalyScore >= 2.5
-                                  ? "bg-red-500"
+                                "h-full rounded-full transition-all",
+                                anomalyScore >= 10.0
+                                  ? "bg-red-600"
+                                  : anomalyScore >= 3.0
+                                  ? "bg-orange-500"
                                   : anomalyScore >= 1.0
                                   ? "bg-amber-500"
                                   : "bg-sky-500",
                               )}
-                              style={{ width: `${Math.max(8, anomalyRatio * 100)}%` }}
+                              style={{ width: `${anomalyIntensity}%` }}
                             />
                           </div>
                           <span className="crypto-mono text-xs font-semibold text-slate-800">
@@ -437,9 +439,9 @@ export default function AlertTable({
                       </td>
 
                       {/* Cluster Partition */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <td className="py-2 px-3.5 whitespace-nowrap">
                         {item.cluster_id != null ? (
-                          <span className="crypto-mono text-xs px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 border border-slate-200 font-semibold shadow-2xs">
+                          <span className="crypto-mono text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-bold shadow-2xs">
                             #{item.cluster_id}
                           </span>
                         ) : (
@@ -448,28 +450,29 @@ export default function AlertTable({
                       </td>
 
                       {/* Mixing / Pattern Flag */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <td className="py-2 px-3.5 whitespace-nowrap">
                         <LaunderingPatternBadge item={item} />
                       </td>
 
                       {/* Seed status */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <td className="py-2 px-3.5 whitespace-nowrap">
                         {item.is_seed ? (
-                          <span className="crypto-mono text-xs px-2 py-0.5 rounded-md bg-red-100/80 text-red-800 border border-red-200 font-bold shadow-2xs">
+                          <span className="inline-flex items-center gap-1 crypto-mono text-[10.5px] px-1.5 py-0.5 rounded font-bold bg-red-50 text-red-700 border border-red-200 shadow-2xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                             {item.seed_family
                               ? item.seed_family.slice(0, 16)
                               : "SEED"}
                           </span>
                         ) : (
-                          <span className="crypto-mono text-xs text-slate-500 font-medium">
+                          <span className="crypto-mono text-[11px] text-slate-400 font-medium">
                             Clean
                           </span>
                         )}
                       </td>
 
                       {/* Telemetry timestamp */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
-                        <span className="crypto-mono text-xs text-slate-600 font-medium">
+                      <td className="py-2 px-3.5 whitespace-nowrap">
+                        <span className="crypto-mono text-[11px] text-slate-600 font-medium">
                           {item.ts
                             ? item.ts.replace("T", " ").slice(0, 16) + " UTC"
                             : "—"}
@@ -535,7 +538,7 @@ function SearchBar({ value, onChange, inputRef }: SearchBarProps) {
   return (
     <div className="relative flex items-center w-full group">
       <div className="absolute left-3 text-slate-400 group-focus-within:text-sky-600 pointer-events-none flex items-center transition-colors">
-        <Search className="w-3.5 h-3.5" />
+        <Search className="w-3.5 h-3.5 stroke-[2.2]" />
       </div>
       <input
         ref={inputRef}
@@ -544,9 +547,9 @@ function SearchBar({ value, onChange, inputRef }: SearchBarProps) {
         placeholder="Search by Bitcoin address prefix… (/ or Ctrl+K)"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="tactile-input w-full h-8.5 pl-9 pr-8 text-xs rounded-md crypto-mono font-medium placeholder:font-normal placeholder:text-slate-400"
+        className="tactile-input w-full h-8 pl-8.5 pr-14 text-xs rounded-md crypto-mono font-medium placeholder:font-normal placeholder:text-slate-400"
       />
-      {value && (
+      {value ? (
         <button
           onClick={() => onChange("")}
           className="absolute right-2.5 text-slate-400 hover:text-slate-700 transition-colors p-0.5 rounded hover:bg-slate-100 cursor-pointer"
@@ -554,6 +557,10 @@ function SearchBar({ value, onChange, inputRef }: SearchBarProps) {
         >
           <X className="w-3.5 h-3.5" />
         </button>
+      ) : (
+        <div className="absolute right-2.5 pointer-events-none hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200/80 text-[10px] text-slate-400 crypto-mono">
+          <span>Ctrl K</span>
+        </div>
       )}
     </div>
   );
