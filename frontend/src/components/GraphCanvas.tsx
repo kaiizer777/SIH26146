@@ -19,10 +19,19 @@ import {
   Layers,
   Network,
   Globe,
-  Radio,
   ExternalLink,
   Pin,
   Sparkles,
+  SlidersHorizontal,
+  Sun,
+  Moon,
+  Workflow,
+  Radio,
+  Target,
+  Eye,
+  EyeOff,
+  ChevronRight,
+  Info,
 } from "lucide-react";
 import type { GraphNode, GraphLink } from "@/lib/api";
 
@@ -43,6 +52,8 @@ interface SimNode extends d3.SimulationNodeDatum {
   anomaly_score: number | null;
   is_seed: boolean;
   country: string | null;
+  tier?: number;
+  degree?: number;
 }
 
 interface SimLink extends d3.SimulationLinkDatum<SimNode> {
@@ -51,8 +62,11 @@ interface SimLink extends d3.SimulationLinkDatum<SimNode> {
   is_explanatory: boolean;
   attention_score?: number | null;
   head_attentions?: Record<string, number> | null;
+  curvature?: number;
 }
 
+type LayoutMode = "force" | "concentric" | "flow";
+type CanvasTheme = "light" | "dark";
 type RiskTier = "seed" | "critical" | "high" | "medium" | "low";
 
 function getRiskTier(score: number | null, isSeed: boolean): RiskTier {
@@ -64,18 +78,33 @@ function getRiskTier(score: number | null, isSeed: boolean): RiskTier {
   return "low";
 }
 
-function getNodeColors(tier: RiskTier): { fill: string; stroke: string; glow?: string } {
+function getNodeColors(tier: RiskTier, isDark: boolean): { fill: string; stroke: string; glow?: string } {
+  if (isDark) {
+    switch (tier) {
+      case "seed":
+        return { fill: "#ef4444", stroke: "#fca5a5", glow: "#dc2626" };
+      case "critical":
+        return { fill: "#f87171", stroke: "#fee2e2", glow: "#ef4444" };
+      case "high":
+        return { fill: "#fb923c", stroke: "#ffedd5", glow: "#f97316" };
+      case "medium":
+        return { fill: "#fbbf24", stroke: "#fef3c7" };
+      default:
+        return { fill: "#34d399", stroke: "#a7f3d0" };
+    }
+  }
+
   switch (tier) {
     case "seed":
-      return { fill: "#dc2626", stroke: "#7f1d1d", glow: "#dc2626" };
+      return { fill: "#dc2626", stroke: "#991b1b", glow: "#dc2626" };
     case "critical":
-      return { fill: "#ef4444", stroke: "#991b1b", glow: "#ef4444" };
+      return { fill: "#ef4444", stroke: "#b91c1c", glow: "#ef4444" };
     case "high":
-      return { fill: "#f97316", stroke: "#c2410c", glow: "#f97316" };
+      return { fill: "#ea580c", stroke: "#9a3412", glow: "#f97316" };
     case "medium":
-      return { fill: "#f59e0b", stroke: "#b45309" };
+      return { fill: "#d97706", stroke: "#b45309" };
     default:
-      return { fill: "#10b981", stroke: "#047857" };
+      return { fill: "#059669", stroke: "#047857" };
   }
 }
 
@@ -85,26 +114,6 @@ const ATTENTION_HEADS = [
   { key: "head_3_seed_prox", label: "Head 3: Seed Proximity Propagation", fallback: 0.78 },
   { key: "head_4_peeling", label: "Head 4: Peeling Cascade Saliency", fallback: 0.65 },
 ] as const;
-
-function getLinkColor(d: SimLink, isEmphasized = false): string {
-  if (isEmphasized || (d.attention_score ?? 0) >= 0.7 || d.is_explanatory) return "#06b6d4";
-  if (d.amount && d.amount >= 1.0) return "#64748b";
-  return "#94a3b8";
-}
-
-function getLinkWidth(d: SimLink, isEmphasized = false): number {
-  const base = d.attention_score ? 1.0 + d.attention_score * 2.5 : (d.is_explanatory ? 2.2 : 1.2);
-  return isEmphasized ? base + 1.2 : base;
-}
-
-function getLinkOpacity(d: SimLink, isEmphasized = false): number {
-  if (isEmphasized) return 1.0;
-  return d.attention_score ?? (d.is_explanatory ? 0.85 : 0.40);
-}
-
-function getLinkFilter(d: SimLink): string | null {
-  return ((d.attention_score ?? 0) >= 0.75 || d.is_explanatory) ? "url(#attention-glow-filter)" : null;
-}
 
 function AttentionBreakdownSection({
   attentionScore,
@@ -145,15 +154,13 @@ function AttentionBreakdownSection({
 
       <div className="space-y-1.5">
         {ATTENTION_HEADS.map(({ key, label, fallback }) => {
-          const val = heads ? (heads[key] ?? fallback) : (isExplanatory ? fallback : fallback * 0.35);
+          const val = heads ? (heads[key] ?? fallback) : isExplanatory ? fallback : fallback * 0.35;
           const pct = Math.round(Math.min(1.0, Math.max(0.0, val)) * 100);
           return (
             <div key={key} className="flex flex-col gap-0.5">
               <div className="flex items-center justify-between text-[9.5px]">
                 <span className="text-slate-300 font-medium">{label}</span>
-                <span className="crypto-mono font-bold text-cyan-300">
-                  {val.toFixed(2)}
-                </span>
+                <span className="crypto-mono font-bold text-cyan-300">{val.toFixed(2)}</span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-slate-800/90 overflow-hidden">
                 <div
@@ -180,31 +187,44 @@ export default function GraphCanvas({
   const svgRef = useRef<SVGSVGElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const transformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
 
-  const [frozen, setFrozen] = useState(false);
+  // Canvas display controls
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("force");
+  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>("light");
+  const [saliencyMode, setSaliencyMode] = useState<boolean>(false);
+  const [frozen, setFrozen] = useState<boolean>(false);
+  const [showMinimap, setShowMinimap] = useState<boolean>(true);
+
+  // Inspector & selection state
   const [selectedNode, setSelectedNode] = useState<SimNode | null>(null);
   const selectedNodeRef = useRef<SimNode | null>(null);
   selectedNodeRef.current = selectedNode;
+
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
-  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
-  const [hoverLeader, setHoverLeader] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const hoveredNodeRef = useRef<SimNode | null>(null);
   hoveredNodeRef.current = hoveredNode;
+
   const [selectedLink, setSelectedLink] = useState<SimLink | null>(null);
   const selectedLinkRef = useRef<SimLink | null>(null);
   selectedLinkRef.current = selectedLink;
+
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [hoverLeader, setHoverLeader] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+
   const simNodesRef = useRef<SimNode[]>([]);
   const simLinksRef = useRef<SimLink[]>([]);
+
+  // Filtering & search
   const [nodeFilter, setNodeFilter] = useState<"all" | "high" | "seeds" | "wallets" | "tx" | "ip">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState<string>("");
 
+  // Live UTC Clock
   useEffect(() => {
     const update = () =>
-      setNow(
-        new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC",
-      );
+      setNow(new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC");
     update();
     const t = setInterval(update, 1000);
     return () => clearInterval(t);
@@ -220,30 +240,17 @@ export default function GraphCanvas({
 
   const activeDisplayNode = selectedNode ?? hoveredNode;
 
-  const primaryIncidentLink = useMemo(() => {
-    if (!activeDisplayNode) return null;
-    const incident = simLinksRef.current.filter((l) => {
-      const s = typeof l.source === "string" ? l.source : (l.source as SimNode).id;
-      const t = typeof l.target === "string" ? l.target : (l.target as SimNode).id;
-      return s === activeDisplayNode.id || t === activeDisplayNode.id;
-    });
-    if (incident.length === 0) return null;
-    return (
-      incident.find((l) => (l.attention_score ?? 0) >= 0.75) ??
-      incident.find((l) => l.is_explanatory) ??
-      incident.find((l) => l.attention_score != null) ??
-      incident[0]
-    );
-  }, [activeDisplayNode]);
-
   // -------------------------------------------------------------------------
-  // 1-Hop Topology Adjacency & Degree Mapping
+  // Topology Adjacency, Degrees & Counts
   // -------------------------------------------------------------------------
-
   const { adjacency, inOutDegree, counts } = useMemo(() => {
     const adj = new Map<string, Set<string>>();
     const degree = new Map<string, { in: number; out: number }>();
-    let wallets = 0, txs = 0, ips = 0, seeds = 0, high = 0;
+    let wallets = 0,
+      txs = 0,
+      ips = 0,
+      seeds = 0,
+      high = 0;
 
     nodes.forEach((n) => {
       adj.set(n.id, new Set<string>());
@@ -312,13 +319,37 @@ export default function GraphCanvas({
     return set;
   }, [nodes, nodeFilter, searchQuery]);
 
+  const searchMatches = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase().trim();
+    return nodes.filter(
+      (n) => n.id.toLowerCase().includes(q) || Boolean(n.label?.toLowerCase().includes(q))
+    );
+  }, [nodes, searchQuery]);
+
+  // Primary incident link for selected/hovered node
+  const primaryIncidentLink = useMemo(() => {
+    if (!activeDisplayNode) return null;
+    const incident = simLinksRef.current.filter((l) => {
+      const s = typeof l.source === "string" ? l.source : (l.source as SimNode).id;
+      const t = typeof l.target === "string" ? l.target : (l.target as SimNode).id;
+      return s === activeDisplayNode.id || t === activeDisplayNode.id;
+    });
+    if (incident.length === 0) return null;
+    return (
+      incident.find((l) => (l.attention_score ?? 0) >= 0.75) ??
+      incident.find((l) => l.is_explanatory) ??
+      incident.find((l) => l.attention_score != null) ??
+      incident[0]
+    );
+  }, [activeDisplayNode]);
+
   // -------------------------------------------------------------------------
   // Zoom & View Navigation
   // -------------------------------------------------------------------------
-
   const resetView = useCallback(() => {
     if (!svgRef.current || !zoomRef.current) return;
-    d3.select(svgRef.current).transition().duration(350).call(zoomRef.current.transform, d3.zoomIdentity);
+    d3.select(svgRef.current).transition().duration(400).call(zoomRef.current.transform, d3.zoomIdentity);
   }, []);
 
   const zoomBy = useCallback((factor: number) => {
@@ -329,12 +360,15 @@ export default function GraphCanvas({
   const fitToScreen = useCallback(() => {
     if (!svgRef.current || !zoomRef.current || nodes.length === 0) return;
     const svgEl = svgRef.current;
-    const width = svgEl.clientWidth || 800;
-    const height = svgEl.clientHeight || 600;
-    const simNodes = simRef.current?.nodes() || [];
+    const width = svgEl.clientWidth || 900;
+    const height = svgEl.clientHeight || 650;
+    const simNodes = simNodesRef.current;
     if (simNodes.length === 0) return;
 
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
     simNodes.forEach((n) => {
       if (n.x != null && n.y != null) {
         minX = Math.min(minX, n.x);
@@ -345,9 +379,9 @@ export default function GraphCanvas({
     });
     if (minX === Infinity) return;
 
-    const graphW = Math.max(maxX - minX + 80, 100);
-    const graphH = Math.max(maxY - minY + 80, 100);
-    const scale = Math.min(1.8, Math.max(0.2, Math.min(width / graphW, height / graphH)));
+    const graphW = Math.max(maxX - minX + 120, 150);
+    const graphH = Math.max(maxY - minY + 120, 150);
+    const scale = Math.min(1.8, Math.max(0.48, Math.min(width / graphW, height / graphH)));
     const transform = d3.zoomIdentity
       .translate(width / 2, height / 2)
       .scale(scale)
@@ -355,6 +389,24 @@ export default function GraphCanvas({
 
     d3.select(svgEl).transition().duration(500).call(zoomRef.current.transform, transform);
   }, [nodes]);
+
+  const zoomToNode = useCallback((nodeId: string) => {
+    if (!svgRef.current || !zoomRef.current) return;
+    const targetNode = simNodesRef.current.find((n) => n.id === nodeId);
+    if (!targetNode || targetNode.x == null || targetNode.y == null) return;
+
+    const width = svgRef.current.clientWidth || 900;
+    const height = svgRef.current.clientHeight || 650;
+    const transform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(1.4)
+      .translate(-targetNode.x, -targetNode.y);
+
+    d3.select(svgRef.current).transition().duration(550).call(zoomRef.current.transform, transform);
+
+    setSelectedNode(targetNode);
+    setHoveredNode(targetNode);
+  }, []);
 
   const toggleFreeze = useCallback(() => {
     if (!simRef.current) return;
@@ -374,28 +426,28 @@ export default function GraphCanvas({
     });
   }, []);
 
-  // Calculate dynamic card position outside the active 1-hop neighbor cluster with zero overlap
+  // -------------------------------------------------------------------------
+  // Dynamic HUD Placement Outside Active Cluster
+  // -------------------------------------------------------------------------
   const updateHoverCardPos = useCallback(
     (d: SimNode) => {
       if (!svgRef.current) return;
       const svgEl = svgRef.current;
-      const transform = d3.zoomTransform(svgEl);
+      const transform = transformRef.current;
       const nx = transform.applyX(d.x ?? 0);
       const ny = transform.applyY(d.y ?? 0);
       const cw = svgEl.clientWidth || 1000;
       const ch = svgEl.clientHeight || 700;
-      const cardW = 380;
-      const cardH = 410;
-      const CLEARANCE = 28;
+      const cardW = 360;
+      const cardH = 390;
+      const CLEARANCE = 32;
 
-      // Retrieve all 1-hop illuminated neighbor coordinates in screen space
       const neighborIds = adjacency.get(d.id);
       const simNodes = simNodesRef.current;
       const neighborNodes = simNodes.filter(
-        (n) => neighborIds?.has(n.id) && n.x != null && n.y != null,
+        (n) => neighborIds?.has(n.id) && n.x != null && n.y != null
       );
 
-      // Compute bounding box of the entire illuminated 1-hop subgraph in screen pixels
       let minX = nx;
       let maxX = nx;
       neighborNodes.forEach((n) => {
@@ -404,33 +456,25 @@ export default function GraphCanvas({
         maxX = Math.max(maxX, px);
       });
 
-      // Place card completely outside the neighbor cluster:
       let left: number;
       const rightPlacement = maxX + CLEARANCE;
       const leftPlacement = minX - CLEARANCE - cardW;
 
-      if (rightPlacement + cardW <= cw - 16) {
-        // Fits cleanly to the right of all neighbors
+      if (rightPlacement + cardW <= cw - 20) {
         left = rightPlacement;
-      } else if (leftPlacement >= 16) {
-        // Fits cleanly to the left of all neighbors
+      } else if (leftPlacement >= 20) {
         left = leftPlacement;
       } else {
-        // Cluster spans most of screen: place on whichever side has more free room
-        const spaceRight = cw - maxX;
-        const spaceLeft = minX;
-        left = spaceRight >= spaceLeft ? Math.max(16, cw - cardW - 16) : 16;
+        left = cw - maxX >= minX ? Math.max(20, cw - cardW - 20) : 20;
       }
 
-      // Vertical position: center on node, clamped away from top bar (56px) and bottom legend (50px)
       let top = ny - cardH / 2;
-      top = Math.max(56, Math.min(ch - cardH - 50, top));
+      top = Math.max(64, Math.min(ch - cardH - 54, top));
 
       setHoverPos({ x: left, y: top });
 
-      // Tactical leader line attachment on card border
       const attachX = left > nx ? left : left + cardW;
-      const attachY = Math.max(top + 24, Math.min(top + cardH - 24, ny));
+      const attachY = Math.max(top + 20, Math.min(top + cardH - 20, ny));
 
       setHoverLeader({
         x1: nx,
@@ -439,14 +483,13 @@ export default function GraphCanvas({
         y2: attachY,
       });
     },
-    [adjacency],
+    [adjacency]
   );
 
-  // Calculate dynamic card position for a selected link
   const updateLinkCardPos = useCallback((link: SimLink) => {
     if (!svgRef.current) return;
     const svgEl = svgRef.current;
-    const transform = d3.zoomTransform(svgEl);
+    const transform = transformRef.current;
     const src = link.source as SimNode;
     const tgt = link.target as SimNode;
     const mx = ((src.x ?? 0) + (tgt.x ?? 0)) / 2;
@@ -455,25 +498,25 @@ export default function GraphCanvas({
     const ny = transform.applyY(my);
     const cw = svgEl.clientWidth || 1000;
     const ch = svgEl.clientHeight || 700;
-    const cardW = 380;
-    const cardH = 410;
-    const CLEARANCE = 28;
+    const cardW = 360;
+    const cardH = 390;
+    const CLEARANCE = 32;
 
     let left = nx + CLEARANCE;
-    if (left + cardW > cw - 16) {
+    if (left + cardW > cw - 20) {
       left = nx - CLEARANCE - cardW;
-      if (left < 16) {
-        left = Math.max(16, (cw - cardW) / 2);
+      if (left < 20) {
+        left = Math.max(20, (cw - cardW) / 2);
       }
     }
 
     let top = ny - cardH / 2;
-    top = Math.max(56, Math.min(ch - cardH - 50, top));
+    top = Math.max(64, Math.min(ch - cardH - 54, top));
 
     setHoverPos({ x: left, y: top });
 
     const attachX = left > nx ? left : left + cardW;
-    const attachY = Math.max(top + 24, Math.min(top + cardH - 24, ny));
+    const attachY = Math.max(top + 20, Math.min(top + cardH - 20, ny));
 
     setHoverLeader({
       x1: nx,
@@ -484,81 +527,208 @@ export default function GraphCanvas({
   }, []);
 
   // -------------------------------------------------------------------------
-  // Main D3 Force Graph Simulation & Rendering
+  // Path Geometry Builder (Curved & Truncated at Node Radii)
   // -------------------------------------------------------------------------
+  const buildLinkPath = useCallback((d: SimLink): string => {
+    const src = d.source as SimNode;
+    const tgt = d.target as SimNode;
+    const sx = src.x ?? 0;
+    const sy = src.y ?? 0;
+    const tx = tgt.x ?? 0;
+    const ty = tgt.y ?? 0;
 
+    const dx = tx - sx;
+    const dy = ty - sy;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) return `M ${sx},${sy} L ${tx},${ty}`;
+
+    const rSrc = src.is_seed ? 22 : src.type === "wallet" ? 15 : 13;
+    const rTgt = tgt.is_seed ? 22 : tgt.type === "wallet" ? 15 : 13;
+
+    const ux = dx / dist;
+    const uy = dy / dist;
+
+    // Truncate cleanly at node outer boundary so arrowheads sit flush
+    const startX = sx + ux * (rSrc + 2);
+    const startY = sy + uy * (rSrc + 2);
+    const endX = tx - ux * (rTgt + 5);
+    const endY = ty - uy * (rTgt + 5);
+
+    const curve = d.curvature ?? 0;
+    if (Math.abs(curve) < 0.01) {
+      return `M ${startX},${startY} L ${endX},${endY}`;
+    }
+
+    // Quadratic Bezier curve offset
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+    const normX = -uy * curve * dist;
+    const normY = ux * curve * dist;
+    const ctrlX = midX + normX;
+    const ctrlY = midY + normY;
+
+    return `M ${startX},${startY} Q ${ctrlX},${ctrlY} ${endX},${endY}`;
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Primary D3 Graph Simulation & Rendering
+  // -------------------------------------------------------------------------
   useEffect(() => {
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const width = svgRef.current.clientWidth || 800;
-    const height = svgRef.current.clientHeight || 600;
+    const width = svgRef.current.clientWidth || 900;
+    const height = svgRef.current.clientHeight || 650;
+    const isDark = canvasTheme === "dark";
 
-    // Defs: Tactical Arrowheads & Filters
+    // -----------------------------------------------------------------------
+    // Defs: Gradients, Filters & Substantial Forensics Markers
+    // -----------------------------------------------------------------------
     const defs = svg.append("defs");
 
-    // Standard arrow
-    defs.append("marker")
+    // Standard arrowhead - enlarged and authoritative
+    defs
+      .append("marker")
       .attr("id", "arrow-standard")
       .attr("viewBox", "0 -4 8 8")
-      .attr("refX", 18).attr("refY", 0)
-      .attr("markerWidth", 5).attr("markerHeight", 5)
+      .attr("refX", 7)
+      .attr("refY", 0)
+      .attr("markerWidth", 6.5)
+      .attr("markerHeight", 6.5)
       .attr("orient", "auto")
-      .append("path").attr("d", "M0,-3L6,0L0,3").attr("fill", "#94a3b8");
+      .append("path")
+      .attr("d", "M0,-3L6.5,0L0,3")
+      .attr("fill", isDark ? "#94a3b8" : "#334155");
 
-    // Explanatory cyan arrow
-    defs.append("marker")
-      .attr("id", "arrow-explanatory")
+    // Saliency cyber cyan arrowhead - prominent
+    defs
+      .append("marker")
+      .attr("id", "arrow-saliency")
       .attr("viewBox", "0 -4 8 8")
-      .attr("refX", 20).attr("refY", 0)
-      .attr("markerWidth", 6).attr("markerHeight", 6)
+      .attr("refX", 7)
+      .attr("refY", 0)
+      .attr("markerWidth", 7.5)
+      .attr("markerHeight", 7.5)
       .attr("orient", "auto")
-      .append("path").attr("d", "M0,-3.5L7,0L0,3.5").attr("fill", "#06b6d4");
+      .append("path")
+      .attr("d", "M0,-3.5L7,0L0,3.5")
+      .attr("fill", "#06b6d4");
 
-    // Glow critical filter
-    const filterCrit = defs.append("filter").attr("id", "glow-critical").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
-    filterCrit.append("feDropShadow").attr("dx", 0).attr("dy", 0).attr("stdDeviation", 3.5).attr("flood-color", "#ef4444").attr("flood-opacity", 0.65);
+    // Critical Red Arrowhead
+    defs
+      .append("marker")
+      .attr("id", "arrow-critical")
+      .attr("viewBox", "0 -4 8 8")
+      .attr("refX", 7)
+      .attr("refY", 0)
+      .attr("markerWidth", 6.5)
+      .attr("markerHeight", 6.5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-3L6.5,0L0,3")
+      .attr("fill", "#ef4444");
 
-    // Glow seed filter
-    const filterSeed = defs.append("filter").attr("id", "glow-seed").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
-    filterSeed.append("feDropShadow").attr("dx", 0).attr("dy", 0).attr("stdDeviation", 5).attr("flood-color", "#dc2626").attr("flood-opacity", 0.85);
+    // Glow Seed Filter
+    const filterSeed = defs
+      .append("filter")
+      .attr("id", "glow-seed")
+      .attr("x", "-50%")
+      .attr("y", "-50%")
+      .attr("width", "200%")
+      .attr("height", "200%");
+    filterSeed
+      .append("feDropShadow")
+      .attr("dx", 0)
+      .attr("dy", 0)
+      .attr("stdDeviation", 4.5)
+      .attr("flood-color", "#dc2626")
+      .attr("flood-opacity", 0.75);
 
-    // Attention Glow Filter (Cyber Cyan #06b6d4 / #38bdf8)
-    const filterAttn = defs.append("filter")
+    // Glow Critical Filter
+    const filterCrit = defs
+      .append("filter")
+      .attr("id", "glow-critical")
+      .attr("x", "-50%")
+      .attr("y", "-50%")
+      .attr("width", "200%")
+      .attr("height", "200%");
+    filterCrit
+      .append("feDropShadow")
+      .attr("dx", 0)
+      .attr("dy", 0)
+      .attr("stdDeviation", 3.5)
+      .attr("flood-color", "#ef4444")
+      .attr("flood-opacity", 0.65);
+
+    // Attention Glow Filter (Refined Cyber Cyan)
+    const filterAttn = defs
+      .append("filter")
       .attr("id", "attention-glow-filter")
-      .attr("x", "-50%").attr("y", "-50%")
-      .attr("width", "200%").attr("height", "200%");
-    filterAttn.append("feDropShadow")
-      .attr("dx", 0).attr("dy", 0)
-      .attr("stdDeviation", 3.2)
+      .attr("x", "-50%")
+      .attr("y", "-50%")
+      .attr("width", "200%")
+      .attr("height", "200%");
+    filterAttn
+      .append("feDropShadow")
+      .attr("dx", 0)
+      .attr("dy", 0)
+      .attr("stdDeviation", 2.8)
       .attr("flood-color", "#06b6d4")
       .attr("flood-opacity", 0.85);
-    filterAttn.append("feGaussianBlur")
-      .attr("stdDeviation", 2)
-      .attr("result", "blur");
-    const feMergeAttn = filterAttn.append("feMerge");
-    feMergeAttn.append("feMergeNode").attr("in", "blur");
-    feMergeAttn.append("feMergeNode").attr("in", "SourceGraphic");
+
+    // Background Canvas Grid Pattern (Light & Dark Blueprint Modes)
+    const gridPattern = defs
+      .append("pattern")
+      .attr("id", "canvas-blueprint-grid")
+      .attr("width", 40)
+      .attr("height", 40)
+      .attr("patternUnits", "userSpaceOnUse");
+
+    gridPattern
+      .append("path")
+      .attr("d", "M 40 0 L 0 0 0 40")
+      .attr("fill", "none")
+      .attr("stroke", isDark ? "rgba(56, 189, 248, 0.07)" : "rgba(148, 163, 184, 0.16)")
+      .attr("stroke-width", 0.8);
+
+    gridPattern
+      .append("circle")
+      .attr("cx", 0)
+      .attr("cy", 0)
+      .attr("r", 1.2)
+      .attr("fill", isDark ? "rgba(56, 189, 248, 0.25)" : "rgba(100, 116, 139, 0.35)");
 
     // Root Group
     const g = svg.append("g").attr("class", "graph-root");
 
-    // Deselect when clicking canvas background
+    // Draw infinite blueprint grid backing
+    g.append("rect")
+      .attr("class", "grid-canvas-plane")
+      .attr("x", -10000)
+      .attr("y", -10000)
+      .attr("width", 20000)
+      .attr("height", 20000)
+      .attr("fill", "url(#canvas-blueprint-grid)")
+      .style("pointer-events", "all");
+
+    // Deselect when clicking empty canvas
     svg.on("click", (e) => {
-      if (e.target === svgRef.current || (e.target as HTMLElement).tagName === "svg") {
-        setSelectedNode(null);
-        setSelectedLink(null);
-        setHoveredNode(null);
-        setHoverPos(null);
-        setHoverLeader(null);
+      if (
+        e.target === svgRef.current ||
+        (e.target as HTMLElement).tagName === "svg" ||
+        (e.target as HTMLElement).classList.contains("grid-canvas-plane")
+      ) {
+        handleCloseInspector();
       }
     });
 
+    // Zoom setup
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 8])
+      .scaleExtent([0.1, 7])
       .on("zoom", (ev) => {
+        transformRef.current = ev.transform;
         g.attr("transform", ev.transform);
         const activeNode = selectedNodeRef.current ?? hoveredNodeRef.current;
         if (activeNode) {
@@ -573,31 +743,86 @@ export default function GraphCanvas({
     if (nodes.length === 0) return;
 
     // Simulation Data Prep
-    const simNodes: SimNode[] = nodes.map((n) => ({ ...n }));
+    const simNodes: SimNode[] = nodes.map((n) => {
+      const deg = (inOutDegree.get(n.id)?.in ?? 0) + (inOutDegree.get(n.id)?.out ?? 0);
+      let tier = 3;
+      if (n.is_seed || (n.risk_score ?? 0) >= 0.85) tier = 0;
+      else if (n.type === "wallet" && (n.risk_score ?? 0) >= 0.5) tier = 1;
+      else if (n.type === "transaction") tier = 2;
+      else if (n.type === "ip") tier = 4;
+
+      return {
+        ...n,
+        degree: deg,
+        tier,
+      };
+    });
     simNodesRef.current = simNodes;
     const nodeById = new Map(simNodes.map((n) => [n.id, n]));
+
+    // Multi-edge curvature assignment to prevent overlaps
+    const edgePairCounts = new Map<string, number>();
     const simLinks: SimLink[] = links
       .filter((l) => nodeById.has(l.source as string) && nodeById.has(l.target as string))
-      .map((l) => ({
-        source: nodeById.get(l.source as string)!,
-        target: nodeById.get(l.target as string)!,
-        linkType: l.type,
-        amount: l.amount ?? null,
-        is_explanatory: l.is_explanatory,
-        attention_score: l.attention_score ?? null,
-        head_attentions: l.head_attentions ?? null,
-      }));
+      .map((l) => {
+        const s = l.source as string;
+        const t = l.target as string;
+        const key = s < t ? `${s}__${t}` : `${t}__${s}`;
+        const count = edgePairCounts.get(key) ?? 0;
+        edgePairCounts.set(key, count + 1);
+
+        // Alternate subtle curves for parallel edges
+        const curvature = count === 0 ? 0 : (count % 2 === 1 ? 0.12 * Math.ceil(count / 2) : -0.12 * (count / 2));
+
+        return {
+          source: nodeById.get(s)!,
+          target: nodeById.get(t)!,
+          linkType: l.type,
+          amount: l.amount ?? null,
+          is_explanatory: l.is_explanatory,
+          attention_score: l.attention_score ?? null,
+          head_attentions: l.head_attentions ?? null,
+          curvature,
+        };
+      });
     simLinksRef.current = simLinks;
 
-    // Links Layer
-    const linkSel = g.append("g").attr("class", "links-layer")
-      .selectAll<SVGLineElement, SimLink>("line").data(simLinks).join("line")
+    // -----------------------------------------------------------------------
+    // Links Layer (Smooth Paths)
+    // -----------------------------------------------------------------------
+    const linksGroup = g.append("g").attr("class", "links-layer");
+
+    const linkPaths = linksGroup
+      .selectAll<SVGPathElement, SimLink>("path")
+      .data(simLinks)
+      .join("path")
       .attr("class", "graph-edge")
-      .attr("stroke", (d) => getLinkColor(d))
-      .attr("stroke-width", (d) => getLinkWidth(d))
-      .attr("stroke-opacity", (d) => getLinkOpacity(d))
-      .attr("filter", (d) => getLinkFilter(d))
-      .attr("marker-end", (d) => (((d.attention_score ?? 0) >= 0.7 || d.is_explanatory) ? "url(#arrow-explanatory)" : "url(#arrow-standard)"))
+      .attr("fill", "none")
+      .attr("stroke", (d) => {
+        const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
+        if (saliencyMode && isAttn) return "#06b6d4";
+        if (d.linkType === "CO_SPEND") return isDark ? "#64748b" : "#64748b";
+        if (d.linkType === "OBSERVED") return isDark ? "#38bdf8" : "#0284c7";
+        return isDark ? "#94a3b8" : "#334155";
+      })
+      .attr("stroke-width", (d) => {
+        const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
+        if (saliencyMode && isAttn) return 3.5;
+        return 2.4;
+      })
+      .attr("stroke-opacity", (d) => {
+        const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
+        if (saliencyMode && isAttn) return 1.0;
+        if (d.linkType === "CO_SPEND") return 0.75;
+        if (d.linkType === "OBSERVED") return 0.75;
+        return 0.8;
+      })
+      .attr("stroke-dasharray", (d) => (d.linkType === "CO_SPEND" ? "4,3" : d.linkType === "OBSERVED" ? "3,3" : null))
+      .attr("marker-end", (d) => {
+        const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
+        if (saliencyMode && isAttn) return "url(#arrow-saliency)";
+        return "url(#arrow-standard)";
+      })
       .style("cursor", "pointer")
       .on("click", (ev, d) => {
         ev.stopPropagation();
@@ -607,128 +832,143 @@ export default function GraphCanvas({
         updateLinkCardPos(d);
       });
 
+    // -----------------------------------------------------------------------
     // Nodes Layer
-    const nodeSel = g.append("g").attr("class", "nodes-layer")
-      .selectAll<SVGGElement, SimNode>("g").data(simNodes).join("g")
+    // -----------------------------------------------------------------------
+    const nodesGroup = g.append("g").attr("class", "nodes-layer");
+
+    const nodeGroups = nodesGroup
+      .selectAll<SVGGElement, SimNode>("g")
+      .data(simNodes)
+      .join("g")
       .attr("class", "node-group")
       .attr("data-node-id", (d) => d.id)
       .attr("opacity", 1)
       .style("cursor", "pointer");
 
-    // Helper for hub size scaling
     const getHubBoost = (id: string) => {
       const deg = (inOutDegree.get(id)?.in ?? 0) + (inOutDegree.get(id)?.out ?? 0);
-      return Math.min(deg * 0.35, 5);
+      return Math.min(deg * 0.45, 8);
     };
 
-    // --- A. Wallet Nodes (Vibrant Solid Circles + 3D Specular Ring) ---
-    const wallets = nodeSel.filter((d) => d.type === "wallet");
+    // A. Wallets (Substantial, High-Contrast Nodes)
+    const wallets = nodeGroups.filter((d) => d.type === "wallet");
 
-    // Seed Outer Radar Sweep Reticle
-    wallets.filter((d) => d.is_seed)
+    // Seed Outer Radar Beacon
+    wallets
+      .filter((d) => d.is_seed)
       .append("circle")
       .attr("class", "animate-radar-reticle")
-      .attr("r", (d) => 10 + getHubBoost(d.id) + 7)
+      .attr("r", (d) => 22 + getHubBoost(d.id))
       .attr("fill", "none")
       .attr("stroke", "#dc2626")
-      .attr("stroke-width", 1.8)
+      .attr("stroke-width", 2.2)
       .attr("stroke-dasharray", "4,3")
-      .attr("opacity", 0.95)
-      .attr("pointer-events", "none");
+      .attr("opacity", 0.95);
 
-    // Wallet Solid Core Circle
-    wallets.append("circle")
+    // Wallet Solid Core
+    wallets
+      .append("circle")
       .attr("class", "node-core")
       .attr("r", (d) => {
-        const base = d.is_seed ? 10 : (d.risk_score ?? 0) >= 0.8 ? 9 : 7.5;
-        return base + getHubBoost(d.id) + (d.risk_score ?? 0) * 3;
+        const base = d.is_seed ? 17 : (d.risk_score ?? 0) >= 0.8 ? 14 : (d.risk_score ?? 0) >= 0.5 ? 12.5 : 11;
+        return base + getHubBoost(d.id) * 0.6;
       })
-      .attr("fill", (d) => getNodeColors(getRiskTier(d.risk_score, d.is_seed)).fill)
-      .attr("stroke", (d) => getNodeColors(getRiskTier(d.risk_score, d.is_seed)).stroke)
-      .attr("stroke-width", (d) => (d.is_seed ? 2 : 1.6))
-      .attr("filter", (d) => (d.is_seed ? "url(#glow-seed)" : (d.risk_score ?? 0) >= 0.8 ? "url(#glow-critical)" : null));
+      .attr("fill", (d) => getNodeColors(getRiskTier(d.risk_score, d.is_seed), isDark).fill)
+      .attr("stroke", (d) => (isDark ? "#ffffff" : getNodeColors(getRiskTier(d.risk_score, d.is_seed), isDark).stroke))
+      .attr("stroke-width", (d) => (d.is_seed ? 2.8 : 2.2))
+      .attr("filter", (d) =>
+        d.is_seed ? "url(#glow-seed)" : (d.risk_score ?? 0) >= 0.8 ? "url(#glow-critical)" : null
+      );
 
-    // Wallet Inner Specular Ring (3D depth)
-    wallets.append("circle")
+    // Specular 3D Highlight Ring
+    wallets
+      .append("circle")
       .attr("r", (d) => {
-        const base = d.is_seed ? 7 : (d.risk_score ?? 0) >= 0.8 ? 6 : 5;
-        return Math.max(3, base + getHubBoost(d.id) * 0.7);
+        const base = d.is_seed ? 11 : (d.risk_score ?? 0) >= 0.8 ? 9 : 7;
+        return base + getHubBoost(d.id) * 0.4;
       })
       .attr("fill", "none")
-      .attr("stroke", "rgba(255, 255, 255, 0.45)")
-      .attr("stroke-width", 1);
+      .attr("stroke", "rgba(255, 255, 255, 0.55)")
+      .attr("stroke-width", 1.2);
 
-    // Micro-badge Text for Seed and Critical Nodes
-    wallets.filter((d) => d.is_seed)
-      .append("text")
-      .attr("y", (d) => 10 + getHubBoost(d.id) + 16)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "7.5px")
-      .attr("font-family", "monospace")
-      .attr("font-weight", "800")
-      .attr("fill", "#dc2626")
-      .text("SEED");
+    // Micro-badge Pill for Seed Entities
+    wallets
+      .filter((d) => d.is_seed)
+      .append("g")
+      .attr("transform", (d) => `translate(0, ${22 + getHubBoost(d.id)})`)
+      .call((gBadge) => {
+        gBadge
+          .append("rect")
+          .attr("x", -16)
+          .attr("y", -7)
+          .attr("width", 32)
+          .attr("height", 14)
+          .attr("rx", 4)
+          .attr("fill", "#dc2626")
+          .attr("stroke", "#ffffff")
+          .attr("stroke-width", 1.2)
+          .attr("filter", "url(#glow-seed)");
 
-    wallets.filter((d) => !d.is_seed && (d.risk_score ?? 0) >= 0.8)
-      .append("text")
-      .attr("y", (d) => 9 + getHubBoost(d.id) + 15)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "7px")
-      .attr("font-family", "monospace")
-      .attr("font-weight", "700")
-      .attr("fill", "#dc2626")
-      .text("CRIT");
+        gBadge
+          .append("text")
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "central")
+          .attr("font-size", "8px")
+          .attr("font-family", "var(--font-jetbrains-mono, monospace)")
+          .attr("font-weight", "800")
+          .attr("fill", "#ffffff")
+          .text("SEED");
+      });
 
-    // --- B. Transactions (Microchip Rounded Rectangles) ---
-    const txs = nodeSel.filter((d) => d.type === "transaction");
-    txs.append("rect")
+    // B. Transactions (Sleek Geometric Micro-Hexagon Vertices)
+    const txs = nodeGroups.filter((d) => d.type === "transaction");
+    txs
+      .append("polygon")
       .attr("class", "node-core")
-      .attr("x", -8).attr("y", -8)
-      .attr("width", 16).attr("height", 16)
-      .attr("rx", 3.5)
-      .attr("fill", "#f8fafc")
-      .attr("stroke", "#64748b")
-      .attr("stroke-width", 1.5);
+      .attr("points", "-9,-12 9,-12 14,0 9,12 -9,12 -14,0")
+      .attr("fill", isDark ? "#1e293b" : "#ffffff")
+      .attr("stroke", isDark ? "#94a3b8" : "#334155")
+      .attr("stroke-width", 2.2);
 
-    txs.append("text")
-      .attr("text-anchor", "middle")
-      .attr("dominant-baseline", "central")
-      .attr("font-size", "7.5px")
-      .attr("font-family", "monospace")
-      .attr("font-weight", "bold")
-      .attr("fill", "#334155")
-      .text("TX");
+    txs
+      .append("circle")
+      .attr("r", 3.5)
+      .attr("fill", isDark ? "#38bdf8" : "#0284c7");
 
-    // --- C. IPs (Cyber Sky Diamonds) ---
-    const ips = nodeSel.filter((d) => d.type === "ip");
-    ips.append("polygon")
+    // C. IPs (Cyber Sky Diamond)
+    const ips = nodeGroups.filter((d) => d.type === "ip");
+    ips
+      .append("polygon")
       .attr("class", "node-core")
-      .attr("points", "0,-10 10,0 0,10 -10,0")
-      .attr("fill", "#e0f2fe")
+      .attr("points", "0,-14 14,0 0,14 -14,0")
+      .attr("fill", isDark ? "#0c4a6e" : "#e0f2fe")
       .attr("stroke", "#0284c7")
-      .attr("stroke-width", 1.8);
+      .attr("stroke-width", 2.2);
 
-    ips.append("text")
+    ips
+      .append("text")
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central")
-      .attr("font-size", "7px")
-      .attr("font-family", "monospace")
+      .attr("font-size", "8.5px")
+      .attr("font-family", "var(--font-jetbrains-mono, monospace)")
       .attr("font-weight", "bold")
-      .attr("fill", "#0369a1")
+      .attr("fill", isDark ? "#7dd3fc" : "#0369a1")
       .text((d) => d.country?.slice(0, 2).toUpperCase() ?? "IP");
 
-    // --- D. Selection & Focus Halo ---
-    nodeSel.append("circle")
+    // D. Selection Halo
+    nodeGroups
+      .append("circle")
       .attr("class", "selection-halo")
-      .attr("r", (d) => (d.type === "wallet" ? 17 + getHubBoost(d.id) + (d.risk_score ?? 0) * 3 : 15))
+      .attr("r", (d) => (d.type === "wallet" ? 22 + getHubBoost(d.id) : 19))
       .attr("fill", "none")
       .attr("stroke", "#0284c7")
-      .attr("stroke-width", 2.5)
-      .attr("stroke-dasharray", "3,3")
+      .attr("stroke-width", 2.8)
+      .attr("stroke-dasharray", "4,3")
       .attr("opacity", 0);
 
-    // Event handlers
-    nodeSel
+    // Event Handlers
+    nodeGroups
       .on("mouseenter", (_, d) => {
         if (!selectedNodeRef.current) {
           setHoveredNode(d);
@@ -751,52 +991,222 @@ export default function GraphCanvas({
       });
 
     // Drag behavior
-    const drag = d3.drag<SVGGElement, SimNode>()
-      .on("start", (ev, d) => { if (!ev.active) sim.alphaTarget(0.2).restart(); d.fx = d.x; d.fy = d.y; })
+    const drag = d3
+      .drag<SVGGElement, SimNode>()
+      .on("start", (ev, d) => {
+        if (!ev.active && layoutMode === "force") simRef.current?.alphaTarget(0.2).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      })
       .on("drag", (ev, d) => {
         d.fx = ev.x;
         d.fy = ev.y;
         if (selectedNodeRef.current?.id === d.id || hoveredNodeRef.current?.id === d.id) {
           updateHoverCardPos(d);
-        } else if (selectedLinkRef.current) {
-          const l = selectedLinkRef.current;
-          if ((l.source as SimNode).id === d.id || (l.target as SimNode).id === d.id) {
-            updateLinkCardPos(l);
-          }
         }
       })
-      .on("end", (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; });
-    nodeSel.call(drag as never);
+      .on("end", (ev, d) => {
+        if (!ev.active && layoutMode === "force") simRef.current?.alphaTarget(0);
+        if (layoutMode === "force") {
+          d.fx = null;
+          d.fy = null;
+        }
+      });
+    nodeGroups.call(drag as never);
 
-    // Force Simulation Setup
-    const sim = d3.forceSimulation<SimNode>(simNodes)
-      .alphaDecay(0.035)
-      .force("link", d3.forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(65))
-      .force("charge", d3.forceManyBody().strength(-170))
+    // -----------------------------------------------------------------------
+    // Layout Calculation Functions
+    // -----------------------------------------------------------------------
+    const applyLayout = (mode: LayoutMode) => {
+      const cx = width / 2;
+      const cy = height / 2;
+
+      if (mode === "concentric") {
+        // Stop physics simulation
+        simRef.current?.stop();
+
+        // 4 Concentric Tiers:
+        // Tier 0: Seed / Critical Targets at Center (r = 30)
+        // Tier 1: Wallets directly related (r = 160)
+        // Tier 2: Transactions (r = 280)
+        // Tier 3: Secondary Wallets (r = 390)
+        // Tier 4: IP Hosts (r = 490)
+        const tiers: SimNode[][] = [[], [], [], [], []];
+        simNodes.forEach((n) => {
+          const t = n.tier ?? 3;
+          tiers[Math.min(4, Math.max(0, t))].push(n);
+        });
+
+        const radii = [45, 165, 285, 395, 495];
+
+        tiers.forEach((tierNodes, tIdx) => {
+          const r = radii[tIdx];
+          const count = tierNodes.length;
+          tierNodes.forEach((node, i) => {
+            const angle = (2 * Math.PI * i) / Math.max(1, count) - Math.PI / 2;
+            const targetX = cx + (count === 1 && tIdx === 0 ? 0 : r * Math.cos(angle));
+            const targetY = cy + (count === 1 && tIdx === 0 ? 0 : r * Math.sin(angle));
+
+            node.fx = targetX;
+            node.fy = targetY;
+          });
+        });
+
+        // Animate nodes to concentric positions
+        nodeGroups
+          .transition()
+          .duration(700)
+          .ease(d3.easeCubicOut)
+          .attr("transform", (d) => `translate(${d.fx ?? 0},${d.fy ?? 0})`)
+          .on("end", function (d) {
+            d.x = d.fx ?? d.x;
+            d.y = d.fy ?? d.y;
+          });
+
+        linkPaths
+          .transition()
+          .duration(700)
+          .ease(d3.easeCubicOut)
+          .attr("d", (d) => {
+            const src = d.source as SimNode;
+            const tgt = d.target as SimNode;
+            const savedSrc = { ...src, x: src.fx ?? src.x, y: src.fy ?? src.y };
+            const savedTgt = { ...tgt, x: tgt.fx ?? tgt.x, y: tgt.fy ?? tgt.y };
+            return buildLinkPath({ ...d, source: savedSrc, target: savedTgt });
+          });
+      } else if (mode === "flow") {
+        // Directed Inflow-Outflow DAG columns
+        simRef.current?.stop();
+
+        const colSeeds = simNodes.filter((n) => n.is_seed || (n.risk_score ?? 0) >= 0.7);
+        const colWallets = simNodes.filter((n) => !n.is_seed && (n.risk_score ?? 0) < 0.7 && n.type === "wallet");
+        const colTxs = simNodes.filter((n) => n.type === "transaction");
+        const colIps = simNodes.filter((n) => n.type === "ip");
+
+        const columns = [
+          { x: cx - 440, nodes: colSeeds },
+          { x: cx - 150, nodes: colTxs },
+          { x: cx + 160, nodes: colWallets },
+          { x: cx + 440, nodes: colIps },
+        ];
+
+        columns.forEach(({ x, nodes: colNodes }) => {
+          const count = colNodes.length;
+          const spacing = Math.min(36, Math.max(20, 600 / Math.max(1, count)));
+          const startY = cy - ((count - 1) * spacing) / 2;
+
+          colNodes.forEach((node, idx) => {
+            node.fx = x;
+            node.fy = startY + idx * spacing;
+          });
+        });
+
+        nodeGroups
+          .transition()
+          .duration(700)
+          .ease(d3.easeCubicOut)
+          .attr("transform", (d) => `translate(${d.fx ?? 0},${d.fy ?? 0})`)
+          .on("end", function (d) {
+            d.x = d.fx ?? d.x;
+            d.y = d.fy ?? d.y;
+          });
+
+        linkPaths
+          .transition()
+          .duration(700)
+          .ease(d3.easeCubicOut)
+          .attr("d", (d) => {
+            const src = d.source as SimNode;
+            const tgt = d.target as SimNode;
+            const savedSrc = { ...src, x: src.fx ?? src.x, y: src.fy ?? src.y };
+            const savedTgt = { ...tgt, x: tgt.fx ?? tgt.x, y: tgt.fy ?? tgt.y };
+            return buildLinkPath({ ...d, source: savedSrc, target: savedTgt });
+          });
+      } else {
+        // Mode === 'force'
+        // Clear fixed anchors and let dynamic degree-adaptive physics breathe
+        simNodes.forEach((n) => {
+          n.fx = null;
+          n.fy = null;
+        });
+
+        simRef.current?.alpha(0.6).restart();
+      }
+    };
+
+    // -----------------------------------------------------------------------
+    // Force Simulation Setup (Mathematically Balanced for 150+ Nodes)
+    // -----------------------------------------------------------------------
+    const sim = d3
+      .forceSimulation<SimNode>(simNodes)
+      .alphaDecay(0.028)
+      // Degree-adaptive link distance to let large hubs spread out naturally
+      .force(
+        "link",
+        d3
+          .forceLink<SimNode, SimLink>(simLinks)
+          .id((d) => d.id)
+          .distance((l) => {
+            const sDeg = (l.source as SimNode).degree ?? 1;
+            const tDeg = (l.target as SimNode).degree ?? 1;
+            return Math.max(70, Math.min(135, 65 + (sDeg + tDeg) * 1.8));
+          })
+      )
+      // Degree-adaptive repulsion to eliminate hairballs
+      .force(
+        "charge",
+        d3.forceManyBody<SimNode>().strength((d) => {
+          const deg = d.degree ?? 1;
+          return -280 - Math.min(deg * 18, 380);
+        })
+      )
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide(22))
+      // Generous collision detection preventing any node overlap with larger nodes
+      .force(
+        "collision",
+        d3.forceCollide<SimNode>((d) => {
+          if (d.is_seed) return 38;
+          if (d.type === "wallet") return 28;
+          if (d.type === "transaction") return 24;
+          return 22;
+        })
+      )
+      // Gentle radial centering to keep disconnected nodes from drifting away
+      .force("radial", d3.forceRadial(260, width / 2, height / 2).strength(0.05))
       .on("tick", () => {
-        linkSel
-          .attr("x1", (d) => (d.source as SimNode).x ?? 0)
-          .attr("y1", (d) => (d.source as SimNode).y ?? 0)
-          .attr("x2", (d) => (d.target as SimNode).x ?? 0)
-          .attr("y2", (d) => (d.target as SimNode).y ?? 0);
-        nodeSel.attr("transform", (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
+        if (layoutMode === "force") {
+          linkPaths.attr("d", buildLinkPath);
+          nodeGroups.attr("transform", (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
+        }
       });
 
     simRef.current = sim;
-    return () => { sim.stop(); };
-  }, [nodes, links, inOutDegree]);
+
+    // Trigger initial layout
+    if (layoutMode !== "force") {
+      applyLayout(layoutMode);
+    }
+
+    // Auto-fit to viewport after initial stabilization
+    const timer = setTimeout(() => {
+      fitToScreen();
+    }, 550);
+
+    return () => {
+      clearTimeout(timer);
+      sim.stop();
+    };
+  }, [nodes, links, inOutDegree, canvasTheme, layoutMode, saliencyMode, buildLinkPath, handleCloseInspector, fitToScreen]);
 
   // -------------------------------------------------------------------------
   // Dynamic 1-Hop Neighborhood Highlighting & Filtering
   // -------------------------------------------------------------------------
-
   useEffect(() => {
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
     const isFiltered = filteredNodeIds !== null;
     const hasFocus = connectedNodeIds !== null;
+    const isDark = canvasTheme === "dark";
 
     svg.selectAll<SVGGElement, SimNode>(".node-group").each(function (d) {
       let isVisible = true;
@@ -809,17 +1219,25 @@ export default function GraphCanvas({
       }
       const isTarget = selectedLink ? isVisible : d.id === activeFocusId;
 
-      d3.select(this).transition().duration(140).attr("opacity", isVisible ? 1 : 0.12);
-      d3.select(this).select(".selection-halo").transition().duration(140).attr("opacity", isTarget ? 1 : 0);
+      d3.select(this)
+        .transition()
+        .duration(120)
+        .attr("opacity", isVisible ? 1 : 0.12);
+
+      d3.select(this)
+        .select(".selection-halo")
+        .transition()
+        .duration(120)
+        .attr("opacity", isTarget ? 1 : 0);
     });
 
-    svg.selectAll<SVGLineElement, SimLink>(".links-layer line").each(function (d) {
+    svg.selectAll<SVGPathElement, SimLink>(".links-layer path").each(function (d) {
       const sId = (d.source as SimNode).id;
       const tId = (d.target as SimNode).id;
       let isConn = true;
       if (selectedLink) {
         isConn =
-          (d === selectedLink) ||
+          d === selectedLink ||
           (sId === (selectedLink.source as SimNode).id && tId === (selectedLink.target as SimNode).id) ||
           (sId === (selectedLink.target as SimNode).id && tId === (selectedLink.source as SimNode).id);
       } else if (hasFocus) {
@@ -829,48 +1247,76 @@ export default function GraphCanvas({
       }
 
       const isEmphasized = (Boolean(selectedLink) && isConn) || (hasFocus && isConn);
-      const baseWidth = getLinkWidth(d, isEmphasized);
-      const baseOpacity = isConn ? (isEmphasized ? 1.0 : getLinkOpacity(d)) : 0.06;
-      const baseColor = isEmphasized ? "#06b6d4" : getLinkColor(d);
-      const baseFilter = isConn ? getLinkFilter(d) : null;
+      const isHighSaliency = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
 
-      d3.select(this).transition().duration(140)
+      let baseColor = isDark ? "#94a3b8" : "#334155";
+      if (isEmphasized || (saliencyMode && isHighSaliency)) {
+        baseColor = "#06b6d4";
+      } else if (d.linkType === "CO_SPEND") {
+        baseColor = isDark ? "#64748b" : "#64748b";
+      } else if (d.linkType === "OBSERVED") {
+        baseColor = isDark ? "#38bdf8" : "#0284c7";
+      }
+
+      const baseWidth = isEmphasized ? 3.5 : saliencyMode && isHighSaliency ? 3.5 : 2.4;
+      const baseOpacity = isConn ? (isEmphasized ? 1.0 : saliencyMode && isHighSaliency ? 1.0 : 0.8) : 0.08;
+      const marker =
+        isEmphasized || (saliencyMode && isHighSaliency) ? "url(#arrow-saliency)" : "url(#arrow-standard)";
+
+      d3.select(this)
+        .transition()
+        .duration(120)
         .attr("stroke-opacity", baseOpacity)
         .attr("stroke-width", baseWidth)
         .attr("stroke", baseColor)
-        .attr("filter", baseFilter);
+        .attr("marker-end", marker)
+        .attr("filter", isEmphasized || (saliencyMode && isHighSaliency) ? "url(#attention-glow-filter)" : null);
     });
-  }, [activeFocusId, connectedNodeIds, filteredNodeIds, selectedLink]);
+  }, [activeFocusId, connectedNodeIds, filteredNodeIds, selectedLink, canvasTheme, saliencyMode]);
 
   return (
-    <div className="relative flex-1 flex flex-col overflow-hidden bg-slate-50 select-none">
+    <div
+      className={clsx(
+        "relative flex-1 flex flex-col overflow-hidden select-none transition-colors duration-200",
+        canvasTheme === "dark" ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
+      )}
+    >
       {/* ------------------------------------------------------------------- */}
-      {/* Integrated Studio Command Bar (Clean, Non-overlapping Layout) */}
+      {/* Studio Forensic Command Toolbar (Clean Spacing, Unclipped Controls) */}
       {/* ------------------------------------------------------------------- */}
       <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-3 pointer-events-none">
-        {/* Left: Cluster Partition Badge + Filter Pills */}
+        {/* Left Cluster Stats & Filter Pills */}
         <div className="pointer-events-auto flex items-center gap-2 flex-wrap max-w-[65vw]">
           {clusterId != null && (
-            <div className="flex items-center gap-2 crypto-mono text-xs text-slate-800 bg-white/95 backdrop-blur-md border border-slate-200/90 px-3 py-1.5 rounded-lg shadow-card">
-              <Network className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-              <span className="font-extrabold text-slate-900 tracking-tight">Cluster #{clusterId}</span>
-              <span className="text-slate-300">|</span>
+            <div
+              className={clsx(
+                "flex items-center gap-2 crypto-mono text-xs px-3 py-1.5 rounded-lg shadow-card border backdrop-blur-md transition-colors",
+                canvasTheme === "dark"
+                  ? "bg-slate-900/90 border-slate-800 text-slate-200"
+                  : "bg-white/95 border-slate-200/90 text-slate-800"
+              )}
+            >
+              <Network className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+              <span className="font-extrabold tracking-tight">Cluster #{clusterId}</span>
+              <span className="text-slate-400">|</span>
               <span className="text-slate-500 font-medium">
                 {nodes.length} Nodes • {links.length} Edges
               </span>
               {highlightMode && (
-                <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-sky-50 text-sky-700 border border-sky-200 tracking-wider">
+                <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-sky-500/15 text-sky-500 border border-sky-500/30 tracking-wider">
                   GNN ACTIVE
                 </span>
               )}
             </div>
           )}
 
-          {/* Tactical Filter Pills */}
-          <div className="hidden sm:flex items-center gap-1 p-1 rounded-lg bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-card">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1.5">
-              Filter:
-            </span>
+          {/* Tactical Entity Filters */}
+          <div
+            className={clsx(
+              "hidden sm:flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card transition-colors",
+              canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-white/95 border-slate-200/90"
+            )}
+          >
             {[
               { id: "all", label: "All", count: nodes.length },
               { id: "high", label: "High Risk", count: counts.high },
@@ -885,8 +1331,10 @@ export default function GraphCanvas({
                 className={clsx(
                   "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5",
                   nodeFilter === id
-                    ? "bg-slate-900 text-white shadow-2xs font-bold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
+                    ? "bg-slate-900 text-white shadow-2xs font-bold dark:bg-sky-600 dark:text-white"
+                    : canvasTheme === "dark"
+                    ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 )}
               >
                 <span>{label}</span>
@@ -894,7 +1342,11 @@ export default function GraphCanvas({
                   <span
                     className={clsx(
                       "text-[9.5px] crypto-mono font-bold px-1 rounded",
-                      nodeFilter === id ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-500",
+                      nodeFilter === id
+                        ? "bg-slate-800 text-slate-200 dark:bg-sky-700"
+                        : canvasTheme === "dark"
+                        ? "bg-slate-800 text-slate-400"
+                        : "bg-slate-100 text-slate-500"
                     )}
                   >
                     {count}
@@ -905,55 +1357,167 @@ export default function GraphCanvas({
           </div>
         </div>
 
-        {/* Right: Search Input + Compact Horizontal Navigation Tools */}
+        {/* Right Navigation & Layout Controls */}
         <div className="pointer-events-auto flex items-center gap-2">
           {/* Quick Search */}
           <div className="relative flex items-center group">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 group-focus-within:text-sky-600 transition-colors pointer-events-none" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 group-focus-within:text-sky-500 transition-colors pointer-events-none" />
             <input
               type="text"
-              placeholder="Search address in graph…"
+              placeholder="Search address / node ID…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="tactile-input w-36 sm:w-44 focus:w-56 h-8 pl-8 pr-6 text-[11px] crypto-mono rounded-lg text-slate-800 placeholder:text-slate-400"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchMatches.length > 0) {
+                  zoomToNode(searchMatches[0].id);
+                }
+              }}
+              className={clsx(
+                "h-8 pl-8 pr-7 text-[11px] crypto-mono rounded-lg border transition-all shadow-2xs outline-none",
+                "w-48 sm:w-56 focus:w-64",
+                canvasTheme === "dark"
+                  ? "bg-slate-900/90 border-slate-800 text-slate-200 placeholder:text-slate-500 focus:border-sky-500"
+                  : "bg-white/95 border-slate-200/90 text-slate-800 placeholder:text-slate-400 focus:border-sky-600"
+              )}
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
-                aria-label="Clear"
+                aria-label="Clear search"
               >
                 <X className="w-3 h-3" />
               </button>
             )}
+            {searchQuery && searchMatches.length > 0 && (
+              <div
+                className={clsx(
+                  "absolute top-9 left-0 right-0 max-h-48 overflow-y-auto rounded-lg border p-1 shadow-card-elevated z-40 text-[10px] crypto-mono",
+                  canvasTheme === "dark" ? "bg-slate-900 border-slate-800 text-slate-300" : "bg-white border-slate-200 text-slate-700"
+                )}
+              >
+                {searchMatches.slice(0, 5).map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => zoomToNode(m.id)}
+                    className={clsx(
+                      "w-full text-left px-2 py-1.5 rounded flex items-center justify-between hover:bg-sky-500/15 cursor-pointer truncate",
+                      canvasTheme === "dark" ? "hover:text-sky-300" : "hover:text-sky-700"
+                    )}
+                  >
+                    <span className="truncate">{m.label || m.id}</span>
+                    <span className="text-[9px] uppercase px-1 rounded bg-slate-800/20">{m.type}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Horizontal Navigation Control Cluster */}
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-card">
-            <ToolBtn id="graph-zoom-in" icon={<ZoomIn className="w-3.5 h-3.5" />} label="Zoom in (+)" onClick={() => zoomBy(1.3)} />
-            <ToolBtn id="graph-zoom-out" icon={<ZoomOut className="w-3.5 h-3.5" />} label="Zoom out (-)" onClick={() => zoomBy(0.75)} />
-            <ToolBtn id="graph-fit" icon={<Maximize2 className="w-3.5 h-3.5" />} label="Fit to Screen" onClick={fitToScreen} />
-            <ToolBtn id="graph-reset" icon={<RotateCcw className="w-3.5 h-3.5" />} label="Reset View" onClick={resetView} />
+          {/* Layout Mode Switcher */}
+          <div
+            className={clsx(
+              "flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card",
+              canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-white/95 border-slate-200/90"
+            )}
+          >
             <ToolBtn
-              id="graph-freeze"
-              icon={frozen ? <Play className="w-3.5 h-3.5 text-sky-600" /> : <Pause className="w-3.5 h-3.5" />}
-              label={frozen ? "Resume physics" : "Freeze physics"}
-              onClick={toggleFreeze}
-              active={frozen}
+              id="layout-force"
+              icon={<Network className="w-3.5 h-3.5" />}
+              label="Force Physics Layout"
+              onClick={() => {
+                setLayoutMode("force");
+                setTimeout(fitToScreen, 700);
+              }}
+              active={layoutMode === "force"}
+              isDark={canvasTheme === "dark"}
             />
+            <ToolBtn
+              id="layout-concentric"
+              icon={<Target className="w-3.5 h-3.5" />}
+              label="Concentric Radar View"
+              onClick={() => {
+                setLayoutMode("concentric");
+                setTimeout(fitToScreen, 750);
+              }}
+              active={layoutMode === "concentric"}
+              isDark={canvasTheme === "dark"}
+            />
+            <ToolBtn
+              id="layout-flow"
+              icon={<Workflow className="w-3.5 h-3.5" />}
+              label="Directed Flow DAG"
+              onClick={() => {
+                setLayoutMode("flow");
+                setTimeout(fitToScreen, 750);
+              }}
+              active={layoutMode === "flow"}
+              isDark={canvasTheme === "dark"}
+            />
+          </div>
+
+          {/* Saliency & Theme Controls */}
+          <div
+            className={clsx(
+              "flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card",
+              canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-white/95 border-slate-200/90"
+            )}
+          >
+            <ToolBtn
+              id="toggle-saliency"
+              icon={<Sparkles className="w-3.5 h-3.5 text-cyan-400" />}
+              label={saliencyMode ? "GNN Saliency: ON" : "GNN Saliency: OFF"}
+              onClick={() => setSaliencyMode(!saliencyMode)}
+              active={saliencyMode}
+              isDark={canvasTheme === "dark"}
+            />
+            <ToolBtn
+              id="toggle-theme"
+              icon={canvasTheme === "dark" ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-600" />}
+              label={canvasTheme === "dark" ? "Switch to Light Blueprint" : "Switch to Surveillance Dark"}
+              onClick={() => setCanvasTheme(canvasTheme === "dark" ? "light" : "dark")}
+              isDark={canvasTheme === "dark"}
+            />
+          </div>
+
+          {/* Navigation Zoom Tools */}
+          <div
+            className={clsx(
+              "flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card",
+              canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-white/95 border-slate-200/90"
+            )}
+          >
+            <ToolBtn id="graph-zoom-in" icon={<ZoomIn className="w-3.5 h-3.5" />} label="Zoom In (+)" onClick={() => zoomBy(1.3)} isDark={canvasTheme === "dark"} />
+            <ToolBtn id="graph-zoom-out" icon={<ZoomOut className="w-3.5 h-3.5" />} label="Zoom Out (-)" onClick={() => zoomBy(0.75)} isDark={canvasTheme === "dark"} />
+            <ToolBtn id="graph-fit" icon={<Maximize2 className="w-3.5 h-3.5" />} label="Fit Graph to Viewport" onClick={fitToScreen} isDark={canvasTheme === "dark"} />
+            <ToolBtn id="graph-reset" icon={<RotateCcw className="w-3.5 h-3.5" />} label="Reset View" onClick={resetView} isDark={canvasTheme === "dark"} />
+            {layoutMode === "force" && (
+              <ToolBtn
+                id="graph-freeze"
+                icon={frozen ? <Play className="w-3.5 h-3.5 text-sky-500" /> : <Pause className="w-3.5 h-3.5" />}
+                label={frozen ? "Resume Physics" : "Pause Physics"}
+                onClick={toggleFreeze}
+                active={frozen}
+                isDark={canvasTheme === "dark"}
+              />
+            )}
           </div>
         </div>
       </div>
 
       {/* ------------------------------------------------------------------- */}
-      {/* Bottom Left: Defense Tactical Legend with Dynamic Counts */}
+      {/* Bottom Left: Defense Tactical Legend */}
       {/* ------------------------------------------------------------------- */}
-      <div className="absolute bottom-3 left-3 z-20 hidden md:flex items-center gap-3.5 px-3.5 py-2 rounded-lg bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-card text-[11px] text-slate-600">
+      <div
+        className={clsx(
+          "absolute bottom-3 left-3 z-20 hidden md:flex items-center gap-3.5 px-3.5 py-2 rounded-lg border backdrop-blur-md shadow-card text-[11px]",
+          canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800 text-slate-300" : "bg-white/95 border-slate-200/90 text-slate-600"
+        )}
+      >
         <button
           onClick={() => setNodeFilter(nodeFilter === "wallets" ? "all" : "wallets")}
           className={clsx(
             "flex items-center gap-1.5 transition-all cursor-pointer px-1 py-0.5 rounded",
-            nodeFilter === "wallets" ? "bg-slate-100 font-bold text-slate-900" : "hover:text-slate-900",
+            nodeFilter === "wallets" ? "font-bold text-emerald-500" : "hover:text-emerald-400"
           )}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-700 shadow-2xs" />
@@ -964,10 +1528,10 @@ export default function GraphCanvas({
           onClick={() => setNodeFilter(nodeFilter === "tx" ? "all" : "tx")}
           className={clsx(
             "flex items-center gap-1.5 transition-all cursor-pointer px-1 py-0.5 rounded",
-            nodeFilter === "tx" ? "bg-slate-100 font-bold text-slate-900" : "hover:text-slate-900",
+            nodeFilter === "tx" ? "font-bold text-sky-400" : "hover:text-sky-300"
           )}
         >
-          <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-slate-500 shadow-2xs" />
+          <span className="w-2.5 h-2.5 rounded-xs bg-slate-300 border border-slate-600 shadow-2xs" />
           <span>Tx ({counts.txs})</span>
         </button>
 
@@ -975,7 +1539,7 @@ export default function GraphCanvas({
           onClick={() => setNodeFilter(nodeFilter === "ip" ? "all" : "ip")}
           className={clsx(
             "flex items-center gap-1.5 transition-all cursor-pointer px-1 py-0.5 rounded",
-            nodeFilter === "ip" ? "bg-slate-100 font-bold text-slate-900" : "hover:text-slate-900",
+            nodeFilter === "ip" ? "font-bold text-sky-400" : "hover:text-sky-300"
           )}
         >
           <span className="w-2.5 h-2.5 rotate-45 bg-sky-100 border border-sky-600 shadow-2xs" />
@@ -986,23 +1550,21 @@ export default function GraphCanvas({
           onClick={() => setNodeFilter(nodeFilter === "seeds" ? "all" : "seeds")}
           className={clsx(
             "flex items-center gap-1.5 transition-all cursor-pointer px-1 py-0.5 rounded",
-            nodeFilter === "seeds" ? "bg-red-50 font-bold text-red-900" : "hover:text-red-700",
+            nodeFilter === "seeds" ? "font-bold text-red-500" : "hover:text-red-400"
           )}
         >
-          <span className="w-2.5 h-2.5 rounded-full border border-dashed border-red-600 bg-red-100 shadow-2xs animate-pulse" />
-          <span className="font-bold text-red-700">Seed Entity ({counts.seeds})</span>
+          <span className="w-2.5 h-2.5 rounded-full border border-dashed border-red-600 bg-red-500 shadow-2xs animate-pulse" />
+          <span className="font-bold text-red-500">Seed Entity ({counts.seeds})</span>
         </button>
       </div>
 
       {/* ------------------------------------------------------------------- */}
-      {/* Tactical SVG Leader Line (Connects Focused Node or Edge to HUD Card) */}
+      {/* SVG Leader Beam (Connects Node or Edge to Forensic Card) */}
       {/* ------------------------------------------------------------------- */}
       {(activeDisplayNode || selectedLink) && hoverLeader && (
         <svg className="absolute inset-0 pointer-events-none z-25 w-full h-full">
-          {/* Target Reticle at Node or Edge Center */}
-          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="4" fill="#06b6d4" stroke="#38bdf8" strokeWidth="1.5" />
-          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="9" fill="none" stroke="#06b6d4" strokeWidth="1" strokeDasharray="2,2" opacity="0.8" />
-          {/* Connecting Dashed Cyan Beam */}
+          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="4.5" fill="#06b6d4" stroke="#38bdf8" strokeWidth="1.5" />
+          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="10" fill="none" stroke="#06b6d4" strokeWidth="1" strokeDasharray="3,3" opacity="0.8" />
           <line
             x1={hoverLeader.x1}
             y1={hoverLeader.y1}
@@ -1013,13 +1575,12 @@ export default function GraphCanvas({
             strokeDasharray="4,3"
             opacity="0.85"
           />
-          {/* Anchor Tick on HUD Card Edge */}
           <circle cx={hoverLeader.x2} cy={hoverLeader.y2} r="3" fill="#38bdf8" />
         </svg>
       )}
 
       {/* ------------------------------------------------------------------- */}
-      {/* Unified Forensic Inspector HUD (Glass Dark Card for Nodes) */}
+      {/* Forensic Inspector HUD (Glass Dark Card for Focused Node) */}
       {/* ------------------------------------------------------------------- */}
       {activeDisplayNode && (
         <div
@@ -1027,14 +1588,14 @@ export default function GraphCanvas({
           style={
             hoverPos
               ? { left: `${hoverPos.x}px`, top: `${hoverPos.y}px` }
-              : { right: "16px", top: "64px" }
+              : { right: "20px", top: "70px" }
           }
           className={clsx(
-            "absolute z-30 w-[380px] rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out",
-            selectedNode ? "pointer-events-auto ring-1 ring-sky-500/50" : "pointer-events-none",
+            "absolute z-30 w-[360px] rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out",
+            selectedNode ? "pointer-events-auto ring-1 ring-sky-500/50" : "pointer-events-none"
           )}
         >
-          {/* Header: Type Badge + Threat Tier Tag + Pinned Tag / Close */}
+          {/* Header */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-extrabold uppercase tracking-widest text-sky-400">
@@ -1077,7 +1638,6 @@ export default function GraphCanvas({
               )}
             </div>
 
-            {/* Pinned Tag & Close Action Button */}
             {selectedNode && (
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-950/80 border border-sky-500/50 text-sky-300 text-[9px] crypto-mono font-bold">
@@ -1088,7 +1648,6 @@ export default function GraphCanvas({
                   onClick={handleCloseInspector}
                   className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
                   aria-label="Close inspector"
-                  title="Unpin / Close inspector"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1096,14 +1655,14 @@ export default function GraphCanvas({
             )}
           </div>
 
-          {/* Node Identifier + Copy Action */}
+          {/* Identifier + Copy Action */}
           <div className="mb-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90">
             <div className="flex items-center justify-between text-[9px] uppercase font-bold text-slate-400 mb-1">
               <span className="tracking-widest">Target Identifier</span>
               <button
                 onClick={() => copyAddress(activeDisplayNode.id)}
                 className="flex items-center gap-1 text-sky-400 hover:text-sky-300 cursor-pointer font-semibold transition-colors pointer-events-auto"
-                title="Copy full identifier"
+                title="Copy identifier"
               >
                 {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                 <span>{copied ? "Copied" : "Copy"}</span>
@@ -1114,12 +1673,10 @@ export default function GraphCanvas({
             </p>
           </div>
 
-          {/* Telemetry Metrics Grid */}
+          {/* Metrics Grid */}
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800/80">
-              <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-1">
-                Risk Score
-              </span>
+              <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-1">Risk Score</span>
               <div className="flex items-baseline gap-2">
                 <span
                   className={clsx(
@@ -1128,7 +1685,7 @@ export default function GraphCanvas({
                       ? "text-red-400"
                       : (activeDisplayNode.risk_score ?? 0) >= 0.5
                       ? "text-amber-400"
-                      : "text-emerald-400",
+                      : "text-emerald-400"
                   )}
                 >
                   {activeDisplayNode.risk_score != null ? activeDisplayNode.risk_score.toFixed(3) : "0.000"}
@@ -1143,7 +1700,7 @@ export default function GraphCanvas({
                       ? "bg-red-500"
                       : (activeDisplayNode.risk_score ?? 0) >= 0.5
                       ? "bg-amber-500"
-                      : "bg-emerald-500",
+                      : "bg-emerald-500"
                   )}
                   style={{ width: `${Math.round((activeDisplayNode.risk_score ?? 0) * 100)}%` }}
                 />
@@ -1151,9 +1708,7 @@ export default function GraphCanvas({
             </div>
 
             <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800/80">
-              <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-1">
-                Cluster Degree
-              </span>
+              <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-1">Cluster Degree</span>
               <span className="crypto-mono text-base font-extrabold text-slate-100 block">
                 {(inOutDegree.get(activeDisplayNode.id)?.in ?? 0) + (inOutDegree.get(activeDisplayNode.id)?.out ?? 0)} Edges
               </span>
@@ -1163,7 +1718,7 @@ export default function GraphCanvas({
             </div>
           </div>
 
-          {/* Multi-Head Relational Attention Breakdown (when incident edge exists) */}
+          {/* Transformer Relational Attention Breakdown */}
           {primaryIncidentLink && (
             <AttentionBreakdownSection
               attentionScore={primaryIncidentLink.attention_score}
@@ -1171,14 +1726,20 @@ export default function GraphCanvas({
               isExplanatory={primaryIncidentLink.is_explanatory}
               title="Transformer Relational Attention"
               subtitle={`Incident ${primaryIncidentLink.linkType}: ${
-                (typeof primaryIncidentLink.source === "object" ? (primaryIncidentLink.source as SimNode).id : primaryIncidentLink.source) === activeDisplayNode.id
-                  ? (typeof primaryIncidentLink.target === "object" ? (primaryIncidentLink.target as SimNode).label : primaryIncidentLink.target)
-                  : (typeof primaryIncidentLink.source === "object" ? (primaryIncidentLink.source as SimNode).label : primaryIncidentLink.source)
+                (typeof primaryIncidentLink.source === "object"
+                  ? (primaryIncidentLink.source as SimNode).id
+                  : primaryIncidentLink.source) === activeDisplayNode.id
+                  ? typeof primaryIncidentLink.target === "object"
+                    ? (primaryIncidentLink.target as SimNode).label
+                    : primaryIncidentLink.target
+                  : typeof primaryIncidentLink.source === "object"
+                  ? (primaryIncidentLink.source as SimNode).label
+                  : primaryIncidentLink.source
               }`}
             />
           )}
 
-          {/* Primary Action Button: Inspect Full Forensic Dossier */}
+          {/* Action: Open Forensic Dossier */}
           {activeDisplayNode.type === "wallet" && onSelectWallet && (
             <button
               onClick={() => onSelectWallet(activeDisplayNode.id)}
@@ -1190,12 +1751,12 @@ export default function GraphCanvas({
             </button>
           )}
 
-          {/* Action Footer */}
+          {/* Footer */}
           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
             {selectedNode ? (
               <span className="flex items-center gap-1.5 text-sky-400 font-semibold">
                 <Pin className="w-3 h-3 rotate-45" />
-                <span>Pinned • Click canvas or ✕ to unpin</span>
+                <span>Pinned • Click canvas to unpin</span>
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-sky-400 font-semibold">
@@ -1209,7 +1770,7 @@ export default function GraphCanvas({
       )}
 
       {/* ------------------------------------------------------------------- */}
-      {/* Unified Relational Edge Forensic Inspector HUD */}
+      {/* Forensic Inspector HUD (Glass Dark Card for Focused Edge) */}
       {/* ------------------------------------------------------------------- */}
       {selectedLink && !selectedNode && (
         <div
@@ -1217,9 +1778,9 @@ export default function GraphCanvas({
           style={
             hoverPos
               ? { left: `${hoverPos.x}px`, top: `${hoverPos.y}px` }
-              : { right: "16px", top: "64px" }
+              : { right: "20px", top: "70px" }
           }
-          className="absolute z-30 w-[380px] rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out pointer-events-auto ring-1 ring-cyan-500/50"
+          className="absolute z-30 w-[360px] rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out pointer-events-auto ring-1 ring-cyan-500/50"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -1248,14 +1809,13 @@ export default function GraphCanvas({
                 onClick={handleCloseInspector}
                 className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
                 aria-label="Close inspector"
-                title="Unpin / Close inspector"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Relational Flow Trajectory Card */}
+          {/* Relational Trajectory */}
           <div className="mb-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90">
             <div className="flex items-center justify-between text-[9px] uppercase font-bold text-slate-400 mb-1.5">
               <span className="tracking-widest">Relational Trajectory</span>
@@ -1266,17 +1826,23 @@ export default function GraphCanvas({
               )}
             </div>
             <div className="flex items-center gap-2 text-xs crypto-mono">
-              <span className="font-bold text-slate-100 bg-slate-800/80 px-2 py-1 rounded truncate max-w-[140px]" title={(selectedLink.source as SimNode).id}>
+              <span
+                className="font-bold text-slate-100 bg-slate-800/80 px-2 py-1 rounded truncate max-w-[130px]"
+                title={(selectedLink.source as SimNode).id}
+              >
                 {(selectedLink.source as SimNode).label}
               </span>
               <span className="text-cyan-400 font-extrabold">→</span>
-              <span className="font-bold text-slate-100 bg-slate-800/80 px-2 py-1 rounded truncate max-w-[140px]" title={(selectedLink.target as SimNode).id}>
+              <span
+                className="font-bold text-slate-100 bg-slate-800/80 px-2 py-1 rounded truncate max-w-[130px]"
+                title={(selectedLink.target as SimNode).id}
+              >
                 {(selectedLink.target as SimNode).label}
               </span>
             </div>
           </div>
 
-          {/* Multi-Head Attention Breakdown Card */}
+          {/* Attention Breakdown */}
           <AttentionBreakdownSection
             attentionScore={selectedLink.attention_score}
             headAttentions={selectedLink.head_attentions}
@@ -1311,7 +1877,7 @@ export default function GraphCanvas({
           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
             <span className="flex items-center gap-1.5 text-cyan-400 font-semibold">
               <Pin className="w-3 h-3 rotate-45" />
-              <span>Edge Pinned • Click canvas or ✕ to unpin</span>
+              <span>Edge Pinned • Click canvas to unpin</span>
             </span>
             <span className="crypto-mono text-slate-400">Cluster #{clusterId}</span>
           </div>
@@ -1322,12 +1888,17 @@ export default function GraphCanvas({
       {/* Loading Overlay */}
       {/* ------------------------------------------------------------------- */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-50/85 backdrop-blur-2xs z-30">
-          <div className="flex flex-col items-center gap-3 p-6 rounded-xl bg-white border border-slate-200 shadow-card">
-            <div className="w-9 h-9 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs z-30">
+          <div
+            className={clsx(
+              "flex flex-col items-center gap-3 p-6 rounded-2xl border shadow-card-elevated",
+              canvasTheme === "dark" ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+            )}
+          >
+            <div className="w-9 h-9 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
             <div className="text-center">
-              <span className="text-xs font-bold text-slate-900 crypto-mono block">Computing Force Layout…</span>
-              <span className="text-[10px] text-slate-400 crypto-mono">Optimizing 1-hop cluster topology</span>
+              <span className="text-xs font-bold crypto-mono block">Optimizing Graph Topology…</span>
+              <span className="text-[10px] text-slate-400 crypto-mono">Applying layout constraints</span>
             </div>
           </div>
         </div>
@@ -1336,34 +1907,50 @@ export default function GraphCanvas({
       {/* Empty State */}
       {!isLoading && nodes.length === 0 && clusterId != null && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="p-6 rounded-xl bg-white/95 border border-slate-200 shadow-card text-center max-w-sm">
+          <div
+            className={clsx(
+              "p-6 rounded-2xl border shadow-card text-center max-w-sm",
+              canvasTheme === "dark" ? "bg-slate-900/95 border-slate-800" : "bg-white/95 border-slate-200"
+            )}
+          >
             <Network className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-            <p className="text-xs font-bold text-slate-800 crypto-mono mb-1">No Topology Data</p>
-            <p className="text-[11px] text-slate-500">No graph partition found for cluster #{clusterId}. Select an alert row from the stream.</p>
+            <p className="text-xs font-bold crypto-mono mb-1">No Topology Data</p>
+            <p className="text-[11px] text-slate-500">
+              No graph partition found for cluster #{clusterId}. Select an alert row from the stream.
+            </p>
           </div>
         </div>
       )}
 
-      {/* SVG Canvas with Tactical Radar Pattern */}
+      {/* SVG Canvas with Blueprint Matrix Pattern */}
       <svg
         ref={svgRef}
-        className="w-full flex-1 dot-matrix-bg cursor-grab active:cursor-grabbing"
+        className="w-full flex-1 cursor-grab active:cursor-grabbing"
         aria-label="Force-directed transaction graph"
       />
 
+      {/* ------------------------------------------------------------------- */}
       {/* Canvas Operator Status Footer */}
-      <div className="h-9 px-4 border-t border-slate-200/90 bg-slate-50 flex items-center justify-between shrink-0 select-none text-[11px] z-10">
-        <div className="flex items-center gap-2 text-slate-600 crypto-mono">
-          <span className="font-semibold text-slate-900">
+      {/* ------------------------------------------------------------------- */}
+      <div
+        className={clsx(
+          "h-9 px-4 border-t flex items-center justify-between shrink-0 select-none text-[11px] z-10 transition-colors",
+          canvasTheme === "dark" ? "border-slate-800/90 bg-slate-950 text-slate-400" : "border-slate-200/90 bg-slate-50 text-slate-600"
+        )}
+      >
+        <div className="flex items-center gap-2 crypto-mono">
+          <span className={clsx("font-semibold", canvasTheme === "dark" ? "text-slate-200" : "text-slate-900")}>
             Cluster #{clusterId ?? "—"}
-          </span>{" "}
-          •{" "}
+          </span>
+          <span>•</span>
           <span>
             {nodes.length} nodes, {links.length} links
           </span>
+          <span>•</span>
+          <span className="capitalize font-medium text-sky-500">Layout: {layoutMode}</span>
         </div>
 
-        <div className="hidden lg:flex items-center gap-3 text-slate-600 crypto-mono text-[10px]">
+        <div className="hidden lg:flex items-center gap-3 crypto-mono text-[10px]">
           <span>Click node or edge to inspect</span>
           <span>•</span>
           <span>Scroll to zoom</span>
@@ -1372,11 +1959,14 @@ export default function GraphCanvas({
         </div>
 
         {/* Live Military SYS UTC Clock */}
-        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-slate-200/90 bg-white text-slate-600 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            SYS UTC
-          </span>
-          <span className="crypto-mono text-xs text-slate-700 font-semibold">{now}</span>
+        <div
+          className={clsx(
+            "flex items-center gap-1.5 px-2.5 py-0.5 rounded border shadow-2xs",
+            canvasTheme === "dark" ? "border-slate-800 bg-slate-900 text-slate-300" : "border-slate-200/90 bg-white text-slate-600"
+          )}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">SYS UTC</span>
+          <span className="crypto-mono text-xs font-semibold">{now}</span>
         </div>
       </div>
     </div>
@@ -1389,12 +1979,14 @@ function ToolBtn({
   label,
   onClick,
   active,
+  isDark,
 }: {
   id: string;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
   active?: boolean;
+  isDark?: boolean;
 }) {
   return (
     <button
@@ -1405,8 +1997,12 @@ function ToolBtn({
       className={clsx(
         "w-7.5 h-7.5 flex items-center justify-center rounded-md border transition-all cursor-pointer shadow-2xs",
         active
-          ? "bg-sky-50 border-sky-300 text-sky-700 shadow-inner"
-          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300",
+          ? isDark
+            ? "bg-sky-950/90 border-sky-500 text-sky-400 shadow-inner"
+            : "bg-sky-50 border-sky-300 text-sky-700 shadow-inner"
+          : isDark
+          ? "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-100 hover:border-slate-700"
+          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
       )}
     >
       {icon}
