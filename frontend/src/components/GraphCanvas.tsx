@@ -443,7 +443,8 @@ export default function GraphCanvas({
       .attr("stroke", "#dc2626")
       .attr("stroke-width", 1.8)
       .attr("stroke-dasharray", "4,3")
-      .attr("opacity", 0.95);
+      .attr("opacity", 0.95)
+      .attr("pointer-events", "none");
 
     // Wallet Solid Core Circle
     wallets.append("circle")

@@ -190,14 +190,14 @@ body {
   background-size: 100% 100%, 120px 120px, 120px 120px, 24px 24px;
 }
 
-@keyframes radar-reticle-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes radar-reticle-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.35; }
 }
 
 .animate-radar-reticle {
-  transform-origin: center;
-  animation: radar-reticle-spin 16s linear infinite;
+  pointer-events: none;
+  animation: radar-reticle-pulse 3s ease-in-out infinite;
 }
 
 /* =========================================================

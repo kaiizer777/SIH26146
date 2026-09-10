@@ -111,6 +111,7 @@ export interface EntityExplainResponse {
   score_breakdown: ScoreBreakdown;
   evidence_trail: EvidenceTrail;
   shap_attributions: ShapAttribution[];
+  attention_matrix?: number[][] | null;
   gnn_subgraph: GnnSubgraph | null;
   summary_narrative: string;
   provisional?: boolean;

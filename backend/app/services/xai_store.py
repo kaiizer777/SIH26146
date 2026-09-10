@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 _composite: dict[str, dict[str, Any]] = {}  # address → composite risk record
 _evidence: dict[str, dict[str, Any]] = {}  # address → evidence trail
 _shap: dict[str, list[dict[str, Any]]] = {}  # address → list of 18 feature attrs
+_attention: dict[str, dict[str, Any]] = {}  # txid or address → attention payload
 _subgraph: dict[str, dict[str, Any]] = {}  # address → GNN subgraph
 
 _loaded: bool = False
@@ -49,6 +50,7 @@ def load() -> None:
         _load_composite()
         _load_evidence()
         _load_shap()
+        _load_attention()
         _load_subgraph()
 
         _loaded = True
@@ -85,10 +87,11 @@ def load() -> None:
         prov_str = ", ".join(provenance_parts) if provenance_parts else f"{anom_label} + {risk_label}"
 
         logger.info(
-            "XAI store loaded: composite=%d evidence=%d shap=%d subgraph=%d (active architecture: %s)",
+            "XAI store loaded: composite=%d evidence=%d shap=%d attention=%d subgraph=%d (active architecture: %s)",
             len(_composite),
             len(_evidence),
             len(_shap),
+            len(_attention),
             len(_subgraph),
             prov_str,
         )
@@ -187,6 +190,11 @@ def get_shap(address: str) -> list[dict[str, Any]] | None:
         return _shap.get(address)
 
 
+def get_attention(key: str) -> dict[str, Any] | None:
+    with _store_lock:
+        return _attention.get(key)
+
+
 def get_subgraph(address: str) -> dict[str, Any] | None:
     with _store_lock:
         return _subgraph.get(address)
@@ -274,6 +282,17 @@ def _load_shap() -> None:
                 _shap[addr] = features
 
 
+def _load_attention() -> None:
+    """attention_matrices.json → keyed by txid or address."""
+    p = Path(getattr(settings, "attention_matrices_path", "data/xai/attention_matrices.json"))
+    if not p.exists():
+        logger.info("Attention matrices artifact not found: %s", p)
+        return
+    raw = _load_json(p, "attention_matrices")
+    if isinstance(raw, dict):
+        _attention.update(raw)
+
+
 def _load_subgraph() -> None:
     """gnn_subgraphs.json → keyed by address."""
     raw = _load_json(settings.gnn_subgraphs_path, "gnn_subgraphs")
@@ -288,11 +307,12 @@ def _load_subgraph() -> None:
 
 def reset_store_for_tests() -> None:
     """Reset store singleton state for testing fallback configurations."""
-    global _composite, _evidence, _shap, _subgraph, _loaded
+    global _composite, _evidence, _shap, _attention, _subgraph, _loaded
     with _store_lock:
         _composite = {}
         _evidence = {}
         _shap = {}
+        _attention = {}
         _subgraph = {}
         _loaded = False
 

@@ -15,9 +15,12 @@ import {
   Layers,
   Network,
   FileText,
+  BarChart3,
+  Brain,
 } from "lucide-react";
 import type { EntityExplainResponse } from "@/lib/api";
 import ShapWaterfall from "./ShapWaterfall";
+import AttentionHeatmap from "./AttentionHeatmap";
 
 type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
@@ -187,6 +190,7 @@ export default function EntityDrawer({
 }: EntityDrawerProps) {
   const [copied, setCopied] = useState(false);
   const [mlRowOpen, setMlRowOpen] = useState(true);
+  const [explainView, setExplainView] = useState<"shap" | "attention">("shap");
 
   const isOpen = address !== null;
 
@@ -236,7 +240,7 @@ export default function EntityDrawer({
       {/* Centered Forensic Dossier Card */}
       <aside
         className={clsx(
-          "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] lg:w-[60vw] h-[96vh] max-w-5xl",
+          "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] lg:w-[60vw] h-[100vh] max-w-5xl",
           "flex flex-col bg-white rounded-xl border border-slate-200/90 shadow-drawer overflow-hidden",
           "transition-all duration-200 ease-out",
           isOpen
@@ -609,9 +613,10 @@ export default function EntityDrawer({
                   )}
                 </Accordion>
 
-                {/* SHAP Waterfall */}
+                {/* Feature Explainability & Attention */}
                 <Accordion
-                  title="SHAP Feature Attributions"
+                  title="Feature Explainability & Attention"
+                  subtitle="Pairwise transformer cross-attention matrix & 1D SHAP attribution waterfall"
                   icon={<Activity className="w-4 h-4 text-sky-600" />}
                   defaultOpen={isProvisional || data.shap_attributions.length > 0}
                 >
@@ -621,11 +626,58 @@ export default function EntityDrawer({
                       className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
                     >
                       <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
-                        SHAP attribution unavailable for newly ingested entities — run full pipeline retraining to compute.
+                        SHAP attribution and attention weights are unavailable for newly ingested provisional entities — run full pipeline retraining to compute.
                       </p>
                     </div>
                   ) : (
-                    <ShapWaterfall attributions={data.shap_attributions} />
+                    <div className="space-y-4">
+                      {/* Segmented View Toggle Bar */}
+                      <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-slate-100">
+                        <span className="text-xs text-slate-500 font-medium">
+                          Explainability Mode:
+                        </span>
+                        <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-xs shadow-inner">
+                          <button
+                            type="button"
+                            onClick={() => setExplainView("shap")}
+                            className={clsx(
+                              "flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all duration-150",
+                              explainView === "shap"
+                                ? "bg-sky-600 text-white shadow-xs"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                            )}
+                            aria-pressed={explainView === "shap"}
+                          >
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            <span>SHAP Waterfall</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setExplainView("attention")}
+                            className={clsx(
+                              "flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all duration-150",
+                              explainView === "attention"
+                                ? "bg-sky-600 text-white shadow-xs"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                            )}
+                            aria-pressed={explainView === "attention"}
+                          >
+                            <Brain className="w-3.5 h-3.5" />
+                            <span>Transformer Attention Matrix</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Smooth View Rendering */}
+                      {explainView === "shap" ? (
+                        <ShapWaterfall attributions={data.shap_attributions} />
+                      ) : (
+                        <AttentionHeatmap
+                          attentionMatrix={data.attention_matrix}
+                          attributions={data.shap_attributions}
+                        />
+                      )}
+                    </div>
                   )}
                 </Accordion>
 

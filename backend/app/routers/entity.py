@@ -308,6 +308,7 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
 
     # --- SHAP attributions (keyed by txid — fetch txids for this address from PG) ---
     shap_attributions: list[ShapAttribution] = []
+    matched_txid: Optional[str] = None
     try:
         async with SessionLocal() as db:
             result = await db.execute(
@@ -326,6 +327,7 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
         for txid in txids:
             raw_shap = xai_store.get_shap(txid)
             if raw_shap:
+                matched_txid = txid
                 break
 
         if raw_shap:
@@ -341,6 +343,19 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
             ]
     except Exception as exc:
         logger.warning("SHAP lookup failed for %s: %s", address[:8] + "...", exc)
+
+    # --- Attention matrix (from FT-Transformer cross-feature attention) ---
+    attention_matrix: Optional[list[list[float]]] = None
+    if matched_txid:
+        attn_payload = xai_store.get_attention(matched_txid)
+        if attn_payload and "cross_feature_attention" in attn_payload:
+            attention_matrix = attn_payload["cross_feature_attention"]
+    if not attention_matrix:
+        attn_payload = xai_store.get_attention(address)
+        if attn_payload and "cross_feature_attention" in attn_payload:
+            attention_matrix = attn_payload["cross_feature_attention"]
+        elif isinstance(attn_payload, list):
+            attention_matrix = attn_payload
 
     # --- GNN subgraph ---
     gnn_subgraph: Optional[GnnSubgraph] = None
@@ -379,6 +394,7 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
         score_breakdown=breakdown,
         evidence_trail=evidence,
         shap_attributions=shap_attributions,
+        attention_matrix=attention_matrix,
         gnn_subgraph=gnn_subgraph,
         summary_narrative=narrative,
         provisional=is_provisional,

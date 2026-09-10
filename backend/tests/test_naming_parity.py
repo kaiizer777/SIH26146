@@ -164,3 +164,46 @@ def test_xai_store_provenance_detection():
     assert "graph_transformer_checkpoint" in prov
     assert "ft_transformer" in prov["ft_transformer_checkpoint"]
     assert "graph_transformer" in prov["graph_transformer_checkpoint"]
+
+
+def test_attention_matrix_schema_and_store():
+    """Verify EntityExplainResponse supports 18x18 attention matrix and xai_store retrieves it."""
+    from app.schemas.entity import EntityExplainResponse, ShapAttribution
+
+    # Schema verification
+    dummy_matrix = [[0.05] * 18 for _ in range(18)]
+    resp = EntityExplainResponse(
+        address="bc1qtest123",
+        composite_score=0.75,
+        verdict="HIGH",
+        score_breakdown=ScoreBreakdown(
+            anomaly_component=0.25,
+            risk_component=0.40,
+            rule_bonus=0.10,
+            mixing_indicator=0.0,
+        ),
+        evidence_trail=EvidenceTrail(
+            anomaly_score=0.08,
+            anomaly_rank_percentile=95.0,
+            triggered_rules=["EQUAL_OUTPUTS"],
+        ),
+        shap_attributions=[
+            ShapAttribution(feature="fee_rate", label="Fee Rate", value=0.02)
+        ],
+        attention_matrix=dummy_matrix,
+        summary_narrative="Test summary narrative.",
+        provisional=False,
+    )
+    assert resp.attention_matrix is not None
+    assert len(resp.attention_matrix) == 18
+    assert len(resp.attention_matrix[0]) == 18
+
+    # Store verification
+    xai_store.load()
+    first_txid = next(iter(xai_store._shap.keys()))
+    attn = xai_store.get_attention(first_txid)
+    if attn is not None:
+        assert "cross_feature_attention" in attn
+        assert len(attn["cross_feature_attention"]) == 18
+        assert len(attn["cross_feature_attention"][0]) == 18
+
