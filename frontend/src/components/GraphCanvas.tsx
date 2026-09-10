@@ -439,7 +439,7 @@ export default function GraphCanvas({
       const cw = svgEl.clientWidth || 1000;
       const ch = svgEl.clientHeight || 700;
       const cardW = 360;
-      const cardH = 390;
+      const effectiveCardH = Math.min(540, Math.max(300, ch - 80));
       const CLEARANCE = 32;
 
       const neighborIds = adjacency.get(d.id);
@@ -468,13 +468,13 @@ export default function GraphCanvas({
         left = cw - maxX >= minX ? Math.max(20, cw - cardW - 20) : 20;
       }
 
-      let top = ny - cardH / 2;
-      top = Math.max(64, Math.min(ch - cardH - 54, top));
+      let top = ny - effectiveCardH / 2;
+      top = Math.max(56, Math.min(ch - effectiveCardH - 16, top));
 
       setHoverPos({ x: left, y: top });
 
       const attachX = left > nx ? left : left + cardW;
-      const attachY = Math.max(top + 20, Math.min(top + cardH - 20, ny));
+      const attachY = Math.max(top + 24, Math.min(top + effectiveCardH - 24, ny));
 
       setHoverLeader({
         x1: nx,
@@ -499,7 +499,7 @@ export default function GraphCanvas({
     const cw = svgEl.clientWidth || 1000;
     const ch = svgEl.clientHeight || 700;
     const cardW = 360;
-    const cardH = 390;
+    const effectiveCardH = Math.min(540, Math.max(300, ch - 80));
     const CLEARANCE = 32;
 
     let left = nx + CLEARANCE;
@@ -510,13 +510,13 @@ export default function GraphCanvas({
       }
     }
 
-    let top = ny - cardH / 2;
-    top = Math.max(64, Math.min(ch - cardH - 54, top));
+    let top = ny - effectiveCardH / 2;
+    top = Math.max(56, Math.min(ch - effectiveCardH - 16, top));
 
     setHoverPos({ x: left, y: top });
 
     const attachX = left > nx ? left : left + cardW;
-    const attachY = Math.max(top + 20, Math.min(top + cardH - 20, ny));
+    const attachY = Math.max(top + 24, Math.min(top + effectiveCardH - 24, ny));
 
     setHoverLeader({
       x1: nx,
@@ -551,8 +551,8 @@ export default function GraphCanvas({
     // Truncate cleanly at node outer boundary so arrowheads sit flush
     const startX = sx + ux * (rSrc + 2);
     const startY = sy + uy * (rSrc + 2);
-    const endX = tx - ux * (rTgt + 5);
-    const endY = ty - uy * (rTgt + 5);
+    const endX = tx - ux * (rTgt + 3.8);
+    const endY = ty - uy * (rTgt + 3.8);
 
     const curve = d.curvature ?? 0;
     if (Math.abs(curve) < 0.01) {
@@ -587,47 +587,75 @@ export default function GraphCanvas({
     // -----------------------------------------------------------------------
     const defs = svg.append("defs");
 
-    // Standard arrowhead - enlarged and authoritative
+    // Standard arrowhead - sleek, scaled-down proportional dart
     defs
       .append("marker")
       .attr("id", "arrow-standard")
-      .attr("viewBox", "0 -4 8 8")
-      .attr("refX", 7)
+      .attr("viewBox", "0 -2.5 5 5")
+      .attr("refX", 4.5)
       .attr("refY", 0)
-      .attr("markerWidth", 6.5)
-      .attr("markerHeight", 6.5)
+      .attr("markerWidth", 4.5)
+      .attr("markerHeight", 4.5)
       .attr("orient", "auto")
       .append("path")
-      .attr("d", "M0,-3L6.5,0L0,3")
-      .attr("fill", isDark ? "#94a3b8" : "#334155");
+      .attr("d", "M0,-2L4.5,0L0,2Z")
+      .attr("fill", isDark ? "#94a3b8" : "#0f172a");
 
-    // Saliency cyber cyan arrowhead - prominent
+    // Outbound Flow Arrowhead (tactical solid black in light, luminous slate in dark)
+    defs
+      .append("marker")
+      .attr("id", "arrow-outbound")
+      .attr("viewBox", "0 -2.5 5 5")
+      .attr("refX", 4.5)
+      .attr("refY", 0)
+      .attr("markerWidth", 4.5)
+      .attr("markerHeight", 4.5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-2L4.5,0L0,2Z")
+      .attr("fill", isDark ? "#e2e8f0" : "#0f172a");
+
+    // Inbound Flow Arrowhead (tactical emerald/teal showing incoming funds)
+    defs
+      .append("marker")
+      .attr("id", "arrow-inbound")
+      .attr("viewBox", "0 -2.5 5 5")
+      .attr("refX", 4.5)
+      .attr("refY", 0)
+      .attr("markerWidth", 4.5)
+      .attr("markerHeight", 4.5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-2L4.5,0L0,2Z")
+      .attr("fill", isDark ? "#34d399" : "#047857");
+
+    // Saliency arrowhead - prominent black in light mode
     defs
       .append("marker")
       .attr("id", "arrow-saliency")
-      .attr("viewBox", "0 -4 8 8")
-      .attr("refX", 7)
+      .attr("viewBox", "0 -2.5 5 5")
+      .attr("refX", 4.5)
       .attr("refY", 0)
-      .attr("markerWidth", 7.5)
-      .attr("markerHeight", 7.5)
+      .attr("markerWidth", 4.5)
+      .attr("markerHeight", 4.5)
       .attr("orient", "auto")
       .append("path")
-      .attr("d", "M0,-3.5L7,0L0,3.5")
-      .attr("fill", "#06b6d4");
+      .attr("d", "M0,-2L4.5,0L0,2Z")
+      .attr("fill", isDark ? "#e2e8f0" : "#0f172a");
 
     // Critical Red Arrowhead
     defs
       .append("marker")
       .attr("id", "arrow-critical")
-      .attr("viewBox", "0 -4 8 8")
-      .attr("refX", 7)
+      .attr("viewBox", "0 -2.5 5 5")
+      .attr("refX", 4.5)
       .attr("refY", 0)
-      .attr("markerWidth", 6.5)
-      .attr("markerHeight", 6.5)
+      .attr("markerWidth", 4.5)
+      .attr("markerHeight", 4.5)
       .attr("orient", "auto")
       .append("path")
-      .attr("d", "M0,-3L6.5,0L0,3")
-      .attr("fill", "#ef4444");
+      .attr("d", "M0,-2L4.5,0L0,2Z")
+      .attr("fill", "#dc2626");
 
     // Glow Seed Filter
     const filterSeed = defs
@@ -661,21 +689,21 @@ export default function GraphCanvas({
       .attr("flood-color", "#ef4444")
       .attr("flood-opacity", 0.65);
 
-    // Attention Glow Filter (Refined Cyber Cyan)
+    // Attention Glow Filter - Subtle & dark-mode only (zero smudge on light canvas)
     const filterAttn = defs
       .append("filter")
       .attr("id", "attention-glow-filter")
-      .attr("x", "-50%")
-      .attr("y", "-50%")
-      .attr("width", "200%")
-      .attr("height", "200%");
+      .attr("x", "-30%")
+      .attr("y", "-30%")
+      .attr("width", "160%")
+      .attr("height", "160%");
     filterAttn
       .append("feDropShadow")
       .attr("dx", 0)
       .attr("dy", 0)
-      .attr("stdDeviation", 2.8)
-      .attr("flood-color", "#06b6d4")
-      .attr("flood-opacity", 0.85);
+      .attr("stdDeviation", isDark ? 1.5 : 0)
+      .attr("flood-color", isDark ? "#38bdf8" : "transparent")
+      .attr("flood-opacity", isDark ? 0.45 : 0);
 
     // Background Canvas Grid Pattern (Light & Dark Blueprint Modes)
     const gridPattern = defs
@@ -800,10 +828,10 @@ export default function GraphCanvas({
       .attr("fill", "none")
       .attr("stroke", (d) => {
         const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
-        if (saliencyMode && isAttn) return "#06b6d4";
-        if (d.linkType === "CO_SPEND") return isDark ? "#64748b" : "#64748b";
-        if (d.linkType === "OBSERVED") return isDark ? "#38bdf8" : "#0284c7";
-        return isDark ? "#94a3b8" : "#334155";
+        if (saliencyMode && isAttn) return isDark ? "#e2e8f0" : "#0f172a";
+        if (d.linkType === "CO_SPEND") return isDark ? "#64748b" : "#475569";
+        if (d.linkType === "OBSERVED") return isDark ? "#e2e8f0" : "#0f172a";
+        return isDark ? "#94a3b8" : "#0f172a";
       })
       .attr("stroke-width", (d) => {
         const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
@@ -956,16 +984,31 @@ export default function GraphCanvas({
       .attr("fill", isDark ? "#7dd3fc" : "#0369a1")
       .text((d) => d.country?.slice(0, 2).toUpperCase() ?? "IP");
 
-    // D. Selection Halo
-    nodeGroups
+    // D. Selection Focus Reticle
+    const haloGroup = nodeGroups.append("g").attr("class", "selection-halo").attr("opacity", 0);
+
+    // Outer soft focus aura
+    haloGroup
       .append("circle")
-      .attr("class", "selection-halo")
-      .attr("r", (d) => (d.type === "wallet" ? 22 + getHubBoost(d.id) : 19))
+      .attr("class", "halo-outer")
+      .attr("r", (d) => (d.type === "wallet" ? 25 + getHubBoost(d.id) : 21))
+      .attr("fill", isDark ? "rgba(56, 189, 248, 0.08)" : "rgba(30, 41, 59, 0.05)")
+      .attr("stroke", isDark ? "rgba(56, 189, 248, 0.3)" : "rgba(30, 41, 59, 0.2)")
+      .attr("stroke-width", 1.2);
+
+    // Inner precision reticle ring
+    haloGroup
+      .append("circle")
+      .attr("class", "halo-inner")
+      .attr("r", (d) => (d.type === "wallet" ? 20 + getHubBoost(d.id) : 17))
       .attr("fill", "none")
-      .attr("stroke", "#0284c7")
-      .attr("stroke-width", 2.8)
-      .attr("stroke-dasharray", "4,3")
-      .attr("opacity", 0);
+      .attr("stroke", (d) => {
+        if (d.is_seed || (d.risk_score ?? 0) >= 0.8) return "#dc2626";
+        if ((d.risk_score ?? 0) >= 0.5) return "#ea580c";
+        return isDark ? "#38bdf8" : "#1e293b";
+      })
+      .attr("stroke-width", 1.8)
+      .attr("stroke-dasharray", "4,3");
 
     // Event Handlers
     nodeGroups
@@ -1222,7 +1265,7 @@ export default function GraphCanvas({
       d3.select(this)
         .transition()
         .duration(120)
-        .attr("opacity", isVisible ? 1 : 0.12);
+        .attr("opacity", isVisible ? 1 : 0.1);
 
       d3.select(this)
         .select(".selection-halo")
@@ -1248,20 +1291,59 @@ export default function GraphCanvas({
 
       const isEmphasized = (Boolean(selectedLink) && isConn) || (hasFocus && isConn);
       const isHighSaliency = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
+      const isOutbound = hasFocus && sId === activeFocusId;
+      const isInbound = hasFocus && tId === activeFocusId;
 
-      let baseColor = isDark ? "#94a3b8" : "#334155";
-      if (isEmphasized || (saliencyMode && isHighSaliency)) {
-        baseColor = "#06b6d4";
-      } else if (d.linkType === "CO_SPEND") {
-        baseColor = isDark ? "#64748b" : "#64748b";
+      // Default styling (black edges in light mode)
+      let baseColor = isDark ? "#94a3b8" : "#0f172a";
+      if (d.linkType === "CO_SPEND") {
+        baseColor = isDark ? "#64748b" : "#475569";
       } else if (d.linkType === "OBSERVED") {
-        baseColor = isDark ? "#38bdf8" : "#0284c7";
+        baseColor = isDark ? "#e2e8f0" : "#0f172a";
+      } else if (saliencyMode && isHighSaliency) {
+        baseColor = isDark ? "#e2e8f0" : "#0f172a";
       }
 
-      const baseWidth = isEmphasized ? 3.5 : saliencyMode && isHighSaliency ? 3.5 : 2.4;
-      const baseOpacity = isConn ? (isEmphasized ? 1.0 : saliencyMode && isHighSaliency ? 1.0 : 0.8) : 0.08;
-      const marker =
-        isEmphasized || (saliencyMode && isHighSaliency) ? "url(#arrow-saliency)" : "url(#arrow-standard)";
+      let marker = saliencyMode && isHighSaliency ? "url(#arrow-saliency)" : "url(#arrow-standard)";
+      let baseWidth = saliencyMode && isHighSaliency ? 3.5 : 2.4;
+      let baseOpacity = d.linkType === "CO_SPEND" || d.linkType === "OBSERVED" ? 0.75 : 0.8;
+      let dashArray: string | null = d.linkType === "CO_SPEND" ? "4,3" : d.linkType === "OBSERVED" ? "3,3" : null;
+
+      if (hasFocus || selectedLink || isFiltered) {
+        if (isEmphasized) {
+          baseOpacity = 1.0;
+          if (isHighSaliency || (saliencyMode && isHighSaliency)) {
+            baseColor = isDark ? "#e2e8f0" : "#0f172a";
+            baseWidth = 3.0;
+            marker = "url(#arrow-saliency)";
+          } else if (d.linkType === "CO_SPEND") {
+            baseColor = isDark ? "#94a3b8" : "#475569";
+            baseWidth = 2.4;
+            dashArray = "4,3";
+            marker = "url(#arrow-outbound)";
+          } else if (d.linkType === "OBSERVED") {
+            baseColor = isDark ? "#e2e8f0" : "#0f172a";
+            baseWidth = 2.4;
+            dashArray = "3,3";
+            marker = "url(#arrow-outbound)";
+          } else if (isInbound) {
+            baseColor = isDark ? "#34d399" : "#047857";
+            baseWidth = 2.8;
+            marker = "url(#arrow-inbound)";
+          } else if (isOutbound) {
+            baseColor = isDark ? "#e2e8f0" : "#0f172a";
+            baseWidth = 2.8;
+            marker = "url(#arrow-outbound)";
+          } else {
+            baseColor = isDark ? "#e2e8f0" : "#0f172a";
+            baseWidth = 2.8;
+            marker = "url(#arrow-outbound)";
+          }
+        } else {
+          // Dimmed non-focused background edge
+          baseOpacity = 0.08;
+        }
+      }
 
       d3.select(this)
         .transition()
@@ -1269,8 +1351,9 @@ export default function GraphCanvas({
         .attr("stroke-opacity", baseOpacity)
         .attr("stroke-width", baseWidth)
         .attr("stroke", baseColor)
+        .attr("stroke-dasharray", dashArray)
         .attr("marker-end", marker)
-        .attr("filter", isEmphasized || (saliencyMode && isHighSaliency) ? "url(#attention-glow-filter)" : null);
+        .attr("filter", isEmphasized && isDark && (isHighSaliency || saliencyMode) ? "url(#attention-glow-filter)" : null);
     });
   }, [activeFocusId, connectedNodeIds, filteredNodeIds, selectedLink, canvasTheme, saliencyMode]);
 
@@ -1563,19 +1646,43 @@ export default function GraphCanvas({
       {/* ------------------------------------------------------------------- */}
       {(activeDisplayNode || selectedLink) && hoverLeader && (
         <svg className="absolute inset-0 pointer-events-none z-25 w-full h-full">
-          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="4.5" fill="#06b6d4" stroke="#38bdf8" strokeWidth="1.5" />
-          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="10" fill="none" stroke="#06b6d4" strokeWidth="1" strokeDasharray="3,3" opacity="0.8" />
+          {/* Origin reticle dot */}
+          <circle
+            cx={hoverLeader.x1}
+            cy={hoverLeader.y1}
+            r="3.5"
+            fill={canvasTheme === "dark" ? "#e2e8f0" : "#0f172a"}
+            stroke={canvasTheme === "dark" ? "#94a3b8" : "#000000"}
+            strokeWidth="1.2"
+          />
+          <circle
+            cx={hoverLeader.x1}
+            cy={hoverLeader.y1}
+            r="8"
+            fill="none"
+            stroke={canvasTheme === "dark" ? "#e2e8f0" : "#0f172a"}
+            strokeWidth="1"
+            strokeDasharray="2,2"
+            opacity="0.75"
+          />
+          {/* Subtle connecting leader line */}
           <line
             x1={hoverLeader.x1}
             y1={hoverLeader.y1}
             x2={hoverLeader.x2}
             y2={hoverLeader.y2}
-            stroke="#06b6d4"
-            strokeWidth="1.5"
-            strokeDasharray="4,3"
-            opacity="0.85"
+            stroke={canvasTheme === "dark" ? "#e2e8f0" : "#0f172a"}
+            strokeWidth="1.2"
+            strokeDasharray="3,3"
+            opacity="0.75"
           />
-          <circle cx={hoverLeader.x2} cy={hoverLeader.y2} r="3" fill="#38bdf8" />
+          {/* Target anchor dot */}
+          <circle
+            cx={hoverLeader.x2}
+            cy={hoverLeader.y2}
+            r="2.5"
+            fill={canvasTheme === "dark" ? "#e2e8f0" : "#0f172a"}
+          />
         </svg>
       )}
 
@@ -1587,11 +1694,19 @@ export default function GraphCanvas({
           onClick={(e) => e.stopPropagation()}
           style={
             hoverPos
-              ? { left: `${hoverPos.x}px`, top: `${hoverPos.y}px` }
-              : { right: "20px", top: "70px" }
+              ? {
+                  left: `${hoverPos.x}px`,
+                  top: `${hoverPos.y}px`,
+                  maxHeight: "calc(100% - 72px)",
+                }
+              : {
+                  right: "20px",
+                  top: "56px",
+                  maxHeight: "calc(100% - 72px)",
+                }
           }
           className={clsx(
-            "absolute z-30 w-[360px] rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out",
+            "absolute z-30 w-[360px] max-h-[calc(100%-72px)] flex flex-col overflow-y-auto overscroll-contain rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out scrollbar-thin",
             selectedNode ? "pointer-events-auto ring-1 ring-sky-500/50" : "pointer-events-none"
           )}
         >
@@ -1777,10 +1892,18 @@ export default function GraphCanvas({
           onClick={(e) => e.stopPropagation()}
           style={
             hoverPos
-              ? { left: `${hoverPos.x}px`, top: `${hoverPos.y}px` }
-              : { right: "20px", top: "70px" }
+              ? {
+                  left: `${hoverPos.x}px`,
+                  top: `${hoverPos.y}px`,
+                  maxHeight: "calc(100% - 72px)",
+                }
+              : {
+                  right: "20px",
+                  top: "56px",
+                  maxHeight: "calc(100% - 72px)",
+                }
           }
-          className="absolute z-30 w-[360px] rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out pointer-events-auto ring-1 ring-cyan-500/50"
+          className="absolute z-30 w-[360px] max-h-[calc(100%-72px)] flex flex-col overflow-y-auto overscroll-contain rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out pointer-events-auto ring-1 ring-sky-500/50 scrollbar-thin"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
