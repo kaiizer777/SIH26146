@@ -39,33 +39,33 @@ interface VerdictVisualConfig {
 
 const VERDICT_CONFIG: Record<Verdict, VerdictVisualConfig> = {
   CRITICAL: {
-    activeCard: "bg-red-50/90 border-red-200 text-red-900 font-bold shadow-2xs ring-1 ring-red-300",
+    activeCard: "pill-critical ring-2 ring-red-400/70 font-bold shadow-xs",
     unselectedCard:
-      "bg-white border-slate-200/90 text-slate-700 hover:border-red-200 hover:bg-red-50/30 shadow-2xs",
-    unselectedDot: "bg-red-500/80 ring-1.5 ring-red-200/60",
-    activeDot: "bg-red-600 ring-1.5 ring-red-300",
+      "bg-white border-slate-200/90 text-slate-700 hover:border-red-200 hover:bg-red-50/20 shadow-2xs",
+    unselectedDot: "bg-red-500/80 ring-2 ring-red-200/60",
+    activeDot: "bg-red-600 ring-2 ring-red-300",
     isPulsing: true,
   },
   HIGH: {
-    activeCard: "bg-orange-50/90 border-orange-200 text-orange-900 font-bold shadow-2xs ring-1 ring-orange-300",
+    activeCard: "pill-high ring-2 ring-orange-400/70 font-bold shadow-xs",
     unselectedCard:
-      "bg-white border-slate-200/90 text-slate-700 hover:border-orange-200 hover:bg-orange-50/30 shadow-2xs",
-    unselectedDot: "bg-orange-500/80 ring-1.5 ring-orange-200/60",
-    activeDot: "bg-orange-600 ring-1.5 ring-orange-300",
+      "bg-white border-slate-200/90 text-slate-700 hover:border-orange-200 hover:bg-orange-50/20 shadow-2xs",
+    unselectedDot: "bg-orange-500/80 ring-2 ring-orange-200/60",
+    activeDot: "bg-orange-600 ring-2 ring-orange-300",
   },
   MEDIUM: {
-    activeCard: "bg-amber-50/90 border-amber-200 text-amber-900 font-bold shadow-2xs ring-1 ring-amber-300",
+    activeCard: "pill-medium ring-2 ring-amber-400/70 font-bold shadow-xs",
     unselectedCard:
-      "bg-white border-slate-200/90 text-slate-700 hover:border-amber-200 hover:bg-amber-50/30 shadow-2xs",
-    unselectedDot: "bg-amber-500/80 ring-1.5 ring-amber-200/60",
-    activeDot: "bg-amber-500 ring-1.5 ring-amber-300",
+      "bg-white border-slate-200/90 text-slate-700 hover:border-amber-200 hover:bg-amber-50/20 shadow-2xs",
+    unselectedDot: "bg-amber-500/80 ring-2 ring-amber-200/60",
+    activeDot: "bg-amber-500 ring-2 ring-amber-300",
   },
   LOW: {
-    activeCard: "bg-emerald-50/90 border-emerald-200 text-emerald-900 font-bold shadow-2xs ring-1 ring-emerald-300",
+    activeCard: "pill-low ring-2 ring-emerald-400/70 font-bold shadow-xs",
     unselectedCard:
-      "bg-white border-slate-200/90 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/30 shadow-2xs",
-    unselectedDot: "bg-emerald-500/80 ring-1.5 ring-emerald-200/60",
-    activeDot: "bg-emerald-600 ring-1.5 ring-emerald-300",
+      "bg-white border-slate-200/90 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/20 shadow-2xs",
+    unselectedDot: "bg-emerald-500/80 ring-2 ring-emerald-200/60",
+    activeDot: "bg-emerald-600 ring-2 ring-emerald-300",
   },
 };
 
@@ -104,18 +104,18 @@ export default function FilterSidebar({
     totalCount > 0 ? Math.min(100, Math.round((filteredCount / totalCount) * 100)) : 100;
 
   return (
-    <aside className="w-[272px] shrink-0 flex flex-col bg-white border-r border-slate-200/90 overflow-y-auto select-none">
+    <aside className="w-[280px] shrink-0 flex flex-col bg-white border-r border-slate-200/90 overflow-y-auto select-none">
       {/* Sidebar Header */}
-      <div className="h-10 flex items-center justify-between px-3 border-b border-slate-200/90 bg-slate-50/90 sticky top-0 z-10">
+      <div className="h-11 flex items-center justify-between px-3.5 border-b border-slate-200/90 bg-gradient-to-b from-slate-50/95 to-slate-100/75 sticky top-0 z-10 backdrop-blur-xs">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center justify-center w-5 h-5 rounded bg-white border border-slate-200 text-slate-700 shadow-2xs shrink-0">
-            <Filter className="w-2.5 h-2.5 text-sky-700 stroke-[2.4]" />
+          <div className="flex items-center justify-center w-5.5 h-5.5 rounded-md bg-white border border-slate-200/90 text-slate-700 shadow-2xs shrink-0">
+            <Filter className="w-3 h-3 text-sky-700 stroke-[2.3]" />
           </div>
-          <span className="text-[10.5px] font-black uppercase tracking-[0.14em] text-slate-900 truncate">
+          <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-slate-800 truncate">
             Surveillance Filters
           </span>
           {hasActiveFilters && (
-            <span className="flex items-center justify-center px-1.5 h-4 rounded-full bg-sky-600 text-white text-[9px] font-extrabold shadow-xs crypto-mono shrink-0">
+            <span className="flex items-center justify-center px-1.5 h-4.5 rounded-full bg-sky-600 text-white text-[9.5px] font-extrabold shadow-xs crypto-mono shrink-0">
               {activeFilterCount}
             </span>
           )}
@@ -124,7 +124,7 @@ export default function FilterSidebar({
           <button
             type="button"
             onClick={resetAll}
-            className="tactile-btn-secondary flex items-center gap-1 text-[10px] font-semibold text-slate-700 hover:text-slate-900 transition-all py-0.5 px-2 rounded border border-slate-200 shadow-2xs active:scale-95 group cursor-pointer shrink-0"
+            className="tactile-btn-secondary flex items-center gap-1 text-[10.5px] font-semibold text-slate-700 hover:text-slate-900 transition-all py-0.5 px-2 rounded-md border border-slate-200/90 shadow-2xs active:scale-95 group cursor-pointer shrink-0"
             aria-label="Reset all filters"
           >
             <RotateCcw className="w-2.5 h-2.5 text-slate-500 group-hover:text-slate-800 group-hover:-rotate-90 transition-transform duration-200" />
@@ -133,7 +133,7 @@ export default function FilterSidebar({
         )}
       </div>
 
-      <div className="flex flex-col gap-3.5 p-3 pb-12">
+      <div className="flex flex-col gap-4.5 p-3.5">
         {/* Coverage Gauge / Stream Telemetry Card */}
         <div className="p-3 rounded-lg border border-slate-200/90 bg-gradient-to-b from-white via-slate-50/50 to-slate-100/50 shadow-card">
           <div className="flex items-center justify-between mb-2">
@@ -215,7 +215,7 @@ export default function FilterSidebar({
                   id={`filter-verdict-${v.toLowerCase()}`}
                   onClick={() => toggleVerdict(v)}
                   className={clsx(
-                    "flex items-center justify-between w-full px-2.5 py-1.5 rounded-md text-xs transition-all cursor-pointer border",
+                    "flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs transition-all cursor-pointer border",
                     active ? cfg.activeCard : cfg.unselectedCard,
                   )}
                 >
@@ -476,18 +476,18 @@ function HeuristicToggle({
     <label
       htmlFor={id}
       className={clsx(
-        "flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer select-none",
+        "flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer select-none",
         checked
           ? isOrange
-            ? "bg-orange-50/70 border-orange-300 shadow-2xs ring-1 ring-orange-200/60"
-            : "bg-amber-50/70 border-amber-300 shadow-2xs ring-1 ring-amber-200/60"
+            ? "bg-gradient-to-r from-orange-50/70 via-orange-50/40 to-white border-orange-300 shadow-2xs ring-1 ring-orange-200/60"
+            : "bg-gradient-to-r from-amber-50/70 via-amber-50/40 to-white border-amber-300 shadow-2xs ring-1 ring-amber-200/60"
           : "bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs",
       )}
     >
-      <div className="flex items-center gap-2 min-w-0 pr-2 flex-1">
+      <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
         <div
           className={clsx(
-            "w-6.5 h-6.5 rounded-md flex items-center justify-center shrink-0 transition-colors",
+            "w-7.5 h-7.5 rounded-md flex items-center justify-center shrink-0 transition-colors",
             checked
               ? isOrange
                 ? "bg-orange-500 text-white shadow-xs"
@@ -503,7 +503,7 @@ function HeuristicToggle({
           <span className="text-xs font-bold text-slate-800 leading-tight">
             {label}
           </span>
-          <span className="text-[10px] text-slate-400 leading-normal">
+          <span className="text-[10.5px] text-slate-400 leading-normal mt-0.5">
             {subtitle}
           </span>
         </div>
@@ -519,7 +519,7 @@ function HeuristicToggle({
         />
         <div
           className={clsx(
-            "w-7.5 h-4 rounded-full transition-colors",
+            "w-8 h-4.5 rounded-full transition-colors",
             checked
               ? isOrange
                 ? "bg-orange-500 shadow-xs"
@@ -529,7 +529,7 @@ function HeuristicToggle({
         />
         <div
           className={clsx(
-            "absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-xs transition-transform",
+            "absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform",
             checked ? "translate-x-3.5" : "translate-x-0",
           )}
         />

@@ -68,10 +68,10 @@ html {
 body {
   background: var(--background);
   color: var(--text-primary);
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-inter, "system-ui"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.011em;
+  letter-spacing: -0.012em;
 }
 
 /* =========================================================
@@ -81,10 +81,10 @@ body {
    ========================================================= */
 
 .crypto-mono {
-  font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-jetbrains-mono, "JetBrains Mono"), "SF Mono", "Fira Code", ui-monospace, monospace;
   font-feature-settings: "tnum" 1, "zero" 1;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
 }
 
 /* =========================================================
@@ -96,7 +96,7 @@ body {
 }
 
 .shadow-card {
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
 }
 
 .shadow-card-elevated {
@@ -113,25 +113,25 @@ body {
 
 .tactile-btn-primary {
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 2px rgba(15, 23, 42, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 3px rgba(15, 23, 42, 0.2);
   border: 1px solid #0f172a;
-  transition: all 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 120ms ease-out;
 }
 .tactile-btn-primary:hover {
   background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 4px rgba(15, 23, 42, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 4px rgba(15, 23, 42, 0.25);
 }
 .tactile-btn-primary:active {
   background: #0f172a;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
   transform: translateY(0.5px);
 }
 
 .tactile-btn-secondary {
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(15, 23, 42, 0.05);
   border: 1px solid #cbd5e1;
-  transition: all 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 120ms ease-out;
 }
 .tactile-btn-secondary:hover {
   background: #ffffff;
@@ -140,7 +140,7 @@ body {
 }
 .tactile-btn-secondary:active {
   background: #f1f5f9;
-  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.1);
   transform: translateY(0.5px);
 }
 
@@ -149,31 +149,31 @@ body {
    ========================================================= */
 
 .pill-critical {
-  color: #991b1b;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(220, 38, 38, 0.05);
+  color: var(--critical-text);
+  background: linear-gradient(180deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid var(--critical-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(220, 38, 38, 0.08);
 }
 
 .pill-high {
-  color: #9a3412;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(234, 88, 12, 0.05);
+  color: var(--high-text);
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid var(--high-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(234, 88, 12, 0.08);
 }
 
 .pill-medium {
-  color: #854d0e;
-  background: #fefce8;
-  border: 1px solid #fef08a;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(202, 138, 4, 0.05);
+  color: var(--medium-text);
+  background: linear-gradient(180deg, #fefce8 0%, #fef9c3 100%);
+  border: 1px solid var(--medium-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(202, 138, 4, 0.08);
 }
 
 .pill-low {
-  color: #166534;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(22, 163, 74, 0.05);
+  color: var(--low-text);
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid var(--low-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(22, 163, 74, 0.08);
 }
 
 /* =========================================================
