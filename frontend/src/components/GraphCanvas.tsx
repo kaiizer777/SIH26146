@@ -23,8 +23,6 @@ import {
   Pin,
   Sparkles,
   SlidersHorizontal,
-  Sun,
-  Moon,
   Workflow,
   Radio,
   Target,
@@ -66,7 +64,6 @@ interface SimLink extends d3.SimulationLinkDatum<SimNode> {
 }
 
 type LayoutMode = "force" | "concentric" | "flow";
-type CanvasTheme = "light" | "dark";
 type RiskTier = "seed" | "critical" | "high" | "medium" | "low";
 
 function getRiskTier(score: number | null, isSeed: boolean): RiskTier {
@@ -78,22 +75,7 @@ function getRiskTier(score: number | null, isSeed: boolean): RiskTier {
   return "low";
 }
 
-function getNodeColors(tier: RiskTier, isDark: boolean): { fill: string; stroke: string; glow?: string } {
-  if (isDark) {
-    switch (tier) {
-      case "seed":
-        return { fill: "#ef4444", stroke: "#fca5a5", glow: "#dc2626" };
-      case "critical":
-        return { fill: "#f87171", stroke: "#fee2e2", glow: "#ef4444" };
-      case "high":
-        return { fill: "#fb923c", stroke: "#ffedd5", glow: "#f97316" };
-      case "medium":
-        return { fill: "#fbbf24", stroke: "#fef3c7" };
-      default:
-        return { fill: "#34d399", stroke: "#a7f3d0" };
-    }
-  }
-
+function getNodeColors(tier: RiskTier): { fill: string; stroke: string; glow?: string } {
   switch (tier) {
     case "seed":
       return { fill: "#dc2626", stroke: "#991b1b", glow: "#dc2626" };
@@ -191,7 +173,6 @@ export default function GraphCanvas({
 
   // Canvas display controls
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("force");
-  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>("light");
   const [saliencyMode, setSaliencyMode] = useState<boolean>(false);
   const [frozen, setFrozen] = useState<boolean>(false);
   const [showMinimap, setShowMinimap] = useState<boolean>(true);
@@ -580,7 +561,6 @@ export default function GraphCanvas({
 
     const width = svgRef.current.clientWidth || 900;
     const height = svgRef.current.clientHeight || 650;
-    const isDark = canvasTheme === "dark";
 
     // -----------------------------------------------------------------------
     // Defs: Gradients, Filters & Substantial Forensics Markers
@@ -599,9 +579,9 @@ export default function GraphCanvas({
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-2L4.5,0L0,2Z")
-      .attr("fill", isDark ? "#94a3b8" : "#0f172a");
+      .attr("fill", "#0f172a");
 
-    // Outbound Flow Arrowhead (tactical solid black in light, luminous slate in dark)
+    // Outbound Flow Arrowhead (tactical solid black in light)
     defs
       .append("marker")
       .attr("id", "arrow-outbound")
@@ -613,7 +593,7 @@ export default function GraphCanvas({
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-2L4.5,0L0,2Z")
-      .attr("fill", isDark ? "#e2e8f0" : "#0f172a");
+      .attr("fill", "#0f172a");
 
     // Inbound Flow Arrowhead (tactical emerald/teal showing incoming funds)
     defs
@@ -627,7 +607,7 @@ export default function GraphCanvas({
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-2L4.5,0L0,2Z")
-      .attr("fill", isDark ? "#34d399" : "#047857");
+      .attr("fill", "#047857");
 
     // Saliency arrowhead - prominent black in light mode
     defs
@@ -641,7 +621,7 @@ export default function GraphCanvas({
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-2L4.5,0L0,2Z")
-      .attr("fill", isDark ? "#e2e8f0" : "#0f172a");
+      .attr("fill", "#0f172a");
 
     // Critical Red Arrowhead
     defs
@@ -687,25 +667,7 @@ export default function GraphCanvas({
       .attr("dy", 0)
       .attr("stdDeviation", 3.5)
       .attr("flood-color", "#ef4444")
-      .attr("flood-opacity", 0.65);
-
-    // Attention Glow Filter - Subtle & dark-mode only (zero smudge on light canvas)
-    const filterAttn = defs
-      .append("filter")
-      .attr("id", "attention-glow-filter")
-      .attr("x", "-30%")
-      .attr("y", "-30%")
-      .attr("width", "160%")
-      .attr("height", "160%");
-    filterAttn
-      .append("feDropShadow")
-      .attr("dx", 0)
-      .attr("dy", 0)
-      .attr("stdDeviation", isDark ? 1.5 : 0)
-      .attr("flood-color", isDark ? "#38bdf8" : "transparent")
-      .attr("flood-opacity", isDark ? 0.45 : 0);
-
-    // Background Canvas Grid Pattern (Light & Dark Blueprint Modes)
+    // Background Canvas Grid Pattern (Light Blueprint Mode)
     const gridPattern = defs
       .append("pattern")
       .attr("id", "canvas-blueprint-grid")
@@ -717,7 +679,7 @@ export default function GraphCanvas({
       .append("path")
       .attr("d", "M 40 0 L 0 0 0 40")
       .attr("fill", "none")
-      .attr("stroke", isDark ? "rgba(56, 189, 248, 0.07)" : "rgba(148, 163, 184, 0.16)")
+      .attr("stroke", "rgba(148, 163, 184, 0.16)")
       .attr("stroke-width", 0.8);
 
     gridPattern
@@ -725,7 +687,7 @@ export default function GraphCanvas({
       .attr("cx", 0)
       .attr("cy", 0)
       .attr("r", 1.2)
-      .attr("fill", isDark ? "rgba(56, 189, 248, 0.25)" : "rgba(100, 116, 139, 0.35)");
+      .attr("fill", "rgba(100, 116, 139, 0.35)");
 
     // Root Group
     const g = svg.append("g").attr("class", "graph-root");
@@ -828,10 +790,10 @@ export default function GraphCanvas({
       .attr("fill", "none")
       .attr("stroke", (d) => {
         const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
-        if (saliencyMode && isAttn) return isDark ? "#e2e8f0" : "#0f172a";
-        if (d.linkType === "CO_SPEND") return isDark ? "#64748b" : "#475569";
-        if (d.linkType === "OBSERVED") return isDark ? "#e2e8f0" : "#0f172a";
-        return isDark ? "#94a3b8" : "#0f172a";
+        if (saliencyMode && isAttn) return "#0f172a";
+        if (d.linkType === "CO_SPEND") return "#475569";
+        if (d.linkType === "OBSERVED") return "#0f172a";
+        return "#0f172a";
       })
       .attr("stroke-width", (d) => {
         const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
@@ -902,8 +864,8 @@ export default function GraphCanvas({
         const base = d.is_seed ? 17 : (d.risk_score ?? 0) >= 0.8 ? 14 : (d.risk_score ?? 0) >= 0.5 ? 12.5 : 11;
         return base + getHubBoost(d.id) * 0.6;
       })
-      .attr("fill", (d) => getNodeColors(getRiskTier(d.risk_score, d.is_seed), isDark).fill)
-      .attr("stroke", (d) => (isDark ? "#ffffff" : getNodeColors(getRiskTier(d.risk_score, d.is_seed), isDark).stroke))
+      .attr("fill", (d) => getNodeColors(getRiskTier(d.risk_score, d.is_seed)).fill)
+      .attr("stroke", (d) => getNodeColors(getRiskTier(d.risk_score, d.is_seed)).stroke)
       .attr("stroke-width", (d) => (d.is_seed ? 2.8 : 2.2))
       .attr("filter", (d) =>
         d.is_seed ? "url(#glow-seed)" : (d.risk_score ?? 0) >= 0.8 ? "url(#glow-critical)" : null
@@ -955,14 +917,14 @@ export default function GraphCanvas({
       .append("polygon")
       .attr("class", "node-core")
       .attr("points", "-9,-12 9,-12 14,0 9,12 -9,12 -14,0")
-      .attr("fill", isDark ? "#1e293b" : "#ffffff")
-      .attr("stroke", isDark ? "#94a3b8" : "#334155")
+      .attr("fill", "#ffffff")
+      .attr("stroke", "#334155")
       .attr("stroke-width", 2.2);
 
     txs
       .append("circle")
       .attr("r", 3.5)
-      .attr("fill", isDark ? "#38bdf8" : "#0284c7");
+      .attr("fill", "#0284c7");
 
     // C. IPs (Cyber Sky Diamond)
     const ips = nodeGroups.filter((d) => d.type === "ip");
@@ -970,7 +932,7 @@ export default function GraphCanvas({
       .append("polygon")
       .attr("class", "node-core")
       .attr("points", "0,-14 14,0 0,14 -14,0")
-      .attr("fill", isDark ? "#0c4a6e" : "#e0f2fe")
+      .attr("fill", "#e0f2fe")
       .attr("stroke", "#0284c7")
       .attr("stroke-width", 2.2);
 
@@ -981,7 +943,7 @@ export default function GraphCanvas({
       .attr("font-size", "8.5px")
       .attr("font-family", "var(--font-jetbrains-mono, monospace)")
       .attr("font-weight", "bold")
-      .attr("fill", isDark ? "#7dd3fc" : "#0369a1")
+      .attr("fill", "#0369a1")
       .text((d) => d.country?.slice(0, 2).toUpperCase() ?? "IP");
 
     // D. Selection Focus Reticle
@@ -992,8 +954,8 @@ export default function GraphCanvas({
       .append("circle")
       .attr("class", "halo-outer")
       .attr("r", (d) => (d.type === "wallet" ? 25 + getHubBoost(d.id) : 21))
-      .attr("fill", isDark ? "rgba(56, 189, 248, 0.08)" : "rgba(30, 41, 59, 0.05)")
-      .attr("stroke", isDark ? "rgba(56, 189, 248, 0.3)" : "rgba(30, 41, 59, 0.2)")
+      .attr("fill", "rgba(30, 41, 59, 0.05)")
+      .attr("stroke", "rgba(30, 41, 59, 0.2)")
       .attr("stroke-width", 1.2);
 
     // Inner precision reticle ring
@@ -1005,7 +967,7 @@ export default function GraphCanvas({
       .attr("stroke", (d) => {
         if (d.is_seed || (d.risk_score ?? 0) >= 0.8) return "#dc2626";
         if ((d.risk_score ?? 0) >= 0.5) return "#ea580c";
-        return isDark ? "#38bdf8" : "#1e293b";
+        return "#1e293b";
       })
       .attr("stroke-width", 1.8)
       .attr("stroke-dasharray", "4,3");
@@ -1239,7 +1201,7 @@ export default function GraphCanvas({
       clearTimeout(timer);
       sim.stop();
     };
-  }, [nodes, links, inOutDegree, canvasTheme, layoutMode, saliencyMode, buildLinkPath, handleCloseInspector, fitToScreen]);
+  }, [nodes, links, inOutDegree, layoutMode, saliencyMode, buildLinkPath, handleCloseInspector, fitToScreen]);
 
   // -------------------------------------------------------------------------
   // Dynamic 1-Hop Neighborhood Highlighting & Filtering
@@ -1249,7 +1211,6 @@ export default function GraphCanvas({
     const svg = d3.select(svgRef.current);
     const isFiltered = filteredNodeIds !== null;
     const hasFocus = connectedNodeIds !== null;
-    const isDark = canvasTheme === "dark";
 
     svg.selectAll<SVGGElement, SimNode>(".node-group").each(function (d) {
       let isVisible = true;
@@ -1295,13 +1256,13 @@ export default function GraphCanvas({
       const isInbound = hasFocus && tId === activeFocusId;
 
       // Default styling (black edges in light mode)
-      let baseColor = isDark ? "#94a3b8" : "#0f172a";
+      let baseColor = "#0f172a";
       if (d.linkType === "CO_SPEND") {
-        baseColor = isDark ? "#64748b" : "#475569";
+        baseColor = "#475569";
       } else if (d.linkType === "OBSERVED") {
-        baseColor = isDark ? "#e2e8f0" : "#0f172a";
+        baseColor = "#0f172a";
       } else if (saliencyMode && isHighSaliency) {
-        baseColor = isDark ? "#e2e8f0" : "#0f172a";
+        baseColor = "#0f172a";
       }
 
       let marker = saliencyMode && isHighSaliency ? "url(#arrow-saliency)" : "url(#arrow-standard)";
@@ -1313,29 +1274,29 @@ export default function GraphCanvas({
         if (isEmphasized) {
           baseOpacity = 1.0;
           if (isHighSaliency || (saliencyMode && isHighSaliency)) {
-            baseColor = isDark ? "#e2e8f0" : "#0f172a";
+            baseColor = "#0f172a";
             baseWidth = 3.0;
             marker = "url(#arrow-saliency)";
           } else if (d.linkType === "CO_SPEND") {
-            baseColor = isDark ? "#94a3b8" : "#475569";
+            baseColor = "#475569";
             baseWidth = 2.4;
             dashArray = "4,3";
             marker = "url(#arrow-outbound)";
           } else if (d.linkType === "OBSERVED") {
-            baseColor = isDark ? "#e2e8f0" : "#0f172a";
+            baseColor = "#0f172a";
             baseWidth = 2.4;
             dashArray = "3,3";
             marker = "url(#arrow-outbound)";
           } else if (isInbound) {
-            baseColor = isDark ? "#34d399" : "#047857";
+            baseColor = "#047857";
             baseWidth = 2.8;
             marker = "url(#arrow-inbound)";
           } else if (isOutbound) {
-            baseColor = isDark ? "#e2e8f0" : "#0f172a";
+            baseColor = "#0f172a";
             baseWidth = 2.8;
             marker = "url(#arrow-outbound)";
           } else {
-            baseColor = isDark ? "#e2e8f0" : "#0f172a";
+            baseColor = "#0f172a";
             baseWidth = 2.8;
             marker = "url(#arrow-outbound)";
           }
@@ -1353,16 +1314,13 @@ export default function GraphCanvas({
         .attr("stroke", baseColor)
         .attr("stroke-dasharray", dashArray)
         .attr("marker-end", marker)
-        .attr("filter", isEmphasized && isDark && (isHighSaliency || saliencyMode) ? "url(#attention-glow-filter)" : null);
+        .attr("filter", null);
     });
-  }, [activeFocusId, connectedNodeIds, filteredNodeIds, selectedLink, canvasTheme, saliencyMode]);
+  }, [activeFocusId, connectedNodeIds, filteredNodeIds, selectedLink, saliencyMode]);
 
   return (
     <div
-      className={clsx(
-        "relative flex-1 flex flex-col overflow-hidden select-none transition-colors duration-200",
-        canvasTheme === "dark" ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
-      )}
+      className="relative flex-1 flex flex-col overflow-hidden select-none transition-colors duration-200 bg-slate-50 text-slate-900"
     >
       {/* ------------------------------------------------------------------- */}
       {/* Studio Forensic Command Toolbar (Clean Spacing, Unclipped Controls) */}
@@ -1371,14 +1329,7 @@ export default function GraphCanvas({
         {/* Left Cluster Stats & Filter Pills */}
         <div className="pointer-events-auto flex items-center gap-2 flex-wrap max-w-[65vw]">
           {clusterId != null && (
-            <div
-              className={clsx(
-                "flex items-center gap-2 crypto-mono text-xs px-3 py-1.5 rounded-lg shadow-card border backdrop-blur-md transition-colors",
-                canvasTheme === "dark"
-                  ? "bg-slate-900/90 border-slate-800 text-slate-200"
-                  : "bg-white/95 border-slate-200/90 text-slate-800"
-              )}
-            >
+            <div className="flex items-center gap-2 crypto-mono text-xs px-3 py-1.5 rounded-lg shadow-card border backdrop-blur-md transition-colors bg-white/95 border-slate-200/90 text-slate-800">
               <Network className="w-3.5 h-3.5 text-sky-500 shrink-0" />
               <span className="font-extrabold tracking-tight">Cluster #{clusterId}</span>
               <span className="text-slate-400">|</span>
@@ -1394,12 +1345,7 @@ export default function GraphCanvas({
           )}
 
           {/* Tactical Entity Filters */}
-          <div
-            className={clsx(
-              "hidden sm:flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card transition-colors",
-              canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-white/95 border-slate-200/90"
-            )}
-          >
+          <div className="hidden sm:flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card transition-colors bg-white/95 border-slate-200/90">
             {[
               { id: "all", label: "All", count: nodes.length },
               { id: "high", label: "High Risk", count: counts.high },
@@ -1414,9 +1360,7 @@ export default function GraphCanvas({
                 className={clsx(
                   "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5",
                   nodeFilter === id
-                    ? "bg-slate-900 text-white shadow-2xs font-bold dark:bg-sky-600 dark:text-white"
-                    : canvasTheme === "dark"
-                    ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+                    ? "bg-slate-900 text-white shadow-2xs font-bold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 )}
               >
@@ -1426,9 +1370,7 @@ export default function GraphCanvas({
                     className={clsx(
                       "text-[9.5px] crypto-mono font-bold px-1 rounded",
                       nodeFilter === id
-                        ? "bg-slate-800 text-slate-200 dark:bg-sky-700"
-                        : canvasTheme === "dark"
-                        ? "bg-slate-800 text-slate-400"
+                        ? "bg-slate-800 text-slate-200"
                         : "bg-slate-100 text-slate-500"
                     )}
                   >
@@ -1455,13 +1397,7 @@ export default function GraphCanvas({
                   zoomToNode(searchMatches[0].id);
                 }
               }}
-              className={clsx(
-                "h-8 pl-8 pr-7 text-[11px] crypto-mono rounded-lg border transition-all shadow-2xs outline-none",
-                "w-48 sm:w-56 focus:w-64",
-                canvasTheme === "dark"
-                  ? "bg-slate-900/90 border-slate-800 text-slate-200 placeholder:text-slate-500 focus:border-sky-500"
-                  : "bg-white/95 border-slate-200/90 text-slate-800 placeholder:text-slate-400 focus:border-sky-600"
-              )}
+              className="h-8 pl-8 pr-7 text-[11px] crypto-mono rounded-lg border transition-all shadow-2xs outline-none w-48 sm:w-56 focus:w-64 bg-white/95 border-slate-200/90 text-slate-800 placeholder:text-slate-400 focus:border-sky-600"
             />
             {searchQuery && (
               <button
@@ -1473,20 +1409,12 @@ export default function GraphCanvas({
               </button>
             )}
             {searchQuery && searchMatches.length > 0 && (
-              <div
-                className={clsx(
-                  "absolute top-9 left-0 right-0 max-h-48 overflow-y-auto rounded-lg border p-1 shadow-card-elevated z-40 text-[10px] crypto-mono",
-                  canvasTheme === "dark" ? "bg-slate-900 border-slate-800 text-slate-300" : "bg-white border-slate-200 text-slate-700"
-                )}
-              >
+              <div className="absolute top-9 left-0 right-0 max-h-48 overflow-y-auto rounded-lg border p-1 shadow-card-elevated z-40 text-[10px] crypto-mono bg-white border-slate-200 text-slate-700">
                 {searchMatches.slice(0, 5).map((m) => (
                   <button
                     key={m.id}
                     onClick={() => zoomToNode(m.id)}
-                    className={clsx(
-                      "w-full text-left px-2 py-1.5 rounded flex items-center justify-between hover:bg-sky-500/15 cursor-pointer truncate",
-                      canvasTheme === "dark" ? "hover:text-sky-300" : "hover:text-sky-700"
-                    )}
+                    className="w-full text-left px-2 py-1.5 rounded flex items-center justify-between hover:bg-sky-500/15 cursor-pointer truncate hover:text-sky-700"
                   >
                     <span className="truncate">{m.label || m.id}</span>
                     <span className="text-[9px] uppercase px-1 rounded bg-slate-800/20">{m.type}</span>
@@ -1497,12 +1425,7 @@ export default function GraphCanvas({
           </div>
 
           {/* Layout Mode Switcher */}
-          <div
-            className={clsx(
-              "flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card",
-              canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-white/95 border-slate-200/90"
-            )}
-          >
+          <div className="flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card bg-white/95 border-slate-200/90">
             <ToolBtn
               id="layout-force"
               icon={<Network className="w-3.5 h-3.5" />}
@@ -1512,7 +1435,6 @@ export default function GraphCanvas({
                 setTimeout(fitToScreen, 700);
               }}
               active={layoutMode === "force"}
-              isDark={canvasTheme === "dark"}
             />
             <ToolBtn
               id="layout-concentric"
@@ -1523,7 +1445,6 @@ export default function GraphCanvas({
                 setTimeout(fitToScreen, 750);
               }}
               active={layoutMode === "concentric"}
-              isDark={canvasTheme === "dark"}
             />
             <ToolBtn
               id="layout-flow"
@@ -1534,45 +1455,15 @@ export default function GraphCanvas({
                 setTimeout(fitToScreen, 750);
               }}
               active={layoutMode === "flow"}
-              isDark={canvasTheme === "dark"}
-            />
-          </div>
-
-          {/* Saliency & Theme Controls */}
-          <div
-            className={clsx(
-              "flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card",
-              canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-white/95 border-slate-200/90"
-            )}
-          >
-            <ToolBtn
-              id="toggle-saliency"
-              icon={<Sparkles className="w-3.5 h-3.5 text-cyan-400" />}
-              label={saliencyMode ? "GNN Saliency: ON" : "GNN Saliency: OFF"}
-              onClick={() => setSaliencyMode(!saliencyMode)}
-              active={saliencyMode}
-              isDark={canvasTheme === "dark"}
-            />
-            <ToolBtn
-              id="toggle-theme"
-              icon={canvasTheme === "dark" ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-600" />}
-              label={canvasTheme === "dark" ? "Switch to Light Blueprint" : "Switch to Surveillance Dark"}
-              onClick={() => setCanvasTheme(canvasTheme === "dark" ? "light" : "dark")}
-              isDark={canvasTheme === "dark"}
             />
           </div>
 
           {/* Navigation Zoom Tools */}
-          <div
-            className={clsx(
-              "flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card",
-              canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-white/95 border-slate-200/90"
-            )}
-          >
-            <ToolBtn id="graph-zoom-in" icon={<ZoomIn className="w-3.5 h-3.5" />} label="Zoom In (+)" onClick={() => zoomBy(1.3)} isDark={canvasTheme === "dark"} />
-            <ToolBtn id="graph-zoom-out" icon={<ZoomOut className="w-3.5 h-3.5" />} label="Zoom Out (-)" onClick={() => zoomBy(0.75)} isDark={canvasTheme === "dark"} />
-            <ToolBtn id="graph-fit" icon={<Maximize2 className="w-3.5 h-3.5" />} label="Fit Graph to Viewport" onClick={fitToScreen} isDark={canvasTheme === "dark"} />
-            <ToolBtn id="graph-reset" icon={<RotateCcw className="w-3.5 h-3.5" />} label="Reset View" onClick={resetView} isDark={canvasTheme === "dark"} />
+          <div className="flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card bg-white/95 border-slate-200/90">
+            <ToolBtn id="graph-zoom-in" icon={<ZoomIn className="w-3.5 h-3.5" />} label="Zoom In (+)" onClick={() => zoomBy(1.3)} />
+            <ToolBtn id="graph-zoom-out" icon={<ZoomOut className="w-3.5 h-3.5" />} label="Zoom Out (-)" onClick={() => zoomBy(0.75)} />
+            <ToolBtn id="graph-fit" icon={<Maximize2 className="w-3.5 h-3.5" />} label="Fit Graph to Viewport" onClick={fitToScreen} />
+            <ToolBtn id="graph-reset" icon={<RotateCcw className="w-3.5 h-3.5" />} label="Reset View" onClick={resetView} />
             {layoutMode === "force" && (
               <ToolBtn
                 id="graph-freeze"
@@ -1580,66 +1471,13 @@ export default function GraphCanvas({
                 label={frozen ? "Resume Physics" : "Pause Physics"}
                 onClick={toggleFreeze}
                 active={frozen}
-                isDark={canvasTheme === "dark"}
               />
             )}
           </div>
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------- */}
-      {/* Bottom Left: Defense Tactical Legend */}
-      {/* ------------------------------------------------------------------- */}
-      <div
-        className={clsx(
-          "absolute bottom-3 left-3 z-20 hidden md:flex items-center gap-3.5 px-3.5 py-2 rounded-lg border backdrop-blur-md shadow-card text-[11px]",
-          canvasTheme === "dark" ? "bg-slate-900/90 border-slate-800 text-slate-300" : "bg-white/95 border-slate-200/90 text-slate-600"
-        )}
-      >
-        <button
-          onClick={() => setNodeFilter(nodeFilter === "wallets" ? "all" : "wallets")}
-          className={clsx(
-            "flex items-center gap-1.5 transition-all cursor-pointer px-1 py-0.5 rounded",
-            nodeFilter === "wallets" ? "font-bold text-emerald-500" : "hover:text-emerald-400"
-          )}
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-700 shadow-2xs" />
-          <span>Wallet ({counts.wallets})</span>
-        </button>
 
-        <button
-          onClick={() => setNodeFilter(nodeFilter === "tx" ? "all" : "tx")}
-          className={clsx(
-            "flex items-center gap-1.5 transition-all cursor-pointer px-1 py-0.5 rounded",
-            nodeFilter === "tx" ? "font-bold text-sky-400" : "hover:text-sky-300"
-          )}
-        >
-          <span className="w-2.5 h-2.5 rounded-xs bg-slate-300 border border-slate-600 shadow-2xs" />
-          <span>Tx ({counts.txs})</span>
-        </button>
-
-        <button
-          onClick={() => setNodeFilter(nodeFilter === "ip" ? "all" : "ip")}
-          className={clsx(
-            "flex items-center gap-1.5 transition-all cursor-pointer px-1 py-0.5 rounded",
-            nodeFilter === "ip" ? "font-bold text-sky-400" : "hover:text-sky-300"
-          )}
-        >
-          <span className="w-2.5 h-2.5 rotate-45 bg-sky-100 border border-sky-600 shadow-2xs" />
-          <span>IP Host ({counts.ips})</span>
-        </button>
-
-        <button
-          onClick={() => setNodeFilter(nodeFilter === "seeds" ? "all" : "seeds")}
-          className={clsx(
-            "flex items-center gap-1.5 transition-all cursor-pointer px-1 py-0.5 rounded",
-            nodeFilter === "seeds" ? "font-bold text-red-500" : "hover:text-red-400"
-          )}
-        >
-          <span className="w-2.5 h-2.5 rounded-full border border-dashed border-red-600 bg-red-500 shadow-2xs animate-pulse" />
-          <span className="font-bold text-red-500">Seed Entity ({counts.seeds})</span>
-        </button>
-      </div>
 
       {/* ------------------------------------------------------------------- */}
       {/* SVG Leader Beam (Connects Node or Edge to Forensic Card) */}
@@ -1651,8 +1489,8 @@ export default function GraphCanvas({
             cx={hoverLeader.x1}
             cy={hoverLeader.y1}
             r="3.5"
-            fill={canvasTheme === "dark" ? "#e2e8f0" : "#0f172a"}
-            stroke={canvasTheme === "dark" ? "#94a3b8" : "#000000"}
+            fill="#0f172a"
+            stroke="#000000"
             strokeWidth="1.2"
           />
           <circle
@@ -1660,7 +1498,7 @@ export default function GraphCanvas({
             cy={hoverLeader.y1}
             r="8"
             fill="none"
-            stroke={canvasTheme === "dark" ? "#e2e8f0" : "#0f172a"}
+            stroke="#0f172a"
             strokeWidth="1"
             strokeDasharray="2,2"
             opacity="0.75"
@@ -1671,7 +1509,7 @@ export default function GraphCanvas({
             y1={hoverLeader.y1}
             x2={hoverLeader.x2}
             y2={hoverLeader.y2}
-            stroke={canvasTheme === "dark" ? "#e2e8f0" : "#0f172a"}
+            stroke="#0f172a"
             strokeWidth="1.2"
             strokeDasharray="3,3"
             opacity="0.75"
@@ -1681,7 +1519,7 @@ export default function GraphCanvas({
             cx={hoverLeader.x2}
             cy={hoverLeader.y2}
             r="2.5"
-            fill={canvasTheme === "dark" ? "#e2e8f0" : "#0f172a"}
+            fill="#0f172a"
           />
         </svg>
       )}
@@ -2012,12 +1850,7 @@ export default function GraphCanvas({
       {/* ------------------------------------------------------------------- */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs z-30">
-          <div
-            className={clsx(
-              "flex flex-col items-center gap-3 p-6 rounded-2xl border shadow-card-elevated",
-              canvasTheme === "dark" ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-            )}
-          >
+          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl border shadow-card-elevated bg-white border-slate-200 text-slate-900">
             <div className="w-9 h-9 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
             <div className="text-center">
               <span className="text-xs font-bold crypto-mono block">Optimizing Graph Topology…</span>
@@ -2030,12 +1863,7 @@ export default function GraphCanvas({
       {/* Empty State */}
       {!isLoading && nodes.length === 0 && clusterId != null && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className={clsx(
-              "p-6 rounded-2xl border shadow-card text-center max-w-sm",
-              canvasTheme === "dark" ? "bg-slate-900/95 border-slate-800" : "bg-white/95 border-slate-200"
-            )}
-          >
+          <div className="p-6 rounded-2xl border shadow-card text-center max-w-sm bg-white/95 border-slate-200">
             <Network className="w-6 h-6 text-slate-400 mx-auto mb-2" />
             <p className="text-xs font-bold crypto-mono mb-1">No Topology Data</p>
             <p className="text-[11px] text-slate-500">
@@ -2055,25 +1883,92 @@ export default function GraphCanvas({
       {/* ------------------------------------------------------------------- */}
       {/* Canvas Operator Status Footer */}
       {/* ------------------------------------------------------------------- */}
-      <div
-        className={clsx(
-          "h-9 px-4 border-t flex items-center justify-between shrink-0 select-none text-[11px] z-10 transition-colors",
-          canvasTheme === "dark" ? "border-slate-800/90 bg-slate-950 text-slate-400" : "border-slate-200/90 bg-slate-50 text-slate-600"
-        )}
-      >
-        <div className="flex items-center gap-2 crypto-mono">
-          <span className={clsx("font-semibold", canvasTheme === "dark" ? "text-slate-200" : "text-slate-900")}>
-            Cluster #{clusterId ?? "—"}
-          </span>
-          <span>•</span>
-          <span>
-            {nodes.length} nodes, {links.length} links
-          </span>
-          <span>•</span>
-          <span className="capitalize font-medium text-sky-500">Layout: {layoutMode}</span>
+      <div className="h-11 px-4 border-t flex items-center justify-between shrink-0 select-none text-[11px] z-10 transition-colors gap-4 overflow-x-auto scrollbar-none border-slate-200/90 bg-slate-50 text-slate-600">
+        {/* Left: Tactical Legend Filter + Cluster Metadata */}
+        <div className="flex items-center gap-3 shrink-0 whitespace-nowrap">
+          {/* Segmented Tactical Legend Pills */}
+          <div className="flex items-center gap-0.5 p-0.5 rounded-lg border text-[11px] transition-all shrink-0 bg-white border-slate-200/90 shadow-2xs text-slate-600">
+            <button
+              onClick={() => setNodeFilter(nodeFilter === "wallets" ? "all" : "wallets")}
+              className={clsx(
+                "flex items-center gap-1.5 transition-all cursor-pointer px-2 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none",
+                nodeFilter === "wallets"
+                  ? "bg-emerald-50 border border-emerald-300 text-emerald-800 font-bold shadow-2xs"
+                  : "border border-transparent hover:text-emerald-700 hover:bg-slate-100"
+              )}
+              title="Toggle wallet filter"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-2xs shrink-0" />
+              <span>Wallet</span>
+              <span className="text-[10px] crypto-mono opacity-70">({counts.wallets})</span>
+            </button>
+
+            <button
+              onClick={() => setNodeFilter(nodeFilter === "tx" ? "all" : "tx")}
+              className={clsx(
+                "flex items-center gap-1.5 transition-all cursor-pointer px-2 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none",
+                nodeFilter === "tx"
+                  ? "bg-sky-50 border border-sky-300 text-sky-800 font-bold shadow-2xs"
+                  : "border border-transparent hover:text-sky-700 hover:bg-slate-100"
+              )}
+              title="Toggle transaction filter"
+            >
+              <span className="w-2 h-2 rounded-xs bg-slate-300 border border-slate-500 shadow-2xs shrink-0" />
+              <span>Tx</span>
+              <span className="text-[10px] crypto-mono opacity-70">({counts.txs})</span>
+            </button>
+
+            <button
+              onClick={() => setNodeFilter(nodeFilter === "ip" ? "all" : "ip")}
+              className={clsx(
+                "flex items-center gap-1.5 transition-all cursor-pointer px-2 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none",
+                nodeFilter === "ip"
+                  ? "bg-sky-50 border border-sky-300 text-sky-800 font-bold shadow-2xs"
+                  : "border border-transparent hover:text-sky-700 hover:bg-slate-100"
+              )}
+              title="Toggle IP host filter"
+            >
+              <span className="w-2 h-2 rotate-45 bg-sky-100 border border-sky-500 shadow-2xs shrink-0" />
+              <span>IP Host</span>
+              <span className="text-[10px] crypto-mono opacity-70">({counts.ips})</span>
+            </button>
+
+            <button
+              onClick={() => setNodeFilter(nodeFilter === "seeds" ? "all" : "seeds")}
+              className={clsx(
+                "flex items-center gap-1.5 transition-all cursor-pointer px-2 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none",
+                nodeFilter === "seeds"
+                  ? "bg-red-50 border border-red-300 text-red-700 font-bold shadow-2xs"
+                  : "border border-transparent hover:text-red-600 hover:bg-slate-100"
+              )}
+              title="Toggle seed entity filter"
+            >
+              <span className="w-2 h-2 rounded-full border border-dashed border-red-600 bg-red-500 shadow-2xs animate-pulse shrink-0" />
+              <span className="font-semibold text-red-500">Seed Entity</span>
+              <span className="text-[10px] crypto-mono font-bold opacity-80">({counts.seeds})</span>
+            </button>
+          </div>
+
+          <span className="hidden sm:inline h-3.5 w-px bg-slate-300 shrink-0" />
+
+          {/* Cluster Metadata Badge */}
+          <div className="hidden md:flex items-center gap-2 crypto-mono text-[11px] whitespace-nowrap shrink-0">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border shadow-2xs uppercase bg-white border-slate-200 text-slate-800">
+              Cluster #{clusterId ?? "—"}
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-600 font-medium">
+              {nodes.length} nodes, {links.length} links
+            </span>
+            <span className="hidden 2xl:inline text-slate-300">•</span>
+            <span className="hidden 2xl:inline capitalize font-medium text-sky-600">
+              Layout: {layoutMode}
+            </span>
+          </div>
         </div>
 
-        <div className="hidden lg:flex items-center gap-3 crypto-mono text-[10px]">
+        {/* Center: Operator Navigation Instructions (shown ONLY on ultra-wide viewports) */}
+        <div className="hidden min-[1800px]:flex items-center gap-2.5 crypto-mono text-[10px] text-slate-400 whitespace-nowrap shrink-0">
           <span>Click node or edge to inspect</span>
           <span>•</span>
           <span>Scroll to zoom</span>
@@ -2081,13 +1976,8 @@ export default function GraphCanvas({
           <span>Drag to pan</span>
         </div>
 
-        {/* Live Military SYS UTC Clock */}
-        <div
-          className={clsx(
-            "flex items-center gap-1.5 px-2.5 py-0.5 rounded border shadow-2xs",
-            canvasTheme === "dark" ? "border-slate-800 bg-slate-900 text-slate-300" : "border-slate-200/90 bg-white text-slate-600"
-          )}
-        >
+        {/* Right: Live Military SYS UTC Clock */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border shadow-2xs shrink-0 whitespace-nowrap text-[11px] border-slate-200/90 bg-white text-slate-600">
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">SYS UTC</span>
           <span className="crypto-mono text-xs font-semibold">{now}</span>
         </div>
@@ -2102,14 +1992,12 @@ function ToolBtn({
   label,
   onClick,
   active,
-  isDark,
 }: {
   id: string;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
   active?: boolean;
-  isDark?: boolean;
 }) {
   return (
     <button
@@ -2120,11 +2008,7 @@ function ToolBtn({
       className={clsx(
         "w-7.5 h-7.5 flex items-center justify-center rounded-md border transition-all cursor-pointer shadow-2xs",
         active
-          ? isDark
-            ? "bg-sky-950/90 border-sky-500 text-sky-400 shadow-inner"
-            : "bg-sky-50 border-sky-300 text-sky-700 shadow-inner"
-          : isDark
-          ? "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-100 hover:border-slate-700"
+          ? "bg-sky-50 border-sky-300 text-sky-700 shadow-inner"
           : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
       )}
     >

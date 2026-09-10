@@ -268,19 +268,19 @@ export default function SurveillanceDashboard() {
         {/* Center canvas */}
         <main className="flex flex-col flex-1 overflow-hidden">
           {/* Enhanced Command Header Toolbar */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200/90 bg-white shrink-0">
-            {/* View switcher segmented control */}
-            <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200/80 shadow-inner">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 shadow-[0_1px_2px_rgba(15,23,42,0.03),inset_0_1px_0_#ffffff] shrink-0">
+            {/* View switcher segmented control with 3D recessed track */}
+            <div className="inline-flex p-1 rounded-lg bg-slate-200/80 border border-slate-300/80 shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.1),0_1px_0_rgba(255,255,255,0.8)]">
               <ViewToggle
                 active={view === "table"}
-                icon={<Table className="w-3.5 h-3.5" />}
+                icon={<Table className="w-3.5 h-3.5 stroke-[2.2]" />}
                 label="Alerts Stream"
                 id="view-toggle-table"
                 onClick={() => setView("table")}
               />
               <ViewToggle
                 active={view === "graph"}
-                icon={<Network className="w-3.5 h-3.5" />}
+                icon={<Network className="w-3.5 h-3.5 stroke-[2.2]" />}
                 label="Cluster Topology"
                 id="view-toggle-graph"
                 onClick={() => setView("graph")}
@@ -289,11 +289,11 @@ export default function SurveillanceDashboard() {
 
             {/* Live stream status + count */}
             <div className="flex items-center gap-3">
-              <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="crypto-mono font-medium">STREAM SYNCED</span>
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-b from-white to-slate-50 border border-slate-300 text-[11px] text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),inset_0_1px_0_#ffffff]">
+                <span className="w-2 h-2 rounded-full led-3d-low" />
+                <span className="crypto-mono font-bold text-[10px] tracking-wider text-emerald-800">STREAM SYNCED</span>
               </div>
-              <span className="crypto-mono text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded-md shadow-2xs">
+              <span className="crypto-mono text-xs font-bold text-slate-800 bg-gradient-to-b from-white to-slate-50 border border-slate-300 px-3 py-1 rounded-md shadow-[0_1px_2px_rgba(15,23,42,0.06),inset_0_1px_0_#ffffff]">
                 {total.toLocaleString()} entities
               </span>
             </div>
@@ -358,7 +358,7 @@ export default function SurveillanceDashboard() {
 }
 
 // ---------------------------------------------------------------------------
-// View toggle button (Segmented Control Pill)
+// View toggle button (3D Segmented Control Pill)
 // ---------------------------------------------------------------------------
 
 function ViewToggle({
@@ -373,16 +373,16 @@ function ViewToggle({
   label: string;
   id: string;
   onClick: () => void;
-}) {
+  }) {
   return (
     <button
       id={id}
       onClick={onClick}
       className={clsx(
-        "flex items-center gap-1.5 h-7.5 px-3.5 rounded-md text-xs font-semibold transition-all cursor-pointer select-none",
+        "flex items-center gap-1.5 h-7 px-3.5 rounded-md text-xs transition-all cursor-pointer select-none",
         active
-          ? "bg-white text-slate-900 shadow-card border border-slate-200/90 font-bold"
-          : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 border border-transparent font-medium",
+          ? "bg-gradient-to-b from-white to-slate-50 text-slate-900 border border-slate-300 shadow-[0_2px_4px_-1px_rgba(15,23,42,0.12),inset_0_1px_0_#ffffff] font-extrabold"
+          : "text-slate-600 hover:text-slate-900 hover:bg-white/50 border border-transparent font-semibold active:translate-y-[0.5px]",
       )}
     >
       {icon}
@@ -390,3 +390,4 @@ function ViewToggle({
     </button>
   );
 }
+

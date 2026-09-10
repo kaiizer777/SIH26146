@@ -45,8 +45,8 @@ export default function TopNav({
       <header className="h-13 flex items-center gap-3.5 px-4 bg-white/95 backdrop-blur-xs border-b border-slate-200/90 shadow-subtle z-30 shrink-0">
       {/* NTRO Emblem + Agency Title */}
       <div className="flex items-center gap-2.5 shrink-0">
-        <div className="flex items-center justify-center w-7.5 h-7.5 rounded-md bg-gradient-to-b from-slate-900 to-slate-950 text-white shadow-xs border border-slate-800">
-          <Shield className="w-4 h-4 text-sky-400 stroke-[2.2]" />
+        <div className="flex items-center justify-center w-7.5 h-7.5 rounded-md bg-gradient-to-b from-blue-600 to-indigo-700 text-white shadow-xs border border-blue-500/40">
+          <Shield className="w-4 h-4 text-white stroke-[2.2] fill-white/10" />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-black tracking-[0.2em] text-slate-950 uppercase select-none">
