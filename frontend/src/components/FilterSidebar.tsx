@@ -230,7 +230,7 @@ export default function FilterSidebar({
         <div>
           <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
             <span>Min Anomaly Score</span>
-            <span className="crypto-mono text-xs font-bold text-sky-800 bg-sky-50 border border-sky-200/90 rounded px-1.5 py-0.5 shadow-2xs">
+            <span className="crypto-mono text-xs font-bold text-blue-800 bg-blue-50 border border-blue-200/90 rounded px-1.5 py-0.5 shadow-2xs">
               ≥ {filters.minAnomaly.toFixed(2)}
             </span>
           </div>
@@ -248,7 +248,7 @@ export default function FilterSidebar({
               }
               style={
                 {
-                  "--slider-track-bg": `linear-gradient(to right, #0284c7 0%, #0284c7 ${filters.minAnomaly * 100}%, #e2e8f0 ${filters.minAnomaly * 100}%, #e2e8f0 100%)`,
+                  "--slider-track-bg": `linear-gradient(to right, #2563eb 0%, #2563eb ${filters.minAnomaly * 100}%, #e2e8f0 ${filters.minAnomaly * 100}%, #e2e8f0 100%)`,
                 } as React.CSSProperties
               }
               className="w-full custom-slider cursor-pointer"
@@ -281,7 +281,7 @@ export default function FilterSidebar({
                   className={clsx(
                     "py-1 rounded text-[10.5px] crypto-mono transition-all cursor-pointer text-center flex items-center justify-center gap-1 active:scale-95",
                     isSelected
-                      ? "bg-sky-600 text-white font-bold shadow-xs border border-sky-600"
+                      ? "bg-gradient-to-b from-blue-600 to-indigo-700 text-white font-bold shadow-xs border border-blue-500/40"
                       : "bg-white text-slate-600 font-medium border border-slate-200/70 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-2xs",
                   )}
                 >
