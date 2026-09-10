@@ -11,6 +11,7 @@ import AlertTable from "@/components/AlertTable";
 import GraphCanvas from "@/components/GraphCanvas";
 import EntityDrawer from "@/components/EntityDrawer";
 import IngestModal from "@/components/IngestModal";
+import ModelProvenanceModal from "@/components/ModelProvenanceModal";
 
 import { useAlerts } from "@/hooks/useAlerts";
 import {
@@ -45,13 +46,14 @@ const DEFAULT_FILTERS: Filters = {
   clusterId: "",
 };
 
-// Hardcoded from Phase 8 verification — used when API hasn't loaded yet
+// SOTA Dual Transformer verified counts — used when API hasn't loaded yet
 const FALLBACK_VERDICT_COUNTS = {
   CRITICAL: 103,
-  HIGH: 78,
-  MEDIUM: 3377,
-  LOW: 13462,
+  HIGH: 10,
+  MEDIUM: 3112,
+  LOW: 12648,
 };
+const FALLBACK_TOTAL_INDEXED = 15873;
 
 // ---------------------------------------------------------------------------
 // Page
@@ -74,8 +76,9 @@ export default function SurveillanceDashboard() {
   const [graphLoading, setGraphLoading] = useState(false);
   const [graphClusterId, setGraphClusterId] = useState<number | null>(null);
 
-  // Modal
+  // Modals
   const [ingestOpen, setIngestOpen] = useState(false);
+  const [provenanceOpen, setProvenanceOpen] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -86,8 +89,8 @@ export default function SurveillanceDashboard() {
   const alertParams = {
     sort: "risk_desc" as const,
     verdict:
-      filters.verdicts.size === 1
-        ? ([...filters.verdicts][0] as Verdict)
+      filters.verdicts.size > 0
+        ? Array.from(filters.verdicts).join(",")
         : null,
     min_anomaly: filters.minAnomaly > 0 ? filters.minAnomaly : null,
     // Strict heuristic isolation:
@@ -101,8 +104,17 @@ export default function SurveillanceDashboard() {
     search: searchValue || null,
   };
 
-  const { items, total, isLoading, error, refresh, loadMore, hasMore } =
-    useAlerts({ ...alertParams, pageSize: 50 });
+  const {
+    items,
+    total,
+    totalIndexed,
+    verdictCounts,
+    isLoading,
+    error,
+    refresh,
+    loadMore,
+    hasMore,
+  } = useAlerts({ ...alertParams, pageSize: 50 });
 
   // Auto-populate Prime Cluster #516 when entering graph view with no cluster active
   useEffect(() => {
@@ -232,9 +244,10 @@ export default function SurveillanceDashboard() {
 
       {/* Top Navigation */}
       <TopNav
-        totalIndexed={total}
+        totalIndexed={totalIndexed > 0 ? totalIndexed : FALLBACK_TOTAL_INDEXED}
         onSearchFocus={handleSearchFocus}
         onIngestClick={() => setIngestOpen(true)}
+        onProvenanceClick={() => setProvenanceOpen(true)}
       />
 
       {/* Main layout: sidebar | center | drawer */}
@@ -244,13 +257,12 @@ export default function SurveillanceDashboard() {
           filters={filters}
           onChange={setFilters}
           filteredCount={total}
-          totalCount={
-            FALLBACK_VERDICT_COUNTS.CRITICAL +
-            FALLBACK_VERDICT_COUNTS.HIGH +
-            FALLBACK_VERDICT_COUNTS.MEDIUM +
-            FALLBACK_VERDICT_COUNTS.LOW
+          totalCount={totalIndexed > 0 ? totalIndexed : FALLBACK_TOTAL_INDEXED}
+          verdictCounts={
+            verdictCounts && typeof verdictCounts.CRITICAL === "number"
+              ? (verdictCounts as typeof FALLBACK_VERDICT_COUNTS)
+              : FALLBACK_VERDICT_COUNTS
           }
-          verdictCounts={FALLBACK_VERDICT_COUNTS}
         />
 
         {/* Center canvas */}
@@ -325,6 +337,7 @@ export default function SurveillanceDashboard() {
           isLoading={entityLoading}
           error={entityError}
           onClose={handleCloseDrawer}
+          onProvenanceClick={() => setProvenanceOpen(true)}
         />
       </div>
 
@@ -333,6 +346,12 @@ export default function SurveillanceDashboard() {
         isOpen={ingestOpen}
         onClose={() => setIngestOpen(false)}
         onSuccess={handleIngestSuccess}
+      />
+
+      {/* Model Architecture Provenance & Benchmark Modal (FLEX-3) */}
+      <ModelProvenanceModal
+        isOpen={provenanceOpen}
+        onClose={() => setProvenanceOpen(false)}
       />
     </div>
   );

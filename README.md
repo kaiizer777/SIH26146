@@ -93,11 +93,16 @@ All figures represent verified measurements on the development machine (document
 | **GeoIP Enrichment** | MaxMind GeoLite2 City/ASN coverage | **100%** (100,000 / 100,000 rows resolved) | Complete offline operation |
 | **Graph Population** | Keyset UNWIND MERGE (Neo4j) | 24,673 `:Wallet`, 100,000 `:Transaction`, 39,620 `:CO_SPEND` | All constraints validated |
 | **Entity Clustering** | GDS Louvain Community Detection | 9,794 communities, modularity = 0.4613 | Synced to Postgres in 3.43s |
-| **Autoencoder (F2)** | Training Time (CPU) / Threshold | **211.7s** / Threshold = 0.0346 (95th pct) | 100k rows scored |
+| **Autoencoder (F2 - Baseline)** | Training Time (CPU) / Threshold | **211.7s** / Threshold = 0.0346 (95th pct) | 100k rows scored |
+| **FT-Transformer (SOTA Anomaly)** | Test F1 / Precision / Latency | **F1 = 0.6972**, Prec = 0.7379, Latency = **0.0222ms** | Active Production Engine |
 | **Peeling Traversal (F3)** | Detection Recall (≥5 hops) | **97.2%** (451 / 464 injected chains caught) | Cypher graph traversal |
 | **CoinJoin Detection (F3)** | Detection Recall (equal outputs) | **100.0%** (50 / 50 synthetic candidates caught) | Heuristic rule validated |
-| **GraphSAGE GNN (F4)** | Training / Inference Time | **12.2s CPU** / **25.4ms** for 24,673 nodes | F1 = 0.9711 |
+| **GraphSAGE GNN (F4 - Baseline)** | Training / Inference Time | **12.2s CPU** / **25.4ms** for 24,673 nodes | F1 = 0.9711 (co-spend) |
+| **Graph Transformer (SOTA Risk)** | Test F1 / ROC-AUC / Latency | **F1 = 0.9209**, AUC = 0.9956, Latency = **0.0120ms** | Active Production Engine |
 | **Explainability (XAI)** | Sub-5ms Forensic Index | **17,041 evidence trails** + SHAP waterfall data | Court-admissible dossiers |
+
+> Canonical single source of truth for all model metrics is maintained in [`data/models/BENCHMARK_TRUTH.json`](data/models/BENCHMARK_TRUTH.json) and [`BENCHMARK_TRUTH.md`](data/models/BENCHMARK_TRUTH.md).
+
 
 ---
 

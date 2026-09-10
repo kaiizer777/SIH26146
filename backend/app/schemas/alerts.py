@@ -31,3 +31,6 @@ class AlertsResponse(BaseModel):
     offset: int
     limit: int
     items: list[AlertItem]
+    total_indexed: Optional[int] = None
+    verdict_counts: Optional[dict[str, int]] = None
+

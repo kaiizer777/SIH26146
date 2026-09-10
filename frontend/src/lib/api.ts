@@ -38,13 +38,15 @@ export interface AlertsResponse {
   offset: number;
   limit: number;
   items: AlertItem[];
+  total_indexed?: number;
+  verdict_counts?: Record<string, number>;
 }
 
 export interface AlertsParams {
   limit?: number;
   offset?: number;
   sort?: "risk_desc" | "risk_asc" | "anomaly_desc" | "ts_desc";
-  verdict?: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | null;
+  verdict?: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | string | null;
   min_risk?: number | null;
   min_anomaly?: number | null;
   is_mixing?: boolean | null;

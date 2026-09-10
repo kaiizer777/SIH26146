@@ -17,10 +17,14 @@ import {
   FileText,
   BarChart3,
   Brain,
+  Cpu,
+  ShieldCheck,
 } from "lucide-react";
 import type { EntityExplainResponse } from "@/lib/api";
 import ShapWaterfall from "./ShapWaterfall";
 import AttentionHeatmap from "./AttentionHeatmap";
+import ModelProvenanceModal from "./ModelProvenanceModal";
+import LegalCertificateModal from "./LegalCertificateModal";
 
 type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
@@ -30,6 +34,7 @@ interface EntityDrawerProps {
   isLoading: boolean;
   error: string | null;
   onClose: () => void;
+  onProvenanceClick?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -187,10 +192,21 @@ export default function EntityDrawer({
   isLoading,
   error,
   onClose,
+  onProvenanceClick,
 }: EntityDrawerProps) {
   const [copied, setCopied] = useState(false);
   const [mlRowOpen, setMlRowOpen] = useState(true);
   const [explainView, setExplainView] = useState<"shap" | "attention">("shap");
+  const [internalProvenanceOpen, setInternalProvenanceOpen] = useState(false);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+
+  const handleProvenanceOpen = () => {
+    if (onProvenanceClick) {
+      onProvenanceClick();
+    } else {
+      setInternalProvenanceOpen(true);
+    }
+  };
 
   const isOpen = address !== null;
 
@@ -362,6 +378,19 @@ export default function EntityDrawer({
                       ) : (
                         <Copy className="w-4 h-4" />
                       )}
+                    </button>
+                  </div>
+
+                  {/* Model Provenance Tag (FLEX-3) */}
+                  <div className="mt-2 flex items-center">
+                    <button
+                      id="drawer-model-provenance-btn"
+                      onClick={handleProvenanceOpen}
+                      className="bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-600 hover:text-slate-900 text-[10px] font-mono px-2 py-0.5 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="View Dual Transformer Model Provenance & Live Benchmark Telemetry"
+                    >
+                      <Cpu className="w-3 h-3 text-sky-500" />
+                      <span>Inference Engine: Dual Transformer (FT-Trans + RGT-4H)</span>
                     </button>
                   </div>
                 </div>
@@ -740,20 +769,49 @@ export default function EntityDrawer({
           )}
         </div>
 
-        {/* Footer: export */}
+        {/* Footer: export actions */}
         {data && (
-          <div className="px-5 py-3.5 border-t border-slate-200/90 bg-slate-50/90 shrink-0 flex items-center justify-end">
-            <button
-              id="drawer-download-dossier-btn"
-              onClick={downloadDossier}
-              className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 h-9 rounded-md tactile-btn-primary text-white text-xs font-semibold shadow-xs cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-sky-300 stroke-[2.2]" />
-              <span>Download Forensic Dossier (JSON)</span>
-            </button>
+          <div className="px-5 py-3.5 border-t border-slate-200/90 bg-slate-50/90 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Court-Admissible Evidence Standard (IEA Sec 65B / BSA 2023 Sec 63)</span>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                id="drawer-download-dossier-btn"
+                onClick={downloadDossier}
+                className="flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-md tactile-btn-secondary text-slate-700 text-xs font-semibold cursor-pointer shrink-0"
+                title="Download raw JSON telemetry payload"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Download JSON</span>
+              </button>
+              <button
+                id="drawer-export-legal-dossier-btn"
+                onClick={() => setLegalModalOpen(true)}
+                className="flex items-center justify-center gap-2 flex-1 sm:flex-initial px-4 h-9 rounded-md tactile-btn-primary text-white text-xs font-semibold shadow-xs cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-300 stroke-[2.2]" />
+                <span>Export Certified Legal Dossier (Sec 65B)</span>
+              </button>
+            </div>
           </div>
         )}
       </aside>
+
+      <LegalCertificateModal
+        isOpen={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        data={data}
+        address={address}
+      />
+
+      {!onProvenanceClick && (
+        <ModelProvenanceModal
+          isOpen={internalProvenanceOpen}
+          onClose={() => setInternalProvenanceOpen(false)}
+        />
+      )}
     </>
   );
 }

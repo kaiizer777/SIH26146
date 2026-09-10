@@ -90,17 +90,17 @@ class Settings(BaseSettings):
     api_dev_token: str = "dev-token-ntro-2026"
 
     # --- Stage 3: Model Architecture Configuration ---
-    # Tradeoffs:
-    #   FT-Transformer (anomaly, primary, default False): Higher precision (0.78 vs 0.71),
-    #     lower false-positive rate (14.3% vs 28.6%), lower recall (0.66 vs 0.84).
+    # Tradeoffs (Canonical Ground Truth per data/models/BENCHMARK_TRUTH.json):
+    #   FT-Transformer (anomaly, primary, default False): Higher precision (0.74 vs 0.05 baseline),
+    #     lower false-positive rate, calibrated F1 0.6972 (precision 0.7379, recall 0.6609, ROC-AUC 0.9739).
     #     Recommended for automated surveillance and high-precision alerting.
-    #   Autoencoder (anomaly, fallback, True): Higher recall (0.84), but higher false-positive rate.
+    #   Autoencoder (anomaly, fallback, True): Unsupervised reconstruction baseline (threshold 0.034618).
     #     Recommended when detection recall is prioritized over false alarms.
     use_legacy_anomaly_model: bool = False
 
     #   Graph Transformer (risk, primary, default False): Strictly outperforms legacy GraphSAGE
-    #     across all metrics (Validation F1 0.9130 vs 0.8750, Test F1 0.9091 vs 0.8696, Test AUC 0.9822 vs 0.9654).
-    #   GraphSAGE (risk, fallback, True): Legacy 3-layer GraphSAGE baseline architecture.
+    #     across all metrics (Test F1 0.9209 vs 0.8696 multi-relational benchmark, Test ROC-AUC 0.9956 vs 0.9654).
+    #   GraphSAGE (risk, fallback, True): Legacy 3-layer GraphSAGE baseline architecture (co-spend F1 0.9711).
     use_legacy_risk_model: bool = False
 
     # Deprecated master toggle: when set to True, enables legacy fallback across BOTH models.

@@ -75,8 +75,16 @@ async def get_alerts(
     """
     if sort not in _VALID_SORTS:
         raise HTTPException(status_code=422, detail=f"sort must be one of {sorted(_VALID_SORTS)}")
-    if verdict and verdict not in _VALID_VERDICTS:
-        raise HTTPException(status_code=422, detail=f"verdict must be one of {sorted(_VALID_VERDICTS)}")
+    target_verdicts: Optional[set[str]] = None
+    if verdict:
+        parsed = {v.strip().upper() for v in verdict.split(",") if v.strip()}
+        invalid = parsed - _VALID_VERDICTS
+        if invalid:
+            raise HTTPException(
+                status_code=422,
+                detail=f"verdict must be one of {sorted(_VALID_VERDICTS)} (comma-separated allowed, got {sorted(invalid)})",
+            )
+        target_verdicts = parsed
 
     # --- 1. Pull all composite records from memory and apply filters ---
     all_records = xai_store._composite  # read-only dict, safe
@@ -86,7 +94,7 @@ async def get_alerts(
 
     for addr, rec in all_records.items():
         # verdict filter
-        if verdict and rec.get("verdict") != verdict:
+        if target_verdicts and rec.get("verdict") not in target_verdicts:
             continue
         # min_risk filter
         if min_risk is not None and rec.get("composite_score", 0.0) < min_risk:
@@ -207,4 +215,11 @@ async def get_alerts(
             geo_country=meta.get("geo_country"),
         ))
 
-    return AlertsResponse(total=total, offset=offset, limit=limit, items=items)
+    return AlertsResponse(
+        total=total,
+        offset=offset,
+        limit=limit,
+        items=items,
+        total_indexed=xai_store.composite_count(),
+        verdict_counts=xai_store.verdict_counts(),
+    )

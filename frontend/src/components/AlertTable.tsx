@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { clsx } from "clsx";
-import { Copy, Check, AlertTriangle, Layers, Zap, Search, X, ShieldAlert, Sparkles } from "lucide-react";
+import { Copy, Check, AlertTriangle, Layers, Zap, Search, X, ShieldAlert, Sparkles, Brain, Network, Users } from "lucide-react";
 import type { AlertItem } from "@/lib/api";
 
 type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
@@ -111,6 +111,85 @@ function SkeletonRow() {
 }
 
 // ---------------------------------------------------------------------------
+// Laundering Pattern Badge Component
+// ---------------------------------------------------------------------------
+
+function LaunderingPatternBadge({ item }: { item: AlertItem }) {
+  if (item.is_peeling_chain) {
+    return (
+      <span
+        title="Cascade peeling chain transaction sequence"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-50 text-orange-800 border border-orange-200/90 shadow-2xs"
+      >
+        <Layers className="w-3 h-3 text-orange-600 stroke-[2.2]" />
+        <span>{item.chain_hops ?? "?"}‑hop peel</span>
+      </span>
+    );
+  }
+
+  if (item.is_mixing) {
+    return (
+      <span
+        title="Equal-output mixing transaction (CoinJoin)"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 shadow-2xs"
+      >
+        <Zap className="w-3 h-3 text-amber-600 stroke-[2.2]" />
+        <span>CoinJoin</span>
+      </span>
+    );
+  }
+
+  const hasLargeCluster = item.triggered_rules?.some((r) =>
+    r.toUpperCase().includes("LARGE_CLUSTER"),
+  );
+  if (hasLargeCluster) {
+    return (
+      <span
+        title="Multi-entity Sybil clustering heuristic (large cluster size)"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200/90 shadow-2xs"
+      >
+        <Users className="w-3 h-3 text-indigo-600 stroke-[2.2]" />
+        <span>Sybil Cluster</span>
+      </span>
+    );
+  }
+
+  const hasHighAnomaly =
+    (item.anomaly_score != null && item.anomaly_score >= 1.0) ||
+    item.triggered_rules?.some((r) => r.toUpperCase().includes("ANOMALY"));
+  if (hasHighAnomaly) {
+    return (
+      <span
+        title="FT-Transformer extreme tabular feature anomaly (behavioral outlier)"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200/90 shadow-2xs"
+      >
+        <Brain className="w-3 h-3 text-purple-600 stroke-[2.2]" />
+        <span>Behavioral Anomaly</span>
+      </span>
+    );
+  }
+
+  const hasHighRisk =
+    (item.risk_score != null && item.risk_score >= 0.7) ||
+    item.triggered_rules?.some((r) =>
+      r.toUpperCase().includes("HIGH_GRAPH_RISK"),
+    );
+  if (hasHighRisk) {
+    return (
+      <span
+        title="Relational Graph Transformer high topological contagion"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-50 text-sky-800 border border-sky-200/90 shadow-2xs"
+      >
+        <Network className="w-3 h-3 text-sky-600 stroke-[2.2]" />
+        <span>Graph Contagion</span>
+      </span>
+    );
+  }
+
+  return <span className="text-slate-400 text-xs">—</span>;
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -129,8 +208,20 @@ export default function AlertTable({
   onSearchChange,
 }: AlertTableProps) {
   const [, setFocusIdx] = useState<number>(-1);
+  const [now, setNow] = useState<string>("");
   const tableRef = useRef<HTMLTableElement>(null);
   const sentinelRef = useRef<HTMLTableRowElement>(null);
+
+  // Live Military UTC Clock
+  useEffect(() => {
+    const update = () =>
+      setNow(
+        new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC",
+      );
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // Keyboard navigation (Arrow keys + Enter)
   useEffect(() => {
@@ -358,19 +449,7 @@ export default function AlertTable({
 
                       {/* Mixing / Pattern Flag */}
                       <td className="py-2.5 px-3.5 whitespace-nowrap">
-                        {item.is_peeling_chain ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-50 text-orange-800 border border-orange-200/90 shadow-2xs">
-                            <Layers className="w-3 h-3 text-orange-600 stroke-[2.2]" />
-                            <span>{item.chain_hops ?? "?"}‑hop peel</span>
-                          </span>
-                        ) : item.is_mixing ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/90 shadow-2xs">
-                            <Zap className="w-3 h-3 text-amber-600 stroke-[2.2]" />
-                            <span>CoinJoin</span>
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-xs">—</span>
-                        )}
+                        <LaunderingPatternBadge item={item} />
                       </td>
 
                       {/* Seed status */}
@@ -430,23 +509,12 @@ export default function AlertTable({
           entities loaded
         </div>
 
-        {/* Console Operator Key Shortcuts Hint */}
-        <div className="hidden sm:flex items-center gap-3 text-slate-600 crypto-mono text-[10px]">
-          <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs font-semibold">↑</kbd>
-            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs font-semibold">↓</kbd>
-            <span>Navigate</span>
+        {/* Live Military SYS UTC Clock */}
+        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-slate-200/90 bg-white text-slate-600 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            SYS UTC
           </span>
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs font-semibold">Click</kbd>
-            <span>Inspect Dossier</span>
-          </span>
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600 shadow-2xs font-semibold">/</kbd>
-            <span>Search</span>
-          </span>
+          <span className="crypto-mono text-xs text-slate-700 font-semibold">{now}</span>
         </div>
       </div>
     </div>

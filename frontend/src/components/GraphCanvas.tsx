@@ -198,6 +198,17 @@ export default function GraphCanvas({
   const [nodeFilter, setNodeFilter] = useState<"all" | "high" | "seeds" | "wallets" | "tx" | "ip">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState<string>("");
+
+  useEffect(() => {
+    const update = () =>
+      setNow(
+        new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC",
+      );
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const handleCloseInspector = useCallback(() => {
     setSelectedNode(null);
@@ -1339,6 +1350,35 @@ export default function GraphCanvas({
         className="w-full flex-1 dot-matrix-bg cursor-grab active:cursor-grabbing"
         aria-label="Force-directed transaction graph"
       />
+
+      {/* Canvas Operator Status Footer */}
+      <div className="h-9 px-4 border-t border-slate-200/90 bg-slate-50 flex items-center justify-between shrink-0 select-none text-[11px] z-10">
+        <div className="flex items-center gap-2 text-slate-600 crypto-mono">
+          <span className="font-semibold text-slate-900">
+            Cluster #{clusterId ?? "—"}
+          </span>{" "}
+          •{" "}
+          <span>
+            {nodes.length} nodes, {links.length} links
+          </span>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-3 text-slate-600 crypto-mono text-[10px]">
+          <span>Click node or edge to inspect</span>
+          <span>•</span>
+          <span>Scroll to zoom</span>
+          <span>•</span>
+          <span>Drag to pan</span>
+        </div>
+
+        {/* Live Military SYS UTC Clock */}
+        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-slate-200/90 bg-white text-slate-600 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            SYS UTC
+          </span>
+          <span className="crypto-mono text-xs text-slate-700 font-semibold">{now}</span>
+        </div>
+      </div>
     </div>
   );
 }

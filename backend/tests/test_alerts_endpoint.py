@@ -69,3 +69,32 @@ def test_alerts_mixing_union(client):
     assert peel_total > 0
     assert coin_total > 0
     assert peel_total + coin_total == mix_total
+
+
+def test_alerts_multi_verdict_filtering(client):
+    """GET /api/v1/alerts?verdict=CRITICAL,HIGH: returns only CRITICAL and HIGH alerts, total equals sum."""
+    headers = {"Authorization": f"Bearer {settings.api_dev_token}"}
+
+    r_crit = client.get("/api/v1/alerts?verdict=CRITICAL&limit=1", headers=headers)
+    r_high = client.get("/api/v1/alerts?verdict=HIGH&limit=1", headers=headers)
+    r_both = client.get("/api/v1/alerts?verdict=CRITICAL,HIGH&limit=50", headers=headers)
+
+    assert r_crit.status_code == 200
+    assert r_high.status_code == 200
+    assert r_both.status_code == 200
+
+    crit_total = r_crit.json()["total"]
+    high_total = r_high.json()["total"]
+    both_data = r_both.json()
+
+    assert crit_total > 0
+    assert high_total > 0
+    assert both_data["total"] == crit_total + high_total
+
+    for item in both_data["items"]:
+        assert item["verdict"] in {"CRITICAL", "HIGH"}
+
+    # Invalid verdict should return 422
+    r_bad = client.get("/api/v1/alerts?verdict=CRITICAL,INVALID_VERDICT", headers=headers)
+    assert r_bad.status_code == 422
+

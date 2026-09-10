@@ -11,6 +11,8 @@ interface UseAlertsOptions extends AlertsParams {
 interface UseAlertsReturn {
   items: AlertItem[];
   total: number;
+  totalIndexed: number;
+  verdictCounts: Record<string, number> | null;
   isLoading: boolean;
   error: string | null;
   refresh: () => void;
@@ -25,6 +27,8 @@ export function useAlerts({
 }: UseAlertsOptions = {}): UseAlertsReturn {
   const [items, setItems] = useState<AlertItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [totalIndexed, setTotalIndexed] = useState(0);
+  const [verdictCounts, setVerdictCounts] = useState<Record<string, number> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
@@ -56,6 +60,12 @@ export function useAlerts({
         });
 
         setTotal(data.total);
+        if (data.total_indexed != null) {
+          setTotalIndexed(data.total_indexed);
+        }
+        if (data.verdict_counts != null) {
+          setVerdictCounts(data.verdict_counts);
+        }
         if (append) {
           setItems((prev) => [...prev, ...data.items]);
         } else {
@@ -99,5 +109,15 @@ export function useAlerts({
 
   const hasMore = items.length < total;
 
-  return { items, total, isLoading, error, refresh, loadMore, hasMore };
+  return {
+    items,
+    total,
+    totalIndexed,
+    verdictCounts,
+    isLoading,
+    error,
+    refresh,
+    loadMore,
+    hasMore,
+  };
 }

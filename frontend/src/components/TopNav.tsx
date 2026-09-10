@@ -1,33 +1,35 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Database, Upload, Search } from "lucide-react";
+import { Shield, Database, Upload, Zap, ChevronDown } from "lucide-react";
+import ModelProvenanceModal from "./ModelProvenanceModal";
 
 interface TopNavProps {
   totalIndexed: number;
-  onSearchFocus: () => void;
+  onSearchFocus?: () => void;
   onIngestClick: () => void;
+  onProvenanceClick?: () => void;
 }
 
 export default function TopNav({
   totalIndexed,
   onSearchFocus,
   onIngestClick,
+  onProvenanceClick,
 }: TopNavProps) {
-  const [now, setNow] = useState<string>("");
+  const [internalProvenanceOpen, setInternalProvenanceOpen] = useState(false);
 
-  useEffect(() => {
-    const update = () =>
-      setNow(
-        new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC",
-      );
-    update();
-    const t = setInterval(update, 1000);
-    return () => clearInterval(t);
-  }, []);
+  const handleProvenanceClick = () => {
+    if (onProvenanceClick) {
+      onProvenanceClick();
+    } else {
+      setInternalProvenanceOpen(true);
+    }
+  };
 
   // Keyboard shortcut: Ctrl+K or /
   useEffect(() => {
+    if (!onSearchFocus) return;
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey && e.key === "k") || e.key === "/") {
         e.preventDefault();
@@ -39,7 +41,8 @@ export default function TopNav({
   }, [onSearchFocus]);
 
   return (
-    <header className="h-13 flex items-center gap-3.5 px-4 bg-white border-b border-slate-200/90 shadow-subtle z-30 shrink-0">
+    <>
+      <header className="h-13 flex items-center gap-3.5 px-4 bg-white border-b border-slate-200/90 shadow-subtle z-30 shrink-0">
       {/* NTRO Emblem + Agency Title */}
       <div className="flex items-center gap-2.5 shrink-0">
         <div className="flex items-center justify-center w-7.5 h-7.5 rounded-md bg-gradient-to-b from-slate-800 to-slate-950 text-white shadow-xs border border-slate-700/60">
@@ -80,30 +83,29 @@ export default function TopNav({
         </span>
       </div>
 
+      {/* Model Architecture Provenance & Telemetry Chip (FLEX-3) */}
+      <button
+        id="topnav-model-provenance-btn"
+        onClick={handleProvenanceClick}
+        aria-haspopup="dialog"
+        aria-label="Dual Transformer model provenance and benchmark audit"
+        className="flex items-center gap-1.5 border border-sky-200/90 bg-sky-50/70 hover:bg-sky-100/80 text-sky-800 transition-all rounded-md px-2.5 py-1 text-xs font-semibold crypto-mono shrink-0 cursor-pointer shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+      >
+        <Zap className="w-3.5 h-3.5 text-sky-600 fill-sky-400/30 shrink-0" />
+        <span className="hidden xl:inline">
+          DUAL TRANSFORMER (FT-TRANS + RGT 4-HEAD) • 4.8ms CPU
+        </span>
+        <span className="xl:hidden hidden sm:inline">
+          DUAL TRANSFORMER • 4.8ms
+        </span>
+        <span className="sm:hidden">
+          DUAL-TF • 4.8ms
+        </span>
+        <ChevronDown className="w-3 h-3 text-sky-500 shrink-0" />
+      </button>
+
       {/* Spacer */}
       <div className="flex-1" />
-
-      {/* Live Military UTC Clock */}
-      <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded border border-slate-100 bg-slate-50/50 text-slate-500 shrink-0">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-          SYS UTC
-        </span>
-        <span className="crypto-mono text-xs text-slate-700 font-semibold">{now}</span>
-      </div>
-
-      {/* Search trigger shortcut button */}
-      <button
-        id="topnav-search-btn"
-        onClick={onSearchFocus}
-        className="flex items-center gap-2 h-7.5 px-2.5 sm:px-3 rounded-md border border-slate-200 tactile-btn-secondary text-slate-600 text-xs transition-all"
-        aria-label="Focus search (Ctrl+K)"
-      >
-        <Search className="w-3.5 h-3.5 text-slate-400" />
-        <span className="hidden sm:inline font-medium">Search</span>
-        <span className="crypto-mono text-[10px] font-medium text-slate-500 bg-slate-100 border border-slate-200/90 rounded px-1.5 py-0.5 shadow-2xs">
-          Ctrl K
-        </span>
-      </button>
 
       {/* Ingest batch button */}
       <button
@@ -115,5 +117,13 @@ export default function TopNav({
         <span>Ingest Batch</span>
       </button>
     </header>
+
+    {!onProvenanceClick && (
+      <ModelProvenanceModal
+        isOpen={internalProvenanceOpen}
+        onClose={() => setInternalProvenanceOpen(false)}
+      />
+    )}
+  </>
   );
 }
