@@ -42,18 +42,18 @@ export default function TopNav({
 
   return (
     <>
-      <header className="h-13 flex items-center gap-3.5 px-4 bg-white border-b border-slate-200/90 shadow-subtle z-30 shrink-0">
+      <header className="h-13 flex items-center gap-3.5 px-4 bg-white/95 backdrop-blur-xs border-b border-slate-200/90 shadow-subtle z-30 shrink-0">
       {/* NTRO Emblem + Agency Title */}
       <div className="flex items-center gap-2.5 shrink-0">
-        <div className="flex items-center justify-center w-7.5 h-7.5 rounded-md bg-gradient-to-b from-slate-800 to-slate-950 text-white shadow-xs border border-slate-700/60">
+        <div className="flex items-center justify-center w-7.5 h-7.5 rounded-md bg-gradient-to-b from-slate-900 to-slate-950 text-white shadow-xs border border-slate-800">
           <Shield className="w-4 h-4 text-sky-400 stroke-[2.2]" />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-extrabold tracking-[0.18em] text-slate-900 uppercase select-none">
+          <span className="text-xs font-black tracking-[0.2em] text-slate-950 uppercase select-none">
             NTRO
           </span>
           <span className="text-slate-300 select-none">|</span>
-          <span className="text-xs font-semibold tracking-wider text-slate-600 uppercase select-none hidden sm:inline">
+          <span className="text-xs font-bold tracking-wider text-slate-700 uppercase select-none hidden sm:inline">
             Bitcoin AML Surveillance
           </span>
         </div>
@@ -63,20 +63,20 @@ export default function TopNav({
       <div className="h-4 w-px bg-slate-200 hidden md:block" />
 
       {/* Operational telemetry badge */}
-      <div className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-emerald-200/90 bg-emerald-50/70 shadow-2xs shrink-0">
+      <div className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-emerald-300/80 bg-emerald-50/80 shadow-2xs shrink-0">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 ring-2 ring-emerald-200/60" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600 ring-2 ring-emerald-200/70" />
         </span>
-        <span className="text-[11px] font-semibold text-emerald-800 crypto-mono tracking-tight">
+        <span className="text-[11px] font-bold text-emerald-900 crypto-mono tracking-tight">
           AIR-GAPPED OPERATIONAL
         </span>
       </div>
 
       {/* Indexed wallet ledger telemetry */}
-      <div className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-slate-200/80 bg-slate-50/80 text-slate-600 shrink-0 hidden md:flex">
-        <Database className="w-3.5 h-3.5 text-slate-400" />
-        <span className="crypto-mono text-xs font-medium text-slate-700">
+      <div className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-slate-200/90 bg-slate-50/80 text-slate-700 shadow-2xs shrink-0 hidden md:flex">
+        <Database className="w-3.5 h-3.5 text-slate-500" />
+        <span className="crypto-mono text-xs font-semibold text-slate-800">
           {totalIndexed > 0
             ? `${totalIndexed.toLocaleString()} WALLETS INDEXED`
             : "INDEXING REPO…"}
@@ -89,7 +89,7 @@ export default function TopNav({
         onClick={handleProvenanceClick}
         aria-haspopup="dialog"
         aria-label="Dual Transformer model provenance and benchmark audit"
-        className="flex items-center gap-1.5 border border-sky-200/90 bg-sky-50/70 hover:bg-sky-100/80 text-sky-800 transition-all rounded-md px-2.5 py-1 text-xs font-semibold crypto-mono shrink-0 cursor-pointer shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+        className="flex items-center gap-1.5 border border-sky-300/80 bg-sky-50/80 hover:bg-sky-100/90 text-sky-900 transition-all rounded-md px-2.5 py-1 text-xs font-semibold crypto-mono shrink-0 cursor-pointer shadow-2xs active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
       >
         <Zap className="w-3.5 h-3.5 text-sky-600 fill-sky-400/30 shrink-0" />
         <span className="hidden xl:inline">
@@ -111,7 +111,7 @@ export default function TopNav({
       <button
         id="topnav-ingest-btn"
         onClick={onIngestClick}
-        className="flex items-center gap-1.5 h-7.5 px-3.5 rounded-md tactile-btn-primary text-white text-xs font-semibold cursor-pointer select-none"
+        className="flex items-center gap-1.5 h-8 px-3.5 rounded-md tactile-btn-primary text-white text-xs font-semibold cursor-pointer select-none active:scale-[0.98]"
       >
         <Upload className="w-3.5 h-3.5 text-sky-300 stroke-[2.2]" />
         <span>Ingest Batch</span>

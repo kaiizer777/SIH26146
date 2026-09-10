@@ -2,7 +2,7 @@
 
 import React from "react";
 import { clsx } from "clsx";
-import { Filter, RotateCcw, X, Layers, Zap, Hash, Check } from "lucide-react";
+import { X, Layers, Zap, Hash, Check } from "lucide-react";
 
 export type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
@@ -39,33 +39,29 @@ interface VerdictVisualConfig {
 
 const VERDICT_CONFIG: Record<Verdict, VerdictVisualConfig> = {
   CRITICAL: {
-    activeCard: "pill-critical ring-2 ring-red-400/70 font-bold shadow-xs",
-    unselectedCard:
-      "bg-white border-slate-200/90 text-slate-700 hover:border-red-200 hover:bg-red-50/20 shadow-2xs",
-    unselectedDot: "bg-red-500/80 ring-2 ring-red-200/60",
-    activeDot: "bg-red-600 ring-2 ring-red-300",
+    activeCard: "verdict-tile-3d-critical font-bold text-red-950",
+    unselectedCard: "verdict-tile-3d-unselected text-slate-800",
+    unselectedDot: "led-3d-critical",
+    activeDot: "led-3d-critical ring-2 ring-red-300",
     isPulsing: true,
   },
   HIGH: {
-    activeCard: "pill-high ring-2 ring-orange-400/70 font-bold shadow-xs",
-    unselectedCard:
-      "bg-white border-slate-200/90 text-slate-700 hover:border-orange-200 hover:bg-orange-50/20 shadow-2xs",
-    unselectedDot: "bg-orange-500/80 ring-2 ring-orange-200/60",
-    activeDot: "bg-orange-600 ring-2 ring-orange-300",
+    activeCard: "verdict-tile-3d-high font-bold text-orange-950",
+    unselectedCard: "verdict-tile-3d-unselected text-slate-800",
+    unselectedDot: "led-3d-high",
+    activeDot: "led-3d-high ring-2 ring-orange-300",
   },
   MEDIUM: {
-    activeCard: "pill-medium ring-2 ring-amber-400/70 font-bold shadow-xs",
-    unselectedCard:
-      "bg-white border-slate-200/90 text-slate-700 hover:border-amber-200 hover:bg-amber-50/20 shadow-2xs",
-    unselectedDot: "bg-amber-500/80 ring-2 ring-amber-200/60",
-    activeDot: "bg-amber-500 ring-2 ring-amber-300",
+    activeCard: "verdict-tile-3d-medium font-bold text-amber-950",
+    unselectedCard: "verdict-tile-3d-unselected text-slate-800",
+    unselectedDot: "led-3d-medium",
+    activeDot: "led-3d-medium ring-2 ring-amber-300",
   },
   LOW: {
-    activeCard: "pill-low ring-2 ring-emerald-400/70 font-bold shadow-xs",
-    unselectedCard:
-      "bg-white border-slate-200/90 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/20 shadow-2xs",
-    unselectedDot: "bg-emerald-500/80 ring-2 ring-emerald-200/60",
-    activeDot: "bg-emerald-600 ring-2 ring-emerald-300",
+    activeCard: "verdict-tile-3d-low font-bold text-emerald-950",
+    unselectedCard: "verdict-tile-3d-unselected text-slate-800",
+    unselectedDot: "led-3d-low",
+    activeDot: "led-3d-low ring-2 ring-emerald-300",
   },
 };
 
@@ -83,15 +79,6 @@ export default function FilterSidebar({
     onChange({ ...filters, verdicts: next });
   };
 
-  const resetAll = () =>
-    onChange({
-      verdicts: new Set(),
-      minAnomaly: 0,
-      isPeelingChain: false,
-      isCoinJoin: false,
-      clusterId: "",
-    });
-
   const activeFilterCount =
     filters.verdicts.size +
     (filters.minAnomaly > 0 ? 1 : 0) +
@@ -105,75 +92,39 @@ export default function FilterSidebar({
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-white border-r border-slate-200/90 overflow-y-auto select-none">
-      {/* Sidebar Header */}
-      <div className="h-11 flex items-center justify-between px-3.5 border-b border-slate-200/90 bg-gradient-to-b from-slate-50/95 to-slate-100/75 sticky top-0 z-10 backdrop-blur-xs">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center justify-center w-5.5 h-5.5 rounded-md bg-white border border-slate-200/90 text-slate-700 shadow-2xs shrink-0">
-            <Filter className="w-3 h-3 text-sky-700 stroke-[2.3]" />
-          </div>
-          <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-slate-800 truncate">
-            Surveillance Filters
-          </span>
-          {hasActiveFilters && (
-            <span className="flex items-center justify-center px-1.5 h-4.5 rounded-full bg-sky-600 text-white text-[9.5px] font-extrabold shadow-xs crypto-mono shrink-0">
-              {activeFilterCount}
-            </span>
-          )}
-        </div>
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={resetAll}
-            className="tactile-btn-secondary flex items-center gap-1 text-[10.5px] font-semibold text-slate-700 hover:text-slate-900 transition-all py-0.5 px-2 rounded-md border border-slate-200/90 shadow-2xs active:scale-95 group cursor-pointer shrink-0"
-            aria-label="Reset all filters"
-          >
-            <RotateCcw className="w-2.5 h-2.5 text-slate-500 group-hover:text-slate-800 group-hover:-rotate-90 transition-transform duration-200" />
-            Reset
-          </button>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-4.5 p-3.5">
-        {/* Coverage Gauge / Stream Telemetry Card */}
-        <div className="p-3 rounded-lg border border-slate-200/90 bg-gradient-to-b from-white via-slate-50/50 to-slate-100/50 shadow-card">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span
-                  className={clsx(
-                    "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                    hasActiveFilters ? "bg-sky-400" : "bg-emerald-400",
-                  )}
-                />
-                <span
-                  className={clsx(
-                    "relative inline-flex rounded-full h-2 w-2 ring-1.5",
-                    hasActiveFilters
-                      ? "bg-sky-500 ring-sky-200"
-                      : "bg-emerald-500 ring-emerald-200",
-                  )}
-                />
-              </span>
-              <span className="text-[10px] uppercase font-extrabold tracking-[0.14em] text-slate-600">
+      <div className="flex flex-col gap-4.5 p-3.5 pb-24">
+        {/* Coverage Gauge / Stream Telemetry Card with 3D Enclosure */}
+        <div className="card-3d p-3.5 rounded-xl">
+          <div className="flex items-center justify-between mb-2.5 gap-2">
+            <div className="flex items-center gap-1.5 min-w-0 shrink-0">
+              <span
+                className={clsx(
+                  "inline-flex rounded-full h-2.5 w-2.5 shrink-0 ring-1",
+                  hasActiveFilters
+                    ? "led-3d-high ring-sky-200"
+                    : "led-3d-low ring-emerald-200",
+                )}
+              />
+              <span className="text-[10px] uppercase font-extrabold tracking-[0.1em] text-slate-700 whitespace-nowrap">
                 Stream Telemetry
               </span>
             </div>
             <span
               className={clsx(
-                "text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded border crypto-mono",
+                "text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md crypto-mono shrink-0",
                 hasActiveFilters
-                  ? "bg-sky-50 text-sky-700 border-sky-200 shadow-2xs"
-                  : "bg-slate-100 text-slate-500 border-slate-200/90",
+                  ? "badge-3d-active font-bold"
+                  : "badge-3d text-slate-600",
               )}
             >
               {hasActiveFilters ? `${activeFilterCount} Active` : "Unfiltered"}
             </span>
           </div>
 
-          {/* Dual-tone gradient progress bar */}
-          <div className="w-full h-2 rounded-full bg-slate-200/80 p-0.5 border border-slate-300/40 overflow-hidden shadow-inner mb-2">
+          {/* 3D Recessed Dual-tone gradient progress bar */}
+          <div className="w-full h-2.5 rounded-full bg-slate-200/90 p-0.5 border border-slate-300/80 shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.12),0_1px_0_rgba(255,255,255,0.9)] overflow-hidden mb-2.5">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-500 via-teal-500 to-emerald-500 transition-all duration-300 shadow-xs"
+              className="h-full rounded-full bg-gradient-to-r from-sky-500 via-teal-500 to-emerald-500 transition-all duration-300 shadow-[0_1px_2px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.7)]"
               style={{ width: `${coveragePercent}%` }}
             />
           </div>
@@ -189,7 +140,14 @@ export default function FilterSidebar({
                 {totalCount.toLocaleString()}
               </span>
             </div>
-            <span className="font-extrabold text-slate-800 bg-white border border-slate-200/90 rounded px-1.5 py-0.5 shadow-2xs tabular-nums text-[11px]">
+            <span
+              className={clsx(
+                "font-extrabold rounded-md px-2 py-0.5 tabular-nums text-[11px]",
+                coveragePercent === 100
+                  ? "badge-3d text-emerald-800 border-emerald-300"
+                  : "badge-3d-active",
+              )}
+            >
               {coveragePercent}%
             </span>
           </div>
@@ -197,15 +155,15 @@ export default function FilterSidebar({
 
         {/* Risk Verdict Filter Matrix */}
         <div>
-          <label className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
             <span>Risk Verdict</span>
             {filters.verdicts.size > 0 && (
-              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/80 px-1.5 py-0.2 rounded crypto-mono">
+              <span className="badge-3d-active text-[10px] font-bold px-2 py-0.5 rounded-md crypto-mono">
                 {filters.verdicts.size} selected
               </span>
             )}
-          </label>
-          <div className="flex flex-col gap-1.5">
+          </div>
+          <div className="flex flex-col gap-2">
             {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as Verdict[]).map((v) => {
               const active = filters.verdicts.has(v);
               const cfg = VERDICT_CONFIG[v];
@@ -215,27 +173,27 @@ export default function FilterSidebar({
                   id={`filter-verdict-${v.toLowerCase()}`}
                   onClick={() => toggleVerdict(v)}
                   className={clsx(
-                    "flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs transition-all cursor-pointer border",
+                    "flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer border select-none",
                     active ? cfg.activeCard : cfg.unselectedCard,
                   )}
                 >
                   <span className="flex items-center gap-2.5">
                     {active && cfg.isPulsing ? (
-                      <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600 ring-2 ring-red-200" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 led-3d-critical ring-2 ring-red-200" />
                       </span>
                     ) : (
                       <span
                         className={clsx(
-                          "w-2 h-2 rounded-full shrink-0 transition-all",
+                          "w-2.5 h-2.5 rounded-full shrink-0 transition-all",
                           active ? cfg.activeDot : cfg.unselectedDot,
                         )}
                       />
                     )}
                     <span
                       className={clsx(
-                        "font-semibold tracking-tight",
+                        "font-bold tracking-tight text-xs",
                         active ? "text-current" : "text-slate-800",
                       )}
                     >
@@ -246,15 +204,21 @@ export default function FilterSidebar({
                   <div className="flex items-center gap-2">
                     <span
                       className={clsx(
-                        "crypto-mono text-[11px] px-1.5 py-0.5 rounded tabular-nums transition-colors",
+                        "crypto-mono text-[11px] px-2.5 py-0.5 rounded-md tabular-nums transition-all font-semibold",
                         active
-                          ? "bg-white text-slate-900 border border-current/20 font-bold shadow-2xs"
-                          : "bg-slate-100 text-slate-600 border border-slate-200/70 font-medium",
+                          ? v === "CRITICAL"
+                            ? "counter-3d-critical font-bold"
+                            : v === "HIGH"
+                              ? "counter-3d-high font-bold"
+                              : v === "MEDIUM"
+                                ? "counter-3d-medium font-bold"
+                                : "counter-3d-low font-bold"
+                          : "counter-3d-unselected",
                       )}
                     >
                       {verdictCounts[v].toLocaleString()}
                     </span>
-                    {active && <Check className="w-3.5 h-3.5 text-current stroke-[2.5]" />}
+                    {active && <Check className="w-4 h-4 text-current stroke-[2.8]" />}
                   </div>
                 </button>
               );
@@ -264,14 +228,14 @@ export default function FilterSidebar({
 
         {/* Min Anomaly Score Range Slider & Presets */}
         <div>
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
             <span>Min Anomaly Score</span>
-            <span className="crypto-mono text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200/90 rounded px-1.5 py-0.5 shadow-2xs">
+            <span className="crypto-mono text-xs font-bold text-sky-800 bg-sky-50 border border-sky-200/90 rounded px-1.5 py-0.5 shadow-2xs">
               ≥ {filters.minAnomaly.toFixed(2)}
             </span>
           </div>
 
-          <div className="px-1">
+          <div className="px-1 py-1">
             <input
               id="filter-anomaly-slider"
               type="range"
@@ -292,7 +256,7 @@ export default function FilterSidebar({
             />
           </div>
 
-          <div className="flex justify-between text-[10px] text-slate-400 crypto-mono mt-1.5 px-1 font-medium">
+          <div className="flex justify-between text-[10px] text-slate-400 crypto-mono mt-1 px-1 font-medium select-none">
             <span>0.00</span>
             <span>0.25</span>
             <span>0.50</span>
@@ -301,7 +265,7 @@ export default function FilterSidebar({
           </div>
 
           {/* Quick Presets Segmented Pills */}
-          <div className="grid grid-cols-4 gap-1 p-1 rounded-lg bg-slate-100 border border-slate-200/80 mt-2.5">
+          <div className="grid grid-cols-4 gap-1 p-1 rounded-lg bg-slate-100/90 border border-slate-200/90 mt-2.5 shadow-inner">
             {[
               { label: "All", val: 0 },
               { label: "0.25", val: 0.25 },
@@ -315,10 +279,10 @@ export default function FilterSidebar({
                   type="button"
                   onClick={() => onChange({ ...filters, minAnomaly: val })}
                   className={clsx(
-                    "py-1 rounded text-[10.5px] crypto-mono transition-all cursor-pointer text-center flex items-center justify-center gap-1",
+                    "py-1 rounded text-[10.5px] crypto-mono transition-all cursor-pointer text-center flex items-center justify-center gap-1 active:scale-95",
                     isSelected
                       ? "bg-sky-600 text-white font-bold shadow-xs border border-sky-600"
-                      : "bg-white text-slate-600 font-medium border border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-2xs",
+                      : "bg-white text-slate-600 font-medium border border-slate-200/70 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-2xs",
                   )}
                 >
                   {isSelected && (
@@ -333,7 +297,7 @@ export default function FilterSidebar({
 
         {/* Laundering Heuristics */}
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2.5">
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2.5">
             Laundering Heuristics
           </label>
           <div className="flex flex-col gap-2">
@@ -360,10 +324,10 @@ export default function FilterSidebar({
 
         {/* Cluster Partition Input & Quick Seed Chips */}
         <div>
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
             <span>Cluster Partition</span>
             {filters.clusterId && (
-              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/90 rounded px-1.5 py-0.2 crypto-mono">
+              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/90 rounded px-1.5 py-0.5 crypto-mono">
                 #{filters.clusterId}
               </span>
             )}
@@ -415,10 +379,10 @@ export default function FilterSidebar({
                 })
               }
               className={clsx(
-                "px-2 py-0.5 rounded text-[10.5px] crypto-mono border transition-all cursor-pointer",
+                "px-2 py-0.5 rounded text-[10.5px] crypto-mono border transition-all cursor-pointer active:scale-95",
                 filters.clusterId === "516"
-                  ? "bg-sky-50 text-sky-700 border-sky-300 font-bold shadow-2xs"
-                  : "bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-white hover:border-slate-300 font-medium",
+                  ? "bg-sky-600 text-white border-sky-600 font-bold shadow-xs"
+                  : "bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-white hover:border-slate-300 hover:text-slate-900 font-semibold shadow-2xs",
               )}
             >
               #516 Prime
@@ -432,10 +396,10 @@ export default function FilterSidebar({
                 })
               }
               className={clsx(
-                "px-2 py-0.5 rounded text-[10.5px] crypto-mono border transition-all cursor-pointer",
+                "px-2 py-0.5 rounded text-[10.5px] crypto-mono border transition-all cursor-pointer active:scale-95",
                 filters.clusterId === "38"
-                  ? "bg-sky-50 text-sky-700 border-sky-300 font-bold shadow-2xs"
-                  : "bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-white hover:border-slate-300 font-medium",
+                  ? "bg-sky-600 text-white border-sky-600 font-bold shadow-xs"
+                  : "bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-white hover:border-slate-300 hover:text-slate-900 font-semibold shadow-2xs",
               )}
             >
               #38 Core
@@ -476,34 +440,34 @@ function HeuristicToggle({
     <label
       htmlFor={id}
       className={clsx(
-        "flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer select-none",
+        "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none",
         checked
           ? isOrange
-            ? "bg-gradient-to-r from-orange-50/70 via-orange-50/40 to-white border-orange-300 shadow-2xs ring-1 ring-orange-200/60"
-            : "bg-gradient-to-r from-amber-50/70 via-amber-50/40 to-white border-amber-300 shadow-2xs ring-1 ring-amber-200/60"
-          : "bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs",
+            ? "verdict-tile-3d-high"
+            : "verdict-tile-3d-medium"
+          : "verdict-tile-3d-unselected",
       )}
     >
       <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
         <div
           className={clsx(
-            "w-7.5 h-7.5 rounded-md flex items-center justify-center shrink-0 transition-colors",
+            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors shadow-xs",
             checked
               ? isOrange
-                ? "bg-orange-500 text-white shadow-xs"
-                : "bg-amber-500 text-white shadow-xs"
+                ? "bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-xs border border-orange-600"
+                : "bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-xs border border-amber-600"
               : isOrange
-                ? "bg-orange-50 text-orange-600 border border-orange-200/70"
-                : "bg-amber-50 text-amber-600 border border-amber-200/70",
+                ? "bg-gradient-to-b from-white to-orange-50/80 text-orange-600 border border-orange-200"
+                : "bg-gradient-to-b from-white to-amber-50/80 text-amber-600 border border-amber-200",
           )}
         >
           {icon}
         </div>
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-xs font-bold text-slate-800 leading-tight">
+          <span className="text-xs font-bold text-slate-900 leading-tight">
             {label}
           </span>
-          <span className="text-[10.5px] text-slate-400 leading-normal mt-0.5">
+          <span className="text-[10.5px] text-slate-500 leading-normal mt-0.5">
             {subtitle}
           </span>
         </div>
@@ -519,18 +483,18 @@ function HeuristicToggle({
         />
         <div
           className={clsx(
-            "w-8 h-4.5 rounded-full transition-colors",
+            "w-9 h-5 rounded-full transition-colors shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.18),0_1px_0_rgba(255,255,255,0.9)] border",
             checked
               ? isOrange
-                ? "bg-orange-500 shadow-xs"
-                : "bg-amber-500 shadow-xs"
-              : "bg-slate-200",
+                ? "bg-gradient-to-b from-orange-500 to-orange-600 border-orange-600"
+                : "bg-gradient-to-b from-amber-500 to-amber-600 border-amber-600"
+              : "bg-slate-200/90 border-slate-300",
           )}
         />
         <div
           className={clsx(
-            "absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform",
-            checked ? "translate-x-3.5" : "translate-x-0",
+            "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-[0_2px_4px_rgba(15,23,42,0.25),inset_0_1px_0_#ffffff] transition-transform",
+            checked ? "translate-x-4" : "translate-x-0",
           )}
         />
       </div>
