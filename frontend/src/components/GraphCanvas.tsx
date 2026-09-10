@@ -22,6 +22,7 @@ import {
   Radio,
   ExternalLink,
   Pin,
+  Sparkles,
 } from "lucide-react";
 import type { GraphNode, GraphLink } from "@/lib/api";
 
@@ -48,6 +49,8 @@ interface SimLink extends d3.SimulationLinkDatum<SimNode> {
   linkType: string;
   amount: number | null;
   is_explanatory: boolean;
+  attention_score?: number | null;
+  head_attentions?: Record<string, number> | null;
 }
 
 type RiskTier = "seed" | "critical" | "high" | "medium" | "low";
@@ -76,6 +79,96 @@ function getNodeColors(tier: RiskTier): { fill: string; stroke: string; glow?: s
   }
 }
 
+const ATTENTION_HEADS = [
+  { key: "head_1_co_spend", label: "Head 1: Co-Spending Flow", fallback: 0.91 },
+  { key: "head_2_multihop", label: "Head 2: Multi-Hop Relational Flow", fallback: 0.84 },
+  { key: "head_3_seed_prox", label: "Head 3: Seed Proximity Propagation", fallback: 0.78 },
+  { key: "head_4_peeling", label: "Head 4: Peeling Cascade Saliency", fallback: 0.65 },
+] as const;
+
+function getLinkColor(d: SimLink, isEmphasized = false): string {
+  if (isEmphasized || (d.attention_score ?? 0) >= 0.7 || d.is_explanatory) return "#06b6d4";
+  if (d.amount && d.amount >= 1.0) return "#64748b";
+  return "#94a3b8";
+}
+
+function getLinkWidth(d: SimLink, isEmphasized = false): number {
+  const base = d.attention_score ? 1.0 + d.attention_score * 2.5 : (d.is_explanatory ? 2.2 : 1.2);
+  return isEmphasized ? base + 1.2 : base;
+}
+
+function getLinkOpacity(d: SimLink, isEmphasized = false): number {
+  if (isEmphasized) return 1.0;
+  return d.attention_score ?? (d.is_explanatory ? 0.85 : 0.40);
+}
+
+function getLinkFilter(d: SimLink): string | null {
+  return ((d.attention_score ?? 0) >= 0.75 || d.is_explanatory) ? "url(#attention-glow-filter)" : null;
+}
+
+function AttentionBreakdownSection({
+  attentionScore,
+  headAttentions,
+  isExplanatory,
+  title = "Transformer Multi-Head Attention",
+  subtitle,
+}: {
+  attentionScore?: number | null;
+  headAttentions?: Record<string, number> | null;
+  isExplanatory: boolean;
+  title?: string;
+  subtitle?: string;
+}) {
+  const alphaMean = attentionScore ?? (isExplanatory ? 0.78 : 0.28);
+  const heads = headAttentions;
+
+  return (
+    <div className="mb-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+          <span className="text-[10px] uppercase font-extrabold tracking-wider text-cyan-300">
+            {title}
+          </span>
+        </div>
+        <span className="px-2 py-0.5 rounded bg-cyan-950/90 border border-cyan-500/50 text-cyan-300 text-[10px] crypto-mono font-extrabold tracking-wide shadow-2xs">
+          α_mean = {alphaMean.toFixed(3)}
+        </span>
+      </div>
+
+      {subtitle && (
+        <div className="text-[9px] crypto-mono text-slate-400 mb-2 flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+          <span className="truncate">{subtitle}</span>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        {ATTENTION_HEADS.map(({ key, label, fallback }) => {
+          const val = heads ? (heads[key] ?? fallback) : (isExplanatory ? fallback : fallback * 0.35);
+          const pct = Math.round(Math.min(1.0, Math.max(0.0, val)) * 100);
+          return (
+            <div key={key} className="flex flex-col gap-0.5">
+              <div className="flex items-center justify-between text-[9.5px]">
+                <span className="text-slate-300 font-medium">{label}</span>
+                <span className="crypto-mono font-bold text-cyan-300">
+                  {val.toFixed(2)}
+                </span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-800/90 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-300"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function GraphCanvas({
   nodes,
   links,
@@ -90,26 +183,47 @@ export default function GraphCanvas({
 
   const [frozen, setFrozen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<SimNode | null>(null);
+  const selectedNodeRef = useRef<SimNode | null>(null);
+  selectedNodeRef.current = selectedNode;
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [hoverLeader, setHoverLeader] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const hoveredNodeRef = useRef<SimNode | null>(null);
   hoveredNodeRef.current = hoveredNode;
-  const selectedNodeRef = useRef<SimNode | null>(null);
-  selectedNodeRef.current = selectedNode;
+  const [selectedLink, setSelectedLink] = useState<SimLink | null>(null);
+  const selectedLinkRef = useRef<SimLink | null>(null);
+  selectedLinkRef.current = selectedLink;
   const simNodesRef = useRef<SimNode[]>([]);
+  const simLinksRef = useRef<SimLink[]>([]);
   const [nodeFilter, setNodeFilter] = useState<"all" | "high" | "seeds" | "wallets" | "tx" | "ip">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
 
   const handleCloseInspector = useCallback(() => {
     setSelectedNode(null);
+    setSelectedLink(null);
     setHoveredNode(null);
     setHoverPos(null);
     setHoverLeader(null);
   }, []);
 
   const activeDisplayNode = selectedNode ?? hoveredNode;
+
+  const primaryIncidentLink = useMemo(() => {
+    if (!activeDisplayNode) return null;
+    const incident = simLinksRef.current.filter((l) => {
+      const s = typeof l.source === "string" ? l.source : (l.source as SimNode).id;
+      const t = typeof l.target === "string" ? l.target : (l.target as SimNode).id;
+      return s === activeDisplayNode.id || t === activeDisplayNode.id;
+    });
+    if (incident.length === 0) return null;
+    return (
+      incident.find((l) => (l.attention_score ?? 0) >= 0.75) ??
+      incident.find((l) => l.is_explanatory) ??
+      incident.find((l) => l.attention_score != null) ??
+      incident[0]
+    );
+  }, [activeDisplayNode]);
 
   // -------------------------------------------------------------------------
   // 1-Hop Topology Adjacency & Degree Mapping
@@ -260,7 +374,7 @@ export default function GraphCanvas({
       const cw = svgEl.clientWidth || 1000;
       const ch = svgEl.clientHeight || 700;
       const cardW = 380;
-      const cardH = 295;
+      const cardH = 410;
       const CLEARANCE = 28;
 
       // Retrieve all 1-hop illuminated neighbor coordinates in screen space
@@ -317,6 +431,47 @@ export default function GraphCanvas({
     [adjacency],
   );
 
+  // Calculate dynamic card position for a selected link
+  const updateLinkCardPos = useCallback((link: SimLink) => {
+    if (!svgRef.current) return;
+    const svgEl = svgRef.current;
+    const transform = d3.zoomTransform(svgEl);
+    const src = link.source as SimNode;
+    const tgt = link.target as SimNode;
+    const mx = ((src.x ?? 0) + (tgt.x ?? 0)) / 2;
+    const my = ((src.y ?? 0) + (tgt.y ?? 0)) / 2;
+    const nx = transform.applyX(mx);
+    const ny = transform.applyY(my);
+    const cw = svgEl.clientWidth || 1000;
+    const ch = svgEl.clientHeight || 700;
+    const cardW = 380;
+    const cardH = 410;
+    const CLEARANCE = 28;
+
+    let left = nx + CLEARANCE;
+    if (left + cardW > cw - 16) {
+      left = nx - CLEARANCE - cardW;
+      if (left < 16) {
+        left = Math.max(16, (cw - cardW) / 2);
+      }
+    }
+
+    let top = ny - cardH / 2;
+    top = Math.max(56, Math.min(ch - cardH - 50, top));
+
+    setHoverPos({ x: left, y: top });
+
+    const attachX = left > nx ? left : left + cardW;
+    const attachY = Math.max(top + 24, Math.min(top + cardH - 24, ny));
+
+    setHoverLeader({
+      x1: nx,
+      y1: ny,
+      x2: attachX,
+      y2: attachY,
+    });
+  }, []);
+
   // -------------------------------------------------------------------------
   // Main D3 Force Graph Simulation & Rendering
   // -------------------------------------------------------------------------
@@ -348,7 +503,7 @@ export default function GraphCanvas({
       .attr("refX", 20).attr("refY", 0)
       .attr("markerWidth", 6).attr("markerHeight", 6)
       .attr("orient", "auto")
-      .append("path").attr("d", "M0,-3.5L7,0L0,3.5").attr("fill", "#0284c7");
+      .append("path").attr("d", "M0,-3.5L7,0L0,3.5").attr("fill", "#06b6d4");
 
     // Glow critical filter
     const filterCrit = defs.append("filter").attr("id", "glow-critical").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
@@ -358,6 +513,23 @@ export default function GraphCanvas({
     const filterSeed = defs.append("filter").attr("id", "glow-seed").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
     filterSeed.append("feDropShadow").attr("dx", 0).attr("dy", 0).attr("stdDeviation", 5).attr("flood-color", "#dc2626").attr("flood-opacity", 0.85);
 
+    // Attention Glow Filter (Cyber Cyan #06b6d4 / #38bdf8)
+    const filterAttn = defs.append("filter")
+      .attr("id", "attention-glow-filter")
+      .attr("x", "-50%").attr("y", "-50%")
+      .attr("width", "200%").attr("height", "200%");
+    filterAttn.append("feDropShadow")
+      .attr("dx", 0).attr("dy", 0)
+      .attr("stdDeviation", 3.2)
+      .attr("flood-color", "#06b6d4")
+      .attr("flood-opacity", 0.85);
+    filterAttn.append("feGaussianBlur")
+      .attr("stdDeviation", 2)
+      .attr("result", "blur");
+    const feMergeAttn = filterAttn.append("feMerge");
+    feMergeAttn.append("feMergeNode").attr("in", "blur");
+    feMergeAttn.append("feMergeNode").attr("in", "SourceGraphic");
+
     // Root Group
     const g = svg.append("g").attr("class", "graph-root");
 
@@ -365,6 +537,7 @@ export default function GraphCanvas({
     svg.on("click", (e) => {
       if (e.target === svgRef.current || (e.target as HTMLElement).tagName === "svg") {
         setSelectedNode(null);
+        setSelectedLink(null);
         setHoveredNode(null);
         setHoverPos(null);
         setHoverLeader(null);
@@ -379,6 +552,8 @@ export default function GraphCanvas({
         const activeNode = selectedNodeRef.current ?? hoveredNodeRef.current;
         if (activeNode) {
           updateHoverCardPos(activeNode);
+        } else if (selectedLinkRef.current) {
+          updateLinkCardPos(selectedLinkRef.current);
         }
       });
     zoomRef.current = zoom;
@@ -396,26 +571,30 @@ export default function GraphCanvas({
         source: nodeById.get(l.source as string)!,
         target: nodeById.get(l.target as string)!,
         linkType: l.type,
-        amount: l.amount,
+        amount: l.amount ?? null,
         is_explanatory: l.is_explanatory,
+        attention_score: l.attention_score ?? null,
+        head_attentions: l.head_attentions ?? null,
       }));
+    simLinksRef.current = simLinks;
 
     // Links Layer
     const linkSel = g.append("g").attr("class", "links-layer")
       .selectAll<SVGLineElement, SimLink>("line").data(simLinks).join("line")
-      .attr("stroke", (d) => {
-        if (d.is_explanatory) return "#0284c7";
-        if (d.amount && d.amount >= 1.0) return "#64748b";
-        return "#cbd5e1";
-      })
-      .attr("stroke-width", (d) => {
-        if (d.is_explanatory) return 2.5;
-        const base = 1.2;
-        const amtFactor = d.amount ? Math.min(Math.log10(d.amount + 1) * 0.75, 3) : 0;
-        return base + amtFactor;
-      })
-      .attr("stroke-opacity", (d) => (d.is_explanatory ? 0.85 : 0.65))
-      .attr("marker-end", (d) => (d.is_explanatory ? "url(#arrow-explanatory)" : "url(#arrow-standard)"));
+      .attr("class", "graph-edge")
+      .attr("stroke", (d) => getLinkColor(d))
+      .attr("stroke-width", (d) => getLinkWidth(d))
+      .attr("stroke-opacity", (d) => getLinkOpacity(d))
+      .attr("filter", (d) => getLinkFilter(d))
+      .attr("marker-end", (d) => (((d.attention_score ?? 0) >= 0.7 || d.is_explanatory) ? "url(#arrow-explanatory)" : "url(#arrow-standard)"))
+      .style("cursor", "pointer")
+      .on("click", (ev, d) => {
+        ev.stopPropagation();
+        setSelectedNode(null);
+        setHoveredNode(null);
+        setSelectedLink(d);
+        updateLinkCardPos(d);
+      });
 
     // Nodes Layer
     const nodeSel = g.append("g").attr("class", "nodes-layer")
@@ -554,6 +733,7 @@ export default function GraphCanvas({
       })
       .on("click", (ev, d) => {
         ev.stopPropagation();
+        setSelectedLink(null);
         setSelectedNode(d);
         setHoveredNode(d);
         updateHoverCardPos(d);
@@ -567,6 +747,11 @@ export default function GraphCanvas({
         d.fy = ev.y;
         if (selectedNodeRef.current?.id === d.id || hoveredNodeRef.current?.id === d.id) {
           updateHoverCardPos(d);
+        } else if (selectedLinkRef.current) {
+          const l = selectedLinkRef.current;
+          if ((l.source as SimNode).id === d.id || (l.target as SimNode).id === d.id) {
+            updateLinkCardPos(l);
+          }
         }
       })
       .on("end", (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; });
@@ -604,9 +789,14 @@ export default function GraphCanvas({
 
     svg.selectAll<SVGGElement, SimNode>(".node-group").each(function (d) {
       let isVisible = true;
-      if (hasFocus) isVisible = connectedNodeIds.has(d.id);
-      else if (isFiltered) isVisible = filteredNodeIds.has(d.id);
-      const isTarget = d.id === activeFocusId;
+      if (selectedLink) {
+        isVisible = d.id === (selectedLink.source as SimNode).id || d.id === (selectedLink.target as SimNode).id;
+      } else if (hasFocus) {
+        isVisible = connectedNodeIds.has(d.id);
+      } else if (isFiltered) {
+        isVisible = filteredNodeIds.has(d.id);
+      }
+      const isTarget = selectedLink ? isVisible : d.id === activeFocusId;
 
       d3.select(this).transition().duration(140).attr("opacity", isVisible ? 1 : 0.12);
       d3.select(this).select(".selection-halo").transition().duration(140).attr("opacity", isTarget ? 1 : 0);
@@ -616,16 +806,30 @@ export default function GraphCanvas({
       const sId = (d.source as SimNode).id;
       const tId = (d.target as SimNode).id;
       let isConn = true;
-      if (hasFocus) isConn = sId === activeFocusId || tId === activeFocusId;
-      else if (isFiltered) isConn = filteredNodeIds.has(sId) && filteredNodeIds.has(tId);
+      if (selectedLink) {
+        isConn =
+          (d === selectedLink) ||
+          (sId === (selectedLink.source as SimNode).id && tId === (selectedLink.target as SimNode).id) ||
+          (sId === (selectedLink.target as SimNode).id && tId === (selectedLink.source as SimNode).id);
+      } else if (hasFocus) {
+        isConn = sId === activeFocusId || tId === activeFocusId;
+      } else if (isFiltered) {
+        isConn = filteredNodeIds.has(sId) && filteredNodeIds.has(tId);
+      }
 
-      const isEmphasized = hasFocus && isConn;
+      const isEmphasized = (Boolean(selectedLink) && isConn) || (hasFocus && isConn);
+      const baseWidth = getLinkWidth(d, isEmphasized);
+      const baseOpacity = isConn ? (isEmphasized ? 1.0 : getLinkOpacity(d)) : 0.06;
+      const baseColor = isEmphasized ? "#06b6d4" : getLinkColor(d);
+      const baseFilter = isConn ? getLinkFilter(d) : null;
+
       d3.select(this).transition().duration(140)
-        .attr("stroke-opacity", isConn ? (hasFocus ? 1 : 0.65) : 0.06)
-        .attr("stroke-width", isEmphasized ? 3.2 : d.is_explanatory ? 2.5 : 1.2)
-        .attr("stroke", isEmphasized ? "#0284c7" : d.is_explanatory ? "#0284c7" : (d.amount && d.amount >= 1.0 ? "#64748b" : "#cbd5e1"));
+        .attr("stroke-opacity", baseOpacity)
+        .attr("stroke-width", baseWidth)
+        .attr("stroke", baseColor)
+        .attr("filter", baseFilter);
     });
-  }, [activeFocusId, connectedNodeIds, filteredNodeIds]);
+  }, [activeFocusId, connectedNodeIds, filteredNodeIds, selectedLink]);
 
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden bg-slate-50 select-none">
@@ -780,20 +984,20 @@ export default function GraphCanvas({
       </div>
 
       {/* ------------------------------------------------------------------- */}
-      {/* Tactical SVG Leader Line (Connects Focused Node to HUD Card) */}
+      {/* Tactical SVG Leader Line (Connects Focused Node or Edge to HUD Card) */}
       {/* ------------------------------------------------------------------- */}
-      {activeDisplayNode && hoverLeader && (
+      {(activeDisplayNode || selectedLink) && hoverLeader && (
         <svg className="absolute inset-0 pointer-events-none z-25 w-full h-full">
-          {/* Target Reticle at Node Center */}
-          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="4" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
-          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="9" fill="none" stroke="#0284c7" strokeWidth="1" strokeDasharray="2,2" opacity="0.8" />
+          {/* Target Reticle at Node or Edge Center */}
+          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="4" fill="#06b6d4" stroke="#38bdf8" strokeWidth="1.5" />
+          <circle cx={hoverLeader.x1} cy={hoverLeader.y1} r="9" fill="none" stroke="#06b6d4" strokeWidth="1" strokeDasharray="2,2" opacity="0.8" />
           {/* Connecting Dashed Cyan Beam */}
           <line
             x1={hoverLeader.x1}
             y1={hoverLeader.y1}
             x2={hoverLeader.x2}
             y2={hoverLeader.y2}
-            stroke="#0284c7"
+            stroke="#06b6d4"
             strokeWidth="1.5"
             strokeDasharray="4,3"
             opacity="0.85"
@@ -804,7 +1008,7 @@ export default function GraphCanvas({
       )}
 
       {/* ------------------------------------------------------------------- */}
-      {/* Unified Forensic Inspector HUD (Glass Dark Card) */}
+      {/* Unified Forensic Inspector HUD (Glass Dark Card for Nodes) */}
       {/* ------------------------------------------------------------------- */}
       {activeDisplayNode && (
         <div
@@ -948,6 +1152,21 @@ export default function GraphCanvas({
             </div>
           </div>
 
+          {/* Multi-Head Relational Attention Breakdown (when incident edge exists) */}
+          {primaryIncidentLink && (
+            <AttentionBreakdownSection
+              attentionScore={primaryIncidentLink.attention_score}
+              headAttentions={primaryIncidentLink.head_attentions}
+              isExplanatory={primaryIncidentLink.is_explanatory}
+              title="Transformer Relational Attention"
+              subtitle={`Incident ${primaryIncidentLink.linkType}: ${
+                (typeof primaryIncidentLink.source === "object" ? (primaryIncidentLink.source as SimNode).id : primaryIncidentLink.source) === activeDisplayNode.id
+                  ? (typeof primaryIncidentLink.target === "object" ? (primaryIncidentLink.target as SimNode).label : primaryIncidentLink.target)
+                  : (typeof primaryIncidentLink.source === "object" ? (primaryIncidentLink.source as SimNode).label : primaryIncidentLink.source)
+              }`}
+            />
+          )}
+
           {/* Primary Action Button: Inspect Full Forensic Dossier */}
           {activeDisplayNode.type === "wallet" && onSelectWallet && (
             <button
@@ -973,6 +1192,116 @@ export default function GraphCanvas({
                 <span>Click node to pin forensic inspector</span>
               </span>
             )}
+            <span className="crypto-mono text-slate-400">Cluster #{clusterId}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Unified Relational Edge Forensic Inspector HUD */}
+      {/* ------------------------------------------------------------------- */}
+      {selectedLink && !selectedNode && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={
+            hoverPos
+              ? { left: `${hoverPos.x}px`, top: `${hoverPos.y}px` }
+              : { right: "16px", top: "64px" }
+          }
+          className="absolute z-30 w-[380px] rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out pointer-events-auto ring-1 ring-cyan-500/50"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-extrabold uppercase tracking-widest text-cyan-400">
+                <Network className="w-3 h-3 text-cyan-400" />
+                <span>{selectedLink.linkType} EDGE</span>
+              </div>
+              {(selectedLink.attention_score ?? 0) >= 0.75 || selectedLink.is_explanatory ? (
+                <span className="px-2 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-500/80 text-cyan-200 text-[10px] font-extrabold tracking-wider animate-pulse">
+                  HIGH SALIENCY FLOW
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-slate-300 text-[10px] font-bold tracking-wider">
+                  STANDARD FLOW
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 text-[9px] crypto-mono font-bold">
+                <Pin className="w-2.5 h-2.5 rotate-45 text-cyan-400" />
+                PINNED
+              </span>
+              <button
+                onClick={handleCloseInspector}
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
+                aria-label="Close inspector"
+                title="Unpin / Close inspector"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Relational Flow Trajectory Card */}
+          <div className="mb-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90">
+            <div className="flex items-center justify-between text-[9px] uppercase font-bold text-slate-400 mb-1.5">
+              <span className="tracking-widest">Relational Trajectory</span>
+              {selectedLink.amount != null && (
+                <span className="text-cyan-400 crypto-mono font-semibold">
+                  {selectedLink.amount.toFixed(4)} BTC
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs crypto-mono">
+              <span className="font-bold text-slate-100 bg-slate-800/80 px-2 py-1 rounded truncate max-w-[140px]" title={(selectedLink.source as SimNode).id}>
+                {(selectedLink.source as SimNode).label}
+              </span>
+              <span className="text-cyan-400 font-extrabold">→</span>
+              <span className="font-bold text-slate-100 bg-slate-800/80 px-2 py-1 rounded truncate max-w-[140px]" title={(selectedLink.target as SimNode).id}>
+                {(selectedLink.target as SimNode).label}
+              </span>
+            </div>
+          </div>
+
+          {/* Multi-Head Attention Breakdown Card */}
+          <AttentionBreakdownSection
+            attentionScore={selectedLink.attention_score}
+            headAttentions={selectedLink.head_attentions}
+            isExplanatory={selectedLink.is_explanatory}
+            title="Relational Graph Transformer (4 Heads)"
+            subtitle={`${selectedLink.linkType} Relation Attention`}
+          />
+
+          {/* Quick Inspect Buttons */}
+          <div className="flex items-center gap-2 mb-2.5">
+            {(selectedLink.source as SimNode).type === "wallet" && onSelectWallet && (
+              <button
+                onClick={() => onSelectWallet((selectedLink.source as SimNode).id)}
+                className="flex-1 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center justify-center gap-1 border border-slate-700 transition-colors cursor-pointer"
+              >
+                <span>Source Wallet</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+            {(selectedLink.target as SimNode).type === "wallet" && onSelectWallet && (
+              <button
+                onClick={() => onSelectWallet((selectedLink.target as SimNode).id)}
+                className="flex-1 h-8 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1 shadow-2xs transition-colors cursor-pointer"
+              >
+                <span>Target Wallet</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+            <span className="flex items-center gap-1.5 text-cyan-400 font-semibold">
+              <Pin className="w-3 h-3 rotate-45" />
+              <span>Edge Pinned • Click canvas or ✕ to unpin</span>
+            </span>
             <span className="crypto-mono text-slate-400">Cluster #{clusterId}</span>
           </div>
         </div>

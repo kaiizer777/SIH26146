@@ -130,9 +130,11 @@ export interface GraphNode {
 export interface GraphLink {
   source: string;
   target: string;
-  type: string;
-  amount: number | null;
+  type: "SENDS" | "RECEIVES" | "CO_SPEND" | "OBSERVED";
+  amount?: number | null;
   is_explanatory: boolean;
+  attention_score?: number | null;
+  head_attentions?: Record<string, number> | null;
 }
 
 export interface GraphResponse {

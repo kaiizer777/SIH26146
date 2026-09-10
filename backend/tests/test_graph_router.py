@@ -197,3 +197,34 @@ def test_seed_recipient_not_flagged_as_seed(client, monkeypatch):
     )
 
 
+def test_graph_links_attention_weights(client):
+    """Cluster #516 graph links must contain attention_score and head_attentions breakdown."""
+    headers = {"Authorization": f"Bearer {settings.api_dev_token}"}
+    response = client.get("/api/v1/graph/516?max_nodes=100", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    links = data["links"]
+    assert len(links) > 0
+
+    tx_links = [l for l in links if l["type"] in ("SENDS", "RECEIVES", "CO_SPEND")]
+    assert len(tx_links) > 0
+
+    expected_heads = {"head_1_co_spend", "head_2_multihop", "head_3_seed_prox", "head_4_peeling"}
+
+    for link in tx_links:
+        score = link.get("attention_score")
+        assert score is not None, f"Link {link} missing attention_score"
+        assert 0.0 <= score <= 1.0, f"Attention score {score} out of bounds"
+
+        heads = link.get("head_attentions")
+        assert heads is not None, f"Link {link} missing head_attentions"
+        assert isinstance(heads, dict)
+        assert set(heads.keys()) == expected_heads
+
+        for head_name, head_val in heads.items():
+            assert 0.0 <= head_val <= 1.0, f"Head {head_name}={head_val} out of bounds"
+
+        if link.get("is_explanatory") or link["type"] == "CO_SPEND":
+            assert score >= 0.75, f"High-saliency link attention score {score} should be >= 0.75"
+
+
