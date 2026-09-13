@@ -197,51 +197,58 @@ export function OpsFaq() {
   const [expandedId, setExpandedId] = useState<string | null>("deployment_ease");
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs divide-y divide-slate-200">
+    <div className="space-y-3">
       {FAQ_ITEMS.map((item) => {
         const isExpanded = expandedId === item.id;
         const Icon = item.icon;
         return (
-          <div key={item.id} className="transition-colors">
+          <div
+            key={item.id}
+            className={`rounded-xl overflow-hidden transition-all ${
+              isExpanded
+                ? "border-t border-t-sky-300/80 border-x border-x-sky-200 border-b border-b-sky-300 bg-white shadow-[0_2px_8px_rgba(2,132,199,0.08)] ring-1 ring-sky-200/80"
+                : "border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(15,23,42,0.04)]"
+            }`}
+          >
             <button
               onClick={() => setExpandedId(isExpanded ? null : item.id)}
-              className="w-full text-left p-4 sm:p-4.5 flex items-start justify-between gap-4 cursor-pointer hover:bg-slate-50/70 transition-colors"
+              className="w-full text-left p-4 sm:p-4.5 flex items-start justify-between gap-4 cursor-pointer active:translate-y-[0.5px]"
             >
-              <div className="flex items-start space-x-3 min-w-0">
+              <div className="flex items-start space-x-3.5 min-w-0">
                 <div
-                  className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
                     isExpanded
-                      ? "bg-slate-900 text-white"
-                      : "bg-slate-100 text-slate-600"
+                      ? "bg-slate-900 text-white border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_4px_rgba(0,0,0,0.25)]"
+                      : "bg-gradient-to-b from-white to-slate-100 text-slate-700 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.05)]"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-4 h-4" />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300">
                       {item.category}
                     </span>
-                    <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-sky-100 text-sky-800">
+                    <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-sky-100/90 text-sky-900 border-t border-t-sky-50 border-x border-x-sky-200 border-b border-b-sky-300/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                       {item.badge}
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                  <h3 className="text-sm font-bold text-slate-950 leading-snug">
                     {item.question}
                   </h3>
                 </div>
               </div>
-              <div className="flex-shrink-0 text-slate-400 mt-1">
+              <div className="flex-shrink-0 text-slate-500 mt-1">
                 {isExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-slate-700" />
+                  <ChevronUp className="w-4 h-4 text-sky-700" />
                 ) : (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-4 h-4 text-slate-500" />
                 )}
               </div>
             </button>
 
             {isExpanded && (
-              <div className="px-5 pb-5 pt-1 pl-14 bg-slate-50/40 border-t border-slate-100">
+              <div className="px-5 pb-5 pt-3 sm:pl-16 bg-slate-50/70 border-t border-slate-200/80">
                 {item.answer}
               </div>
             )}

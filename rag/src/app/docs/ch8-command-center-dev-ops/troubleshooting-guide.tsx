@@ -186,7 +186,7 @@ export function TroubleshootingGuide() {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs space-y-4 p-5">
+    <div className="rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(15,23,42,0.05)] space-y-4 p-5">
       {/* Search and Category Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         <div className="relative w-full sm:w-80">
@@ -196,7 +196,7 @@ export function TroubleshootingGuide() {
             placeholder="Search symptoms in plain English (e.g. port busy, upload blocked)…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white"
+            className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border-t border-t-slate-200 border-x border-x-slate-200 border-b border-b-slate-300 rounded-lg text-xs font-mono text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
           />
         </div>
 
@@ -206,10 +206,10 @@ export function TroubleshootingGuide() {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase cursor-pointer active:translate-y-[0.5px] ${
                 activeCategory === cat
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-slate-900 text-white border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_3px_rgba(0,0,0,0.3)] font-bold"
+                  : "bg-gradient-to-b from-white to-slate-100 text-slate-700 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(15,23,42,0.04)] font-medium"
               }`}
             >
               {cat}
@@ -221,7 +221,7 @@ export function TroubleshootingGuide() {
       {/* Accordion List */}
       <div className="space-y-3">
         {filteredItems.length === 0 ? (
-          <div className="p-8 text-center text-xs font-mono text-slate-400 bg-slate-50 rounded-lg">
+          <div className="p-8 text-center text-xs font-mono text-slate-500 bg-slate-50 rounded-lg border border-slate-200">
             No troubleshooting scenarios matched your query.
           </div>
         ) : (
@@ -230,10 +230,10 @@ export function TroubleshootingGuide() {
             return (
               <div
                 key={item.id}
-                className={`rounded-lg border transition-all ${
+                className={`rounded-lg transition-all ${
                   isExpanded
-                    ? "border-slate-300 bg-white shadow-xs"
-                    : "border-slate-200 bg-slate-50/50 hover:bg-white"
+                    ? "border-t border-t-sky-300/80 border-x border-x-sky-200 border-b border-b-sky-300 bg-white shadow-[0_2px_8px_rgba(2,132,199,0.08)] ring-1 ring-sky-200/80"
+                    : "border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(15,23,42,0.04)]"
                 }`}
               >
                 {/* Accordion Header */}
@@ -241,60 +241,60 @@ export function TroubleshootingGuide() {
                   onClick={() => setExpandedId(isExpanded ? null : item.id)}
                   className="w-full text-left p-4 flex items-start justify-between gap-3 cursor-pointer"
                 >
-                  <div className="space-y-1 min-w-0">
+                  <div className="space-y-1.5 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-slate-200 text-slate-700">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-slate-200/80 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300">
                         {item.category}
                       </span>
-                      <span className="text-xs font-bold text-slate-900 leading-snug">
+                      <span className="text-xs font-bold text-slate-950 leading-snug">
                         {item.title}
                       </span>
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase bg-amber-100 text-amber-800 border border-amber-200">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-amber-100/90 text-amber-900 border-t border-t-amber-50 border-x border-x-amber-200 border-b border-b-amber-300/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                         {item.badge}
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-600 font-sans leading-normal">
+                    <div className="text-[11px] text-slate-700 font-sans leading-normal">
                       {item.plainExplanation}
                     </div>
                   </div>
-                  <div className="flex-shrink-0 text-slate-400 mt-1">
+                  <div className="flex-shrink-0 text-slate-500 mt-1">
                     {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-slate-600" />
+                      <ChevronUp className="w-4 h-4 text-sky-700" />
                     ) : (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-4 h-4 text-slate-500" />
                     )}
                   </div>
                 </button>
 
                 {/* Accordion Content */}
                 {isExpanded && (
-                  <div className="px-4 pb-5 pt-1 space-y-4 border-t border-slate-100">
+                  <div className="px-4 pb-5 pt-2 space-y-4 border-t border-slate-100">
                     {/* Error Symptom Callout */}
-                    <div className="p-3 bg-amber-50/60 rounded-lg border border-amber-200/80 text-xs font-mono space-y-1">
-                      <div className="text-[10px] uppercase font-bold text-amber-800 flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                    <div className="p-3 bg-amber-50/80 rounded-lg border-t border-t-amber-100 border-x border-x-amber-200 border-b border-b-amber-300/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] text-xs font-mono space-y-1">
+                      <div className="text-[10px] uppercase font-bold text-amber-900 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
                         What You See On Screen:
                       </div>
-                      <div className="text-slate-800 text-[11px] leading-relaxed">
+                      <div className="text-slate-900 text-[11px] leading-relaxed font-medium">
                         {item.symptom}
                       </div>
                     </div>
 
                     {/* Root Cause Analysis in Plain English */}
-                    <div className="space-y-1 text-xs text-slate-700 leading-relaxed font-sans">
-                      <div className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400">
+                    <div className="space-y-1 text-xs text-slate-800 leading-relaxed font-sans">
+                      <div className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-500">
                         Behind the Scenes (Technical Cause)
                       </div>
-                      <p className="text-slate-600 text-xs">{item.rootCause}</p>
+                      <p className="text-slate-700 text-xs">{item.rootCause}</p>
                     </div>
 
                     {/* Fix Command Box */}
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-slate-500">
+                      <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-slate-600">
                         <span>1-Click Remediation Command (PowerShell)</span>
                         <button
                           onClick={() => handleCopy(`fix-${item.id}`, item.fixCommand)}
-                          className="text-sky-700 hover:text-sky-900 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          className="text-sky-800 font-bold flex items-center gap-1.5 cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border-t border-t-white border-x border-x-sky-200 border-b border-b-sky-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(2,132,199,0.08)] active:translate-y-[0.5px]"
                         >
                           {copiedId === `fix-${item.id}` ? (
                             <>
@@ -303,13 +303,13 @@ export function TroubleshootingGuide() {
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3 h-3" />
+                              <Copy className="w-3 h-3 text-sky-700" />
                               <span>COPY MAGIC FIX</span>
                             </>
                           )}
                         </button>
                       </div>
-                      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 overflow-x-auto">
+                      <div className="bg-slate-950 p-3 rounded-lg border-t border-t-slate-800 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_6px_rgba(0,0,0,0.35)] overflow-x-auto">
                         <pre className="text-emerald-400 text-xs font-mono whitespace-pre">
                           {item.fixCommand}
                         </pre>
@@ -318,11 +318,11 @@ export function TroubleshootingGuide() {
 
                     {/* Verification Command */}
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-slate-500">
+                      <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-slate-600">
                         <span>Check Resolution Status</span>
                         <button
                           onClick={() => handleCopy(`ver-${item.id}`, item.verificationCommand)}
-                          className="text-sky-700 hover:text-sky-900 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          className="text-sky-800 font-bold flex items-center gap-1.5 cursor-pointer bg-sky-50 px-2.5 py-1 rounded-md border-t border-t-white border-x border-x-sky-200 border-b border-b-sky-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(2,132,199,0.08)] active:translate-y-[0.5px]"
                         >
                           {copiedId === `ver-${item.id}` ? (
                             <>
@@ -331,13 +331,13 @@ export function TroubleshootingGuide() {
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3 h-3" />
+                              <Copy className="w-3 h-3 text-sky-700" />
                               <span>COPY CHECK</span>
                             </>
                           )}
                         </button>
                       </div>
-                      <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 overflow-x-auto">
+                      <div className="bg-slate-900 p-2.5 rounded-lg border-t border-t-slate-800 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] overflow-x-auto">
                         <pre className="text-sky-300 text-[11px] font-mono whitespace-pre">
                           {item.verificationCommand}
                         </pre>
@@ -345,9 +345,9 @@ export function TroubleshootingGuide() {
                     </div>
 
                     {/* Safety Guarantee Callout */}
-                    <div className="text-[11px] font-mono text-emerald-700 bg-emerald-50/60 p-2 rounded border border-emerald-200 flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <span>{item.safetyGuarantee}</span>
+                    <div className="text-[11px] font-mono text-emerald-900 bg-emerald-50/80 p-2.5 rounded-lg border-t border-t-white border-x border-x-emerald-200 border-b border-b-emerald-300/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+                      <span className="font-medium">{item.safetyGuarantee}</span>
                     </div>
                   </div>
                 )}

@@ -456,9 +456,9 @@ export function SchemaInspector() {
   const edgeIds = ["cospend", "sends", "receives", "observed"];
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+    <div className="rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_8px_rgba(15,23,42,0.06)]">
       {/* Tactical Component Header */}
-      <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 bg-gradient-to-b from-slate-50 to-slate-100/70 border-b border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
@@ -474,17 +474,17 @@ export function SchemaInspector() {
           </p>
         </div>
 
-        {/* Category Switcher */}
-        <div className="flex items-center bg-slate-200/70 p-1 rounded-lg border border-slate-200 text-xs font-mono">
+        {/* Category Switcher (No Hover Effects, Elevated Tactile Default) */}
+        <div className="flex items-center bg-slate-200/90 p-1 rounded-lg border-t border-t-slate-300 border-b border-b-white shadow-inner text-xs font-mono">
           <button
             onClick={() => {
               setSelectedCategory("nodes");
               if (!nodeIds.includes(selectedEntityId)) setSelectedEntityId("wallet");
             }}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-md font-bold transition-none cursor-pointer ${
               selectedCategory === "nodes"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-gradient-to-b from-white to-slate-50 text-slate-950 border-t border-t-white border-x border-x-slate-300 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_3px_rgba(15,23,42,0.1)]"
+                : "text-slate-700 font-semibold active:translate-y-[0.5px]"
             }`}
           >
             Evidence Nodes (3)
@@ -494,10 +494,10 @@ export function SchemaInspector() {
               setSelectedCategory("edges");
               if (!edgeIds.includes(selectedEntityId)) setSelectedEntityId("cospend");
             }}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-md font-bold transition-none cursor-pointer ${
               selectedCategory === "edges"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-gradient-to-b from-white to-slate-50 text-slate-950 border-t border-t-white border-x border-x-slate-300 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_3px_rgba(15,23,42,0.1)]"
+                : "text-slate-700 font-semibold active:translate-y-[0.5px]"
             }`}
           >
             Red String Edges (4)
@@ -505,7 +505,7 @@ export function SchemaInspector() {
         </div>
       </div>
 
-      {/* Entity Selector Tabs */}
+      {/* Entity Selector Tabs (No Hover Effects, Elevated Tactile Default) */}
       <div className="p-3 bg-white border-b border-slate-200 flex flex-wrap gap-2">
         {(selectedCategory === "nodes" ? nodeIds : edgeIds).map((id) => {
           const item = SCHEMA_ENTITIES[id];
@@ -514,14 +514,14 @@ export function SchemaInspector() {
             <button
               key={id}
               onClick={() => setSelectedEntityId(id)}
-              className={`px-3 py-2 rounded-lg text-xs font-mono transition-all flex items-center gap-2 cursor-pointer border ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-mono transition-none flex items-center gap-2 cursor-pointer border ${
                 isSelected
-                  ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
+                  ? "bg-gradient-to-b from-slate-800 to-slate-950 text-white border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_6px_rgba(15,23,42,0.25)] font-bold"
+                  : "bg-gradient-to-b from-white to-slate-50 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_3px_rgba(15,23,42,0.05)] font-semibold active:translate-y-[0.5px]"
               }`}
             >
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`w-2.5 h-2.5 rounded-full shadow-xs ${
                   id === "wallet"
                     ? "bg-amber-400"
                     : id === "transaction"
@@ -539,8 +539,8 @@ export function SchemaInspector() {
               />
               <span className="font-bold">{item.name}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.5 rounded ${
-                  isSelected ? "bg-slate-800 text-slate-300" : "bg-white text-slate-500 border border-slate-200"
+                className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                  isSelected ? "bg-slate-800 text-slate-200 border border-slate-700" : "bg-slate-100 text-slate-600 border border-slate-200"
                 }`}
               >
                 {item.cardinality.split(" ")[0]}
@@ -555,7 +555,7 @@ export function SchemaInspector() {
         {/* Left Column: Entity Definition & Property Table (7 cols) */}
         <div className="lg:col-span-7 space-y-5">
           {/* Header Card */}
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200/80 space-y-2">
+          <div className="p-4 rounded-xl bg-gradient-to-b from-white to-slate-50/80 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_5px_rgba(15,23,42,0.05)] space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span
@@ -570,17 +570,17 @@ export function SchemaInspector() {
               </div>
               <div className="text-right font-mono">
                 <span className="text-xs font-bold text-slate-900">{activeEntity.cardinality}</span>
-                <span className="text-[10px] text-slate-400 ml-1.5">({activeEntity.cardinalitySub})</span>
+                <span className="text-[10px] text-slate-500 ml-1.5 font-semibold">({activeEntity.cardinalitySub})</span>
               </div>
             </div>
 
             {/* Analogy Badge */}
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-xs font-medium">
-              <Sparkles className="w-3 h-3 text-amber-600" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border-t border-t-amber-100 border-b border-b-amber-300 text-xs font-semibold shadow-xs">
+              <Sparkles className="w-3 h-3 text-amber-700" />
               <span>{activeEntity.analogy}</span>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed pt-1">
+            <p className="text-xs text-slate-700 leading-relaxed pt-1 font-sans">
               {activeEntity.summary}
             </p>
           </div>
@@ -589,50 +589,50 @@ export function SchemaInspector() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-slate-500" />
+                <Layers className="w-3.5 h-3.5 text-slate-600" />
                 Evidence Properties &amp; Meaning
               </span>
-              <span className="text-[10px] font-mono text-slate-400">
+              <span className="text-[10px] font-mono text-slate-500 font-semibold">
                 {activeEntity.properties.length} properties defined
               </span>
             </div>
 
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <div className="border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 rounded-xl overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_3px_rgba(15,23,42,0.05)]">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100/80 text-slate-600 font-mono text-[10px] uppercase border-b border-slate-200">
+                  <thead className="bg-gradient-to-b from-slate-100 to-slate-200/80 text-slate-700 font-mono text-[10px] uppercase border-b border-slate-300">
                     <tr>
-                      <th className="py-2 px-3">Field</th>
-                      <th className="py-2 px-2">Type</th>
-                      <th className="py-2 px-2">Index Rule</th>
-                      <th className="py-2 px-3">Plain-English Meaning</th>
+                      <th className="py-2.5 px-3.5 font-bold">Field</th>
+                      <th className="py-2.5 px-2.5 font-bold">Type</th>
+                      <th className="py-2.5 px-2.5 font-bold">Index Rule</th>
+                      <th className="py-2.5 px-3.5 font-bold">Plain-English Meaning</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-200/80">
                     {activeEntity.properties.map((prop, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-2 px-3 font-mono font-bold text-slate-900">
+                      <tr key={idx} className="even:bg-slate-50/70 odd:bg-white transition-none">
+                        <td className="py-2.5 px-3.5 font-mono font-bold text-slate-900">
                           {prop.name}
                         </td>
-                        <td className="py-2 px-2 font-mono text-[11px] text-sky-700">
+                        <td className="py-2.5 px-2.5 font-mono text-[11px] text-sky-700 font-semibold">
                           {prop.type}
                         </td>
-                        <td className="py-2 px-2">
+                        <td className="py-2.5 px-2.5">
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                               prop.constraint.includes("UNIQUE")
-                                ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                ? "bg-amber-50 text-amber-800 border border-amber-300"
                                 : prop.constraint.includes("INDEXED")
-                                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                                ? "bg-emerald-50 text-emerald-800 border border-emerald-300"
+                                : "bg-slate-100 text-slate-700 border border-slate-300"
                             }`}
                           >
                             {prop.constraint}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-slate-600 text-[11px]">
+                        <td className="py-2.5 px-3.5 text-slate-700 text-[11.5px] leading-normal font-sans">
                           {prop.description}
-                          <div className="font-mono text-[10px] text-slate-400 mt-0.5">
+                          <div className="font-mono text-[10px] text-slate-500 mt-0.5">
                             e.g. {prop.example}
                           </div>
                         </td>
@@ -645,12 +645,12 @@ export function SchemaInspector() {
           </div>
 
           {/* Hardening & Performance Note */}
-          <div className="p-3 bg-sky-50/50 rounded-lg border border-sky-100 text-xs text-slate-700 space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-sky-900">
+          <div className="p-3.5 bg-gradient-to-b from-sky-50/80 to-sky-50/40 rounded-xl border-t border-t-sky-100 border-x border-x-sky-200 border-b border-b-sky-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(2,132,199,0.06)] text-xs text-slate-700 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-sky-950">
               <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
               Forensic Reliability Rule
             </div>
-            <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
+            <p className="text-[11.5px] text-slate-700 leading-relaxed font-sans">
               {activeEntity.hardeningRule}
             </p>
           </div>
@@ -659,9 +659,9 @@ export function SchemaInspector() {
         {/* Right Column: Visual Triad Mini-Map & Cypher Box (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           {/* Visual Topology Mini-Map */}
-          <div className="p-4 rounded-lg bg-slate-900 text-white space-y-3 shadow-xs">
+          <div className="p-4 sm:p-5 rounded-xl bg-slate-900 text-white space-y-3.5 border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_4px_14px_rgba(0,0,0,0.35)]">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-slate-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Network className="w-3.5 h-3.5 text-sky-400" />
                 The Detective&apos;s Pinboard Web
               </span>
@@ -669,7 +669,7 @@ export function SchemaInspector() {
             </div>
 
             {/* SVG Visual Triad */}
-            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 flex items-center justify-center">
+            <div className="bg-slate-950 p-4 rounded-xl border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-slate-950 shadow-inner flex items-center justify-center">
               <svg viewBox="0 0 320 180" className="w-full h-auto max-w-[300px]">
                 {/* Background Grid Accent */}
                 <defs>
@@ -870,39 +870,39 @@ export function SchemaInspector() {
           </div>
 
           {/* Production Cypher Box */}
-          <div className="border border-slate-200 rounded-lg overflow-hidden bg-white space-y-0">
-            <div className="p-2.5 bg-slate-100/90 border-b border-slate-200 flex items-center justify-between">
+          <div className="border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 rounded-xl overflow-hidden bg-white shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_6px_rgba(15,23,42,0.06)] space-y-0">
+            <div className="p-2.5 px-3.5 bg-gradient-to-b from-slate-100 to-slate-200/80 border-b border-slate-300 flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Terminal className="w-3.5 h-3.5 text-slate-600" />
-                <span className="font-mono text-xs font-bold text-slate-800">
+                <Terminal className="w-3.5 h-3.5 text-slate-700" />
+                <span className="font-mono text-xs font-bold text-slate-900">
                   Production Cypher Implementation
                 </span>
               </div>
               <button
                 onClick={handleCopyCypher}
-                className="btn-tactical-primary text-white text-[11px] font-mono px-2.5 py-1 rounded flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="btn-tactical-primary text-white text-[11px] font-mono font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_5px_rgba(30,64,175,0.25)] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]"
               >
                 {copied ? (
                   <>
-                    <Check className="w-3 h-3 text-emerald-400" />
+                    <Check className="w-3 h-3 text-emerald-300" />
                     <span>Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3 h-3 text-slate-300" />
+                    <Copy className="w-3 h-3 text-slate-200" />
                     <span>Copy Cypher</span>
                   </>
                 )}
               </button>
             </div>
 
-            <div className="p-3 bg-slate-900 text-slate-200 font-mono text-[11px] overflow-x-auto max-h-[220px] leading-relaxed">
+            <div className="p-3.5 bg-slate-950 text-slate-100 font-mono text-[11px] overflow-x-auto max-h-[220px] leading-relaxed shadow-inner">
               <pre>{activeEntity.cypherQuery}</pre>
             </div>
 
-            <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-[10px] font-mono text-slate-500 flex items-center justify-between">
+            <div className="p-2.5 px-3.5 bg-slate-50 border-t border-slate-200 text-[10px] font-mono text-slate-600 flex items-center justify-between">
               <span>Source: {activeEntity.sourceFile}</span>
-              <span className="text-emerald-700 font-semibold">100% Offline Neo4j 5.26</span>
+              <span className="text-emerald-700 font-bold">100% Offline Neo4j 5.26</span>
             </div>
           </div>
         </div>

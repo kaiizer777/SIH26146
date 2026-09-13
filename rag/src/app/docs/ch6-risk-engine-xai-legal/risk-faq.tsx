@@ -85,7 +85,7 @@ const FAQS: FAQItem[] = [
         <p>
           Instead, we present an <strong>itemized SHAP attribution receipt</strong>:
         </p>
-        <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 font-mono text-[11px] text-slate-800 space-y-1">
+        <div className="p-3.5 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)] font-mono text-[11px] text-slate-800 space-y-1">
           <div>&bull; +28% Danger: 98.4% of funds swept to secret change wallet</div>
           <div>&bull; +19% Danger: Payer bumped mempool fee by 8.2x for panic confirmation</div>
           <div>&bull; +18% Danger: Broadcast routed via offshore bulletproof ASN</div>
@@ -179,9 +179,9 @@ export function RiskFaq() {
   }, [selectedCategory, searchQuery]);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div className="bg-white rounded-xl border-t border-t-white border-x border-x-slate-200/90 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(15,23,42,0.06)] overflow-hidden">
       {/* Top Banner */}
-      <div className="bg-slate-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800">
+      <div className="bg-gradient-to-b from-slate-900 to-slate-950 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono text-[10px] font-bold tracking-wider uppercase border border-sky-400/30">
@@ -204,21 +204,21 @@ export function RiskFaq() {
             placeholder="Search questions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-800 text-white placeholder-slate-400 text-xs font-mono border border-slate-700 focus:outline-hidden focus:border-slate-500"
+            className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-800 text-white placeholder-slate-400 text-xs font-mono border-t border-t-slate-700 border-x border-x-slate-700 border-b border-b-slate-600 shadow-inner focus:outline-hidden focus:border-slate-500"
           />
         </div>
       </div>
 
       {/* Category Filter Pills */}
-      <div className="bg-slate-50/80 px-5 py-3 border-b border-slate-200 flex flex-wrap items-center gap-2">
+      <div className="bg-slate-50/90 px-5 py-3 border-b border-slate-200 flex flex-wrap items-center gap-2">
         {categories.map((cat) => (
           <button
             key={cat.key}
             onClick={() => setSelectedCategory(cat.key)}
-            className={`px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-mono cursor-pointer transition-all ${
               selectedCategory === cat.key
-                ? "bg-slate-900 text-white font-bold shadow-xs"
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+                ? "bg-slate-900 text-white font-bold border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1px_3px_rgba(0,0,0,0.3)]"
+                : "bg-white text-slate-800 font-medium border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.05)]"
             }`}
           >
             {cat.label}
@@ -234,25 +234,27 @@ export function RiskFaq() {
             <div key={faq.id} className="transition-colors">
               <button
                 onClick={() => toggleAccordion(faq.id)}
-                className="w-full text-left px-5 py-4 flex items-start justify-between gap-4 hover:bg-slate-50/80 transition-colors cursor-pointer"
+                className={`w-full text-left px-5 py-4 flex items-start justify-between gap-4 cursor-pointer transition-colors ${
+                  isOpen ? "bg-slate-50/70" : "bg-white"
+                }`}
               >
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold tracking-wider bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
                       {faq.badgeText}
                     </span>
                   </div>
-                  <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                  <h4 className="text-sm font-bold text-slate-950 leading-snug">
                     {faq.question}
                   </h4>
-                  <p className="text-xs text-slate-500 line-clamp-1">
+                  <p className="text-xs text-slate-600 line-clamp-1 font-normal">
                     {faq.oneLinerAnswer}
                   </p>
                 </div>
 
                 <div
-                  className={`mt-1 w-6 h-6 rounded flex items-center justify-center text-slate-400 transition-transform duration-200 ${
-                    isOpen ? "transform rotate-180 text-slate-800 bg-slate-100" : ""
+                  className={`mt-1 w-6 h-6 rounded flex items-center justify-center text-slate-500 transition-transform duration-200 ${
+                    isOpen ? "transform rotate-180 text-slate-900 bg-slate-200/80" : ""
                   }`}
                 >
                   <ChevronDown className="w-4 h-4" />
@@ -261,7 +263,7 @@ export function RiskFaq() {
 
               {isOpen && (
                 <div className="px-5 pb-5 pt-1 bg-white border-t border-slate-100">
-                  <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-lg text-xs font-medium text-blue-900 mb-3">
+                  <div className="p-3 bg-gradient-to-b from-blue-50 to-blue-100/40 border-t border-t-blue-100 border-x border-x-blue-200/70 border-b border-b-blue-200 rounded-lg text-xs font-medium text-blue-950 mb-3 shadow-2xs">
                     <strong>TL;DR: </strong>{faq.oneLinerAnswer}
                   </div>
                   {faq.detailedAnswer}

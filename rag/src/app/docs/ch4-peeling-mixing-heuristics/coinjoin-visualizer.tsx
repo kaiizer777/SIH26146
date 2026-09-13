@@ -171,18 +171,18 @@ export function CoinjoinVisualizer() {
   }, [currentPreset, relativeTolPercent, injectedNoise]);
 
   return (
-    <div className="card-tactical rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+    <div className="card-tactical rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white overflow-hidden shadow-[0_2px_6px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.9)]">
       {/* Component Header with Relatable Analogy */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 border-b border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-md bg-slate-900 text-white">
+            <span className="p-1.5 rounded-lg bg-gradient-to-b from-slate-800 to-slate-950 text-white border-t border-t-slate-700 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.2)]">
               <GitMerge className="w-4 h-4" />
             </span>
             <h3 className="text-base font-bold text-slate-900 tracking-tight">
               CoinJoin Equal-Output Matrix Visualizer
             </h3>
-            <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span className="px-2.5 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
               THE &quot;DIGITAL LAUNDROMAT&quot; ANALOGY
             </span>
           </div>
@@ -194,20 +194,20 @@ export function CoinjoinVisualizer() {
         {/* Live Heuristic Status Badge */}
         <div>
           {simulation.isCoinJoinDetected ? (
-            <div className="px-3.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2 shadow-xs">
+            <div className="px-3.5 py-1.5 rounded-lg bg-gradient-to-b from-rose-50 to-rose-100/80 border-t border-t-rose-100 border-x border-x-rose-200 border-b border-b-rose-300 text-rose-900 flex items-center gap-2 shadow-2xs">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
               </span>
-              <div className="font-mono text-xs font-bold flex items-center gap-1">
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+              <div className="font-mono text-xs font-bold flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
                 COINJOIN DETECTED (is_mixing = true)
               </div>
             </div>
           ) : (
-            <div className="px-3.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <div className="font-mono text-xs font-semibold">
+            <div className="px-3.5 py-1.5 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100/80 border-t border-t-emerald-100 border-x border-x-emerald-200 border-b border-b-emerald-300 text-emerald-900 flex items-center gap-2 shadow-2xs">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <div className="font-mono text-xs font-bold">
                 CLEARED: ORDINARY MULTI-PAYMENT
               </div>
             </div>
@@ -219,7 +219,7 @@ export function CoinjoinVisualizer() {
       <div className="p-4 sm:p-5 border-b border-slate-200 bg-white space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-700 font-mono uppercase mr-1">
+            <span className="text-xs font-bold text-slate-800 font-mono uppercase mr-1">
               Select Mixer Protocol:
             </span>
             {Object.entries(PRESETS).map(([key, p]) => (
@@ -229,10 +229,10 @@ export function CoinjoinVisualizer() {
                   setSelectedPresetKey(key);
                   setInjectedNoise(0.0);
                 }}
-                className={`px-3 py-1.5 rounded-md font-mono text-xs transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg font-mono text-xs transition-all cursor-pointer active:translate-y-[0.5px] ${
                   selectedPresetKey === key
-                    ? "bg-slate-900 text-white font-bold shadow-xs ring-2 ring-slate-900/20"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                    ? "bg-gradient-to-b from-slate-900 to-slate-950 text-white font-bold border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_3px_rgba(0,0,0,0.25)] ring-2 ring-slate-900/20"
+                    : "bg-gradient-to-b from-white to-slate-100 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 font-semibold shadow-2xs"
                 }`}
               >
                 {p.name.split(" ")[0]} ({p.denomination} BTC Pool)
@@ -240,43 +240,43 @@ export function CoinjoinVisualizer() {
             ))}
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-200/80 p-0.5 rounded-lg text-xs font-mono">
+          <div className="flex items-center gap-1 bg-slate-200/90 p-1 rounded-lg text-xs font-mono border border-slate-300/80 shadow-2xs">
             <button
               onClick={() => setActiveTab("flow")}
-              className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md cursor-pointer active:translate-y-[0.5px] transition-colors ${
                 activeTab === "flow"
-                  ? "tab-tactical-active text-slate-900 font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
+                  : "text-slate-700 font-semibold"
               }`}
             >
               Laundromat Matrix
             </button>
             <button
               onClick={() => setActiveTab("analogy")}
-              className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md cursor-pointer active:translate-y-[0.5px] transition-colors ${
                 activeTab === "analogy"
-                  ? "tab-tactical-active text-slate-900 font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
+                  : "text-slate-700 font-semibold"
               }`}
             >
               Analogy Breakdown
             </button>
             <button
               onClick={() => setActiveTab("algorithm")}
-              className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md cursor-pointer active:translate-y-[0.5px] transition-colors ${
                 activeTab === "algorithm"
-                  ? "tab-tactical-active text-slate-900 font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
+                  : "text-slate-700 font-semibold"
               }`}
             >
               Detection Logic
             </button>
             <button
               onClick={() => setActiveTab("fp-guard")}
-              className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md cursor-pointer active:translate-y-[0.5px] transition-colors ${
                 activeTab === "fp-guard"
-                  ? "tab-tactical-active text-slate-900 font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
+                  : "text-slate-700 font-semibold"
               }`}
             >
               IEEE Epsilon Guard
@@ -285,12 +285,12 @@ export function CoinjoinVisualizer() {
         </div>
 
         {/* Dynamic Preset Narrative */}
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 flex items-start gap-2">
+        <div className="p-3.5 bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200 rounded-lg text-xs text-slate-700 flex items-start gap-2.5 shadow-2xs">
           <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-          <div>
+          <div className="leading-relaxed">
             <span className="font-bold text-slate-900">{currentPreset.name}:</span>{" "}
             {currentPreset.description} Each participant receives exactly{" "}
-            <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+            <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/90 shadow-2xs">
               {currentPreset.denomination} BTC
             </span>
             .
@@ -301,11 +301,11 @@ export function CoinjoinVisualizer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <label htmlFor="relative-tolerance" className="font-semibold text-slate-700 flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-slate-400" />
+              <label htmlFor="relative-tolerance" className="font-semibold text-slate-800 flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-slate-500" />
                 Matching Tolerance Window (&plusmn;%)
               </label>
-              <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+              <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-[11px] shadow-2xs">
                 &plusmn;{relativeTolPercent.toFixed(2)}%
               </span>
             </div>
@@ -320,22 +320,22 @@ export function CoinjoinVisualizer() {
               onChange={(e) => setRelativeTolPercent(parseFloat(e.target.value))}
               className="w-full accent-slate-900 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
             />
-            <div className="text-[10px] text-slate-500">
+            <div className="text-[10px] text-slate-500 font-medium">
               Allows catching mixers even if coordinator fees slightly alter output pennies.
             </div>
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <label htmlFor="noise-delta" className="font-semibold text-slate-700 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+              <label htmlFor="noise-delta" className="font-semibold text-slate-800 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-slate-500" />
                 Simulate Adversarial Jitter (&Delta;)
               </label>
               <span
-                className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
+                className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] shadow-2xs ${
                   injectedNoise === 0
-                    ? "bg-slate-100 text-slate-700"
-                    : "bg-amber-50 text-amber-800 border border-amber-200"
+                    ? "bg-slate-100 text-slate-800 border border-slate-200"
+                    : "bg-amber-50 text-amber-900 border border-amber-300"
                 }`}
               >
                 &Delta; = {injectedNoise > 0 ? `+${injectedNoise.toFixed(4)}` : "0.0000"} BTC
@@ -356,13 +356,13 @@ export function CoinjoinVisualizer() {
               {injectedNoise > 0 && (
                 <button
                   onClick={() => setInjectedNoise(0.0)}
-                  className="text-[10px] font-mono text-slate-500 hover:text-slate-900 underline shrink-0 cursor-pointer"
+                  className="text-[10px] font-mono text-slate-800 font-bold underline shrink-0 cursor-pointer active:text-slate-950"
                 >
                   Reset &Delta;
                 </button>
               )}
             </div>
-            <div className="text-[10px] text-slate-500">
+            <div className="text-[10px] text-slate-500 font-medium">
               Test what happens when criminals intentionally jitter output amounts to evade detection.
             </div>
           </div>
@@ -377,7 +377,7 @@ export function CoinjoinVisualizer() {
             <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
               {/* Inputs Column: Dirty Clothes */}
               <div className="md:col-span-3 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-mono font-bold pb-1 border-b border-slate-200 text-slate-600">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold pb-1 border-b border-slate-200 text-slate-700">
                   <span className="flex items-center gap-1">
                     🧺 INPUTS ({simulation.inputs.length})
                   </span>
@@ -386,27 +386,27 @@ export function CoinjoinVisualizer() {
                 {simulation.inputs.map((inp, idx) => (
                   <div
                     key={idx}
-                    className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono space-y-0.5 hover:border-slate-300 transition-colors"
+                    className="p-2.5 rounded-lg bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 text-xs font-mono space-y-0.5 shadow-2xs"
                   >
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-slate-800">Depositor #{idx + 1}</span>
-                      <span className="font-extrabold text-slate-900">
+                      <span className="font-extrabold text-slate-950">
                         {inp.amount.toFixed(4)} BTC
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-400 truncate">{inp.address}</div>
+                    <div className="text-[10px] text-slate-500 truncate">{inp.address}</div>
                   </div>
                 ))}
               </div>
 
               {/* Central Arrow */}
               <div className="md:col-span-1 flex items-center justify-center">
-                <ArrowRight className="w-5 h-5 text-slate-300 hidden md:block" />
+                <ArrowRight className="w-5 h-5 text-slate-400 hidden md:block" />
                 <div className="w-px h-6 bg-slate-200 md:hidden" />
               </div>
 
               {/* Central Mixer Node: The Washing Machine */}
-              <div className="md:col-span-3 p-4 rounded-xl bg-slate-900 text-white shadow-xs space-y-3 text-center">
+              <div className="md:col-span-3 p-4 rounded-xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.3)] space-y-3 text-center">
                 <div className="flex items-center justify-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
                   <Waves className="w-4 h-4 animate-spin" />
                   The Washing Machine (Mixer Tx)
@@ -431,7 +431,7 @@ export function CoinjoinVisualizer() {
                   </div>
                 </div>
                 <div className="pt-2 border-t border-slate-800">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold shadow-2xs">
                     Identical Outputs Group: {simulation.maxEqualGroup}
                   </span>
                 </div>
@@ -439,13 +439,13 @@ export function CoinjoinVisualizer() {
 
               {/* Central Arrow */}
               <div className="md:col-span-1 flex items-center justify-center">
-                <ArrowRight className="w-5 h-5 text-slate-300 hidden md:block" />
+                <ArrowRight className="w-5 h-5 text-slate-400 hidden md:block" />
                 <div className="w-px h-6 bg-slate-200 md:hidden" />
               </div>
 
               {/* Outputs Column: Clean Shirts */}
               <div className="md:col-span-3 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-mono font-bold pb-1 border-b border-slate-200 text-slate-600">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold pb-1 border-b border-slate-200 text-slate-700">
                   <span className="flex items-center gap-1">
                     👕 OUTPUTS ({simulation.outputs.length})
                   </span>
@@ -455,16 +455,16 @@ export function CoinjoinVisualizer() {
                   {simulation.outputs.map((out, idx) => (
                     <div
                       key={idx}
-                      className={`p-2.5 rounded-lg border text-xs font-mono space-y-0.5 transition-colors ${
+                      className={`p-2.5 rounded-lg border text-xs font-mono space-y-0.5 shadow-2xs ${
                         out.type === "equal"
-                          ? "bg-emerald-50/80 border-emerald-300"
-                          : "bg-slate-50 border-slate-200"
+                          ? "bg-gradient-to-b from-emerald-50 to-emerald-100/70 border-t border-t-emerald-200 border-x border-x-emerald-300 border-b border-b-emerald-400"
+                          : "bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300"
                       }`}
                     >
                       <div className="flex justify-between items-center">
                         <span
                           className={`text-[10px] font-bold uppercase ${
-                            out.type === "equal" ? "text-emerald-900 font-extrabold" : "text-slate-500"
+                            out.type === "equal" ? "text-emerald-900 font-extrabold" : "text-slate-600"
                           }`}
                         >
                           {out.type === "equal"
@@ -473,13 +473,13 @@ export function CoinjoinVisualizer() {
                         </span>
                         <span
                           className={`font-extrabold ${
-                            out.type === "equal" ? "text-emerald-950" : "text-slate-700"
+                            out.type === "equal" ? "text-emerald-950" : "text-slate-800"
                           }`}
                         >
                           {out.amount.toFixed(4)} BTC
                         </span>
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate">{out.address}</div>
+                      <div className="text-[10px] text-slate-500 truncate">{out.address}</div>
                     </div>
                   ))}
                 </div>
@@ -488,40 +488,40 @@ export function CoinjoinVisualizer() {
 
             {/* Heuristic Gate Checklist */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-              <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 1: Multi-Party Inputs</div>
+              <div className="p-3.5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-2xs space-y-1">
+                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">Gate 1: Multi-Party Inputs</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   {simulation.inputs.length} Inputs (&ge; 3)
                 </div>
                 <p className="text-[10px] text-slate-500">Filters 1-to-1 bilateral transfers.</p>
               </div>
 
-              <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 2: Multi-Party Outputs</div>
+              <div className="p-3.5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-2xs space-y-1">
+                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">Gate 2: Multi-Party Outputs</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   {simulation.outputs.length} Outputs (&ge; 3)
                 </div>
                 <p className="text-[10px] text-slate-500">Requires multi-participant payout.</p>
               </div>
 
-              <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 3: Meaningful Value</div>
+              <div className="p-3.5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-2xs space-y-1">
+                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">Gate 3: Meaningful Value</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   {simulation.totalIn} BTC (&ge; 0.05)
                 </div>
                 <p className="text-[10px] text-slate-500">Eliminates dusting attacks and fee spam.</p>
               </div>
 
-              <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 4: Identical Outputs</div>
+              <div className="p-3.5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-2xs space-y-1">
+                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">Gate 4: Identical Outputs</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold">
                   {simulation.maxEqualGroup >= 2 ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   ) : (
-                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
                   )}
                   <span className={simulation.maxEqualGroup >= 2 ? "text-slate-900" : "text-rose-700"}>
                     {simulation.maxEqualGroup} Identical Denominations

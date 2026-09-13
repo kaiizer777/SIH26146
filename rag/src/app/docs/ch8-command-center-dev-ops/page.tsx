@@ -229,24 +229,30 @@ export default function Chapter8Page() {
 
       {/* CHAPTER FOOTER NAVIGATION */}
       <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <Link href="/docs/ch7-online-inference-sync" className="p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-2 group cursor-pointer transition-colors shadow-xs">
-          <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform" />
+        <Link
+          href="/docs/ch7-online-inference-sync"
+          className="p-3 rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-slate-50/90 text-slate-900 text-xs font-medium flex items-center gap-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(15,23,42,0.05)] cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4 text-slate-700 -translate-x-0.5 flex-shrink-0" />
           <div className="text-left">
-            <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-semibold">Previous Chapter</div>
-            <div className="font-semibold text-slate-900">Ch 7: Online Inference &amp; Live Sync</div>
+            <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wider font-semibold">Previous Chapter</div>
+            <div className="font-bold text-slate-950">Ch 7: Online Inference &amp; Live Sync</div>
           </div>
         </Link>
 
-        <div className="text-xs font-mono text-slate-400 text-center">
+        <div className="text-xs font-mono text-slate-500 text-center font-semibold">
           NTRO FORENSIC INTELLIGENCE &bull; SEC-DOC-26146-CH08
         </div>
 
-        <Link href="/docs/ch1-mission-architecture" className="btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center gap-2 group cursor-pointer shadow-xs">
+        <Link
+          href="/docs/ch1-mission-architecture"
+          className="btn-tactical-primary text-white text-xs font-medium px-5 py-3 rounded-lg flex items-center gap-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_6px_rgba(0,0,0,0.2)] cursor-pointer"
+        >
           <div className="text-left">
             <div className="text-[10px] text-blue-200 font-mono uppercase tracking-wider font-semibold">Loop Back</div>
-            <div className="font-semibold text-white">Ch 1: Mission Architecture</div>
+            <div className="font-bold text-white">Ch 1: Mission Architecture</div>
           </div>
-          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2" />
+          <ArrowRight className="w-4 h-4 text-white translate-x-0.5 ml-2 flex-shrink-0" />
         </Link>
       </div>
     </article>

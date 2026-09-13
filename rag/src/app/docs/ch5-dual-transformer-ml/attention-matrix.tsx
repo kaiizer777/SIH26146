@@ -7,9 +7,6 @@ import {
   Crosshair,
   RefreshCw,
   BarChart3,
-  HelpCircle,
-  Eye,
-  ShieldAlert,
   Zap,
 } from "lucide-react";
 
@@ -49,7 +46,7 @@ const SCENARIOS = [
     id: "peeling",
     name: "Scenario A: Ransomware Peeling Funnel (LockBit 3.0)",
     badge: "1-IN-2-OUT ASYMMETRY",
-    badgeColor: "text-amber-700 bg-amber-50 border-amber-200",
+    badgeColor: "text-amber-900 bg-amber-100 border-amber-300",
     description: "Syndicate peeling hop: 48.5 BTC input is split into a tiny 1.5 BTC peeled cash-out and a massive 47.0 BTC forward change. Detective A's attention lenses immediately link Max Output Fraction with Total BTC Amount.",
     primaryFeatures: ["max_output_fraction", "total_in_btc", "total_out_btc", "amt_log", "fee_rate"],
     anomalyScore: 0.0842,
@@ -62,7 +59,7 @@ const SCENARIOS = [
     id: "coinjoin",
     name: "Scenario B: Whirlpool Equal-Denomination Mixer",
     badge: "MIXER ENTROPY SPIKE",
-    badgeColor: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    badgeColor: "text-emerald-950 bg-emerald-100 border-emerald-300",
     description: "Wasabi/Whirlpool 5-party mixing round: Equal 0.05 BTC outputs produce unnatural output symmetry. Detective A's attention sharply zeroes in on Equal Outputs Flag and CoinJoin Candidate Flag.",
     primaryFeatures: ["equal_outputs_flag", "coinjoin_candidate_flag", "output_entropy", "num_inputs", "num_outputs"],
     anomalyScore: 0.1129,
@@ -75,7 +72,7 @@ const SCENARIOS = [
     id: "botnet",
     name: "Scenario C: Multi-ASN Automated Dispersal Botnet",
     badge: "NETWORK DE-SYNCHRONIZATION",
-    badgeColor: "text-sky-700 bg-sky-50 border-sky-200",
+    badgeColor: "text-sky-950 bg-sky-100 border-sky-300",
     description: "Automated off-peak dispersal across 7 autonomous routing systems and 5 sovereign countries. Detective A highlights suspicious cross-talk between ASN Routing Count, Country Count, and Hour of Day.",
     primaryFeatures: ["unique_asn_count", "unique_country_count", "hour_of_day", "fee_rate", "is_segwit"],
     anomalyScore: 0.0631,
@@ -187,69 +184,69 @@ export function AttentionMatrix() {
     return items;
   }, [matrix, selectedFeatureIdx]);
 
-  const getCellColor = (weight: number, isSelectedRow: boolean, isSelectedCol: boolean) => {
-    if (weight < 0.025) return "bg-slate-50 text-slate-400";
-    if (weight < 0.055) return "bg-sky-50 text-sky-700";
-    if (weight < 0.095) return "bg-sky-100 text-sky-800 font-medium";
-    if (weight < 0.14) return "bg-sky-200 text-sky-900 font-semibold";
-    if (weight < 0.20) return "bg-indigo-300 text-indigo-950 font-bold";
-    return "bg-indigo-600 text-white font-bold shadow-xs";
+  const getCellColor = (weight: number) => {
+    if (weight < 0.025) return "bg-slate-100/90 border border-slate-200/90 text-slate-500 font-medium";
+    if (weight < 0.055) return "bg-sky-50 border border-sky-200 text-sky-850 font-medium";
+    if (weight < 0.095) return "bg-sky-100 border border-sky-300 text-sky-900 font-semibold";
+    if (weight < 0.14) return "bg-sky-200 border border-sky-400 text-sky-950 font-bold";
+    if (weight < 0.20) return "bg-indigo-300 border border-indigo-500 text-indigo-950 font-extrabold";
+    return "bg-indigo-600 border border-indigo-700 text-white font-extrabold shadow-2xs";
   };
 
   return (
-    <div className="card-tactical rounded-xl border border-slate-200 overflow-hidden bg-white shadow-xs">
+    <div className="rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 overflow-hidden bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(15,23,42,0.06)]">
       {/* Top Header & Scenario Controls */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70">
+      <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/80">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-slate-900 text-white">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-slate-900 text-white shadow-2xs">
                 DETECTIVE A IN ACTION
               </span>
-              <span className="text-xs font-mono text-emerald-600 font-bold flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5" />
+              <span className="text-xs font-mono text-emerald-800 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
                 0.0ms INSTANT EXPLANATION
               </span>
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-sky-600" />
+            <h3 className="text-base sm:text-lg font-bold text-slate-950 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-sky-600 flex-shrink-0" />
               Detective A: 18-Trait Cross-Examination Heatmap
             </h3>
-            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+            <p className="text-xs text-slate-700 max-w-2xl leading-relaxed font-normal">
               See how Detective A (FT-Transformer) spots hidden correlations between 18 transaction traits.
               When criminal syndicates attempt peeling or mixing, these traits blow their cover — and Detective A explains why with zero extra delay!
             </p>
           </div>
 
           {/* Mode Switcher */}
-          <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 shadow-2xs self-start">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-lg border-t border-t-slate-200 border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] self-start">
             <button
               onClick={() => setDisplayMode("matrix")}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded text-xs transition-none cursor-pointer ${
                 displayMode === "matrix"
-                  ? "tab-tactical-active text-slate-900 font-bold border border-slate-300 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_3px_rgba(0,0,0,0.08)]"
+                  : "text-slate-700 font-medium bg-white/40 border border-transparent"
               }`}
             >
               18 &times; 18 Cross-Trait Heatmap
             </button>
             <button
               onClick={() => setDisplayMode("cls")}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded text-xs transition-none flex items-center gap-1 cursor-pointer ${
                 displayMode === "cls"
-                  ? "tab-tactical-active text-slate-900 font-bold border border-slate-300 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_3px_rgba(0,0,0,0.08)]"
+                  : "text-slate-700 font-medium bg-white/40 border border-transparent"
               }`}
             >
-              <BarChart3 className="w-3.5 h-3.5" />
+              <BarChart3 className="w-3.5 h-3.5 text-slate-700" />
               Direct Trait Attribution
             </button>
           </div>
         </div>
 
         {/* Tactical Scenario Selector Buttons */}
-        <div className="mt-4 pt-4 border-t border-slate-200/80">
-          <div className="text-[11px] font-mono uppercase font-bold text-slate-500 mb-2">
+        <div className="mt-4 pt-4 border-t border-slate-200/90">
+          <div className="text-[11px] font-mono uppercase font-bold text-slate-600 mb-2">
             Select a Criminal Laundering Scenario:
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -264,25 +261,25 @@ export function AttentionMatrix() {
                     else if (sc.id === "coinjoin") setSelectedFeatureIdx(7);
                     else setSelectedFeatureIdx(11);
                   }}
-                  className={`text-left p-2.5 rounded-lg border transition-all relative ${
+                  className={`text-left p-3 rounded-lg transition-none relative cursor-pointer ${
                     isSelected
-                      ? "bg-white border-slate-900 shadow-xs ring-1 ring-slate-900/10"
-                      : "bg-white/60 border-slate-200 hover:bg-white hover:border-slate-300"
+                      ? "bg-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/10"
+                      : "bg-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 text-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(15,23,42,0.04)]"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${sc.badgeColor}`}>
+                    <span className={`text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded border shadow-2xs ${sc.badgeColor}`}>
                       {sc.badge}
                     </span>
                     {isSelected && (
-                      <span className="w-2 h-2 rounded-full bg-slate-900" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-900 shadow-2xs" />
                     )}
                   </div>
-                  <div className="text-xs font-bold text-slate-900 truncate">
+                  <div className="text-xs font-bold text-slate-950 truncate">
                     {sc.name.split(":")[1]?.trim() || sc.name}
                   </div>
-                  <div className="text-[10px] text-slate-500 font-mono mt-1">
-                    Anomaly Alert: <strong className="text-slate-800">{sc.anomalyScore}</strong> ({sc.percentile})
+                  <div className="text-[10.5px] text-slate-600 font-mono mt-1 font-medium">
+                    Anomaly Alert: <strong className="text-slate-950 font-bold">{sc.anomalyScore}</strong> ({sc.percentile})
                   </div>
                 </button>
               );
@@ -297,17 +294,17 @@ export function AttentionMatrix() {
         <div className="xl:col-span-8 space-y-4">
           {displayMode === "matrix" ? (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-600 pb-1">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-700 pb-1 font-medium">
                 <span>
-                  ATTENTION LENSES: <strong>4 HEADS</strong> &bull; TOTAL TRAITS: <strong>18 NUMERIC TRAITS</strong>
+                  ATTENTION LENSES: <strong className="text-slate-950 font-bold">4 HEADS</strong> &bull; TOTAL TRAITS: <strong className="text-slate-950 font-bold">18 NUMERIC TRAITS</strong>
                 </span>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-500 font-semibold">
                   Click any row to isolate cross-examination profile
                 </span>
               </div>
 
               {/* Scrollable Matrix Container */}
-              <div className="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 overflow-x-auto">
+              <div className="border border-slate-200 rounded-lg p-2.5 bg-slate-50/70 overflow-x-auto shadow-2xs">
                 <div className="min-w-[620px]">
                   {/* Top Column Labels */}
                   <div className="flex items-end pl-24 mb-1">
@@ -317,12 +314,12 @@ export function AttentionMatrix() {
                       return (
                         <div
                           key={feat.key}
-                          className={`flex-1 text-center text-[9px] font-mono truncate px-0.5 transition-colors ${
+                          className={`flex-1 text-center text-[9px] font-mono truncate px-0.5 transition-none ${
                             isSelected
-                              ? "font-bold text-slate-900"
+                              ? "font-extrabold text-slate-950 underline decoration-slate-900"
                               : isHovered
-                              ? "text-sky-600 font-bold"
-                              : "text-slate-400"
+                              ? "text-sky-700 font-bold"
+                              : "text-slate-600 font-medium"
                           }`}
                           title={feat.label}
                         >
@@ -342,10 +339,10 @@ export function AttentionMatrix() {
                           {/* Row Header Label */}
                           <button
                             onClick={() => setSelectedFeatureIdx(rIdx)}
-                            className={`w-24 text-right pr-2 text-[10px] font-mono truncate transition-colors flex items-center justify-end gap-1 ${
+                            className={`w-24 text-right pr-2 text-[10px] font-mono truncate transition-none flex items-center justify-end gap-1 cursor-pointer ${
                               isRowSelected
                                 ? "font-bold text-slate-950 underline decoration-slate-900 decoration-2"
-                                : "text-slate-600 hover:text-slate-900"
+                                : "text-slate-700 font-medium"
                             }`}
                             title={`${rowFeat.label} (Click to inspect)`}
                           >
@@ -360,12 +357,7 @@ export function AttentionMatrix() {
                             {row.map((val, cIdx) => {
                               const isHovered =
                                 hoveredCell?.row === rIdx && hoveredCell?.col === cIdx;
-                              const isColSelected = selectedFeatureIdx === cIdx;
-                              const colorClass = getCellColor(
-                                val,
-                                isRowSelected,
-                                isColSelected
-                              );
+                              const colorClass = getCellColor(val);
 
                               return (
                                 <button
@@ -375,16 +367,16 @@ export function AttentionMatrix() {
                                   }
                                   onMouseLeave={() => setHoveredCell(null)}
                                   onClick={() => setSelectedFeatureIdx(rIdx)}
-                                  className={`flex-1 h-6 rounded text-[9px] font-mono flex items-center justify-center transition-all relative ${colorClass} ${
+                                  className={`flex-1 h-6 rounded text-[9px] font-mono flex items-center justify-center transition-none relative cursor-pointer ${colorClass} ${
                                     isHovered
-                                      ? "ring-2 ring-slate-900 z-10 scale-110"
+                                      ? "ring-2 ring-slate-900 z-10 scale-105"
                                       : isRowSelected
                                       ? "ring-1 ring-slate-400"
                                       : ""
                                   }`}
                                   title={`${rowFeat.label} ↔ ${ORDERED_FEATURES[cIdx].label}: Attention Correlation = ${(val * 100).toFixed(1)}%`}
                                 >
-                                  {val >= 0.12 ? (val * 100).toFixed(0) : ""}
+                                  {val >= 0.10 ? (val * 100).toFixed(0) : ""}
                                 </button>
                               );
                             })}
@@ -397,41 +389,42 @@ export function AttentionMatrix() {
               </div>
 
               {/* Color Gradient Scale Legend */}
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 pt-2 px-1">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 pt-2 px-1">
                 <div className="flex items-center gap-1.5">
-                  <span>Attention Glow:</span>
+                  <span className="font-bold text-slate-800">Attention Intensity:</span>
                   <div className="flex items-center gap-1">
-                    <span className="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-200" title="Low Correlation" />
-                    <span className="w-3.5 h-3.5 rounded bg-sky-100 border border-sky-200" title="Mild Correlation" />
-                    <span className="w-3.5 h-3.5 rounded bg-sky-200 border border-sky-300" title="Moderate Link" />
-                    <span className="w-3.5 h-3.5 rounded bg-indigo-300 border border-indigo-400" title="Strong Cross-Talk" />
-                    <span className="w-3.5 h-3.5 rounded bg-indigo-600 text-white" title="Critical Saliency Alert" />
+                    <span className="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-300" title="Low Correlation (&lt; 2.5%)" />
+                    <span className="w-3.5 h-3.5 rounded bg-sky-50 border border-sky-200" title="Mild Correlation (2.5%–5.5%)" />
+                    <span className="w-3.5 h-3.5 rounded bg-sky-100 border border-sky-300" title="Moderate Link (5.5%–9.5%)" />
+                    <span className="w-3.5 h-3.5 rounded bg-sky-200 border border-sky-400" title="Significant Link (9.5%–14%)" />
+                    <span className="w-3.5 h-3.5 rounded bg-indigo-300 border border-indigo-500" title="Strong Cross-Talk (14%–20%)" />
+                    <span className="w-3.5 h-3.5 rounded bg-indigo-600 border border-indigo-700 text-white shadow-2xs" title="Critical Saliency Alert (&ge; 20%)" />
                   </div>
-                  <span className="text-[10px] text-slate-400">(Light = Independent &rarr; Dark Indigo = Suspicious Joint Link)</span>
+                  <span className="text-[10px] text-slate-500 font-medium">(Light = Independent &rarr; Dark Indigo = Suspicious Joint Link)</span>
                 </div>
-                <div className="text-[10px] text-slate-400">
-                  Numbers shown on links &ge; 12% attention weight
+                <div className="text-[10px] text-slate-500 font-medium">
+                  Correlation % shown on links &ge; 10%
                 </div>
               </div>
             </div>
           ) : (
             /* Direct Attribution Mode */
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-600 pb-1">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-700 pb-1 font-bold">
                 <span>
                   DIRECT TRAIT ATTRIBUTION (WHY DETECTIVE A FLAGGED THIS)
                 </span>
-                <span className="text-[11px] text-emerald-600 font-bold">
+                <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">
                   Zero Compute Overhead (0.0ms)
                 </span>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed font-normal">
                 Because Detective A uses a dedicated master summary token, it directly extracts which traits
-                contributed most to the anomaly alert with <strong>zero extra calculation</strong>. No waiting 250 milliseconds for external explainability tools!
+                contributed most to the anomaly alert with <strong className="text-slate-950 font-bold">zero extra calculation</strong>. No waiting 250 milliseconds for external explainability tools!
               </p>
 
-              <div className="space-y-2 border border-slate-200 rounded-lg p-4 bg-slate-50/60">
+              <div className="space-y-2 border border-slate-200 rounded-lg p-4 bg-slate-50/70">
                 {ORDERED_FEATURES.map((feat, idx) => {
                   const val = currentScenario.clsAttributions[idx] || 0.02;
                   const isTop = currentScenario.primaryFeatures.includes(feat.key);
@@ -441,29 +434,29 @@ export function AttentionMatrix() {
                     <div
                       key={feat.key}
                       onClick={() => setSelectedFeatureIdx(idx)}
-                      className={`p-2 rounded-md transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-lg transition-none cursor-pointer ${
                         selectedFeatureIdx === idx
-                          ? "bg-white border border-slate-900 shadow-xs"
-                          : "hover:bg-white/80"
+                          ? "bg-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/10"
+                          : "bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(15,23,42,0.03)]"
                       }`}
                     >
-                      <div className="flex items-center justify-between text-xs font-mono mb-1">
-                        <span className="flex items-center gap-1.5 font-medium text-slate-900">
+                      <div className="flex items-center justify-between text-xs font-mono mb-1.5">
+                        <span className="flex items-center gap-1.5 font-bold text-slate-950">
                           {feat.index + 1}. {feat.label}
                           {isTop && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                            <span className="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
                               SMOKING GUN
                             </span>
                           )}
                         </span>
-                        <span className="font-bold text-slate-800">
+                        <span className="font-bold text-slate-950">
                           Contribution: {(val * 100).toFixed(1)}%
                         </span>
                       </div>
                       <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
-                            isTop ? "bg-indigo-600" : "bg-sky-500"
+                            isTop ? "bg-indigo-600" : "bg-sky-600"
                           }`}
                           style={{ width: `${widthPct}%` }}
                         />
@@ -476,10 +469,10 @@ export function AttentionMatrix() {
           )}
 
           {/* Quick Explanatory Banner */}
-          <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200/80 text-xs text-slate-600 flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
+          <div className="p-4 bg-white rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 text-xs text-slate-700 flex items-start gap-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(15,23,42,0.04)]">
+            <Info className="w-4 h-4 text-sky-700 flex-shrink-0 mt-0.5" />
             <div className="leading-relaxed">
-              <strong className="text-slate-900">Why Judges Love This:</strong> Unlike old black-box AI models that output a mystery number,
+              <strong className="text-slate-950">Why Judges Love This:</strong> Unlike old black-box AI models that output a mystery number,
               Detective A visually shows exactly which traits were suspicious. If a criminal alters their fees to throw off simple rules,
               the attention mechanism still catches them through cross-correlation with change fraction and output count!
             </div>
@@ -488,32 +481,32 @@ export function AttentionMatrix() {
 
         {/* RIGHT: Selected Feature Inspector Card */}
         <div className="xl:col-span-4 space-y-4">
-          <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-4 sticky top-20">
+          <div className="p-4 sm:p-5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(15,23,42,0.06)] space-y-4 sticky top-20">
             {/* Header of Inspector */}
             <div className="border-b border-slate-200 pb-3">
-              <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-slate-500">
+              <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-slate-600">
                 <span>INSPECTING TRAIT #{selectedFeature.index + 1}</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 uppercase">
+                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 uppercase font-bold shadow-2xs">
                   {selectedFeature.category}
                 </span>
               </div>
-              <h4 className="text-sm sm:text-base font-bold text-slate-900 mt-1">
+              <h4 className="text-sm sm:text-base font-bold text-slate-950 mt-1">
                 {selectedFeature.label}
               </h4>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed font-medium">
                 {selectedFeature.description}
               </p>
             </div>
 
             {/* Quick Metrics of this feature */}
             <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              <div className="p-2 bg-slate-50 rounded border border-slate-200">
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Expected Range</div>
-                <div className="font-semibold text-slate-800 mt-0.5">{selectedFeature.nominalRange}</div>
+              <div className="p-2.5 bg-slate-50 rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs">
+                <div className="text-[10px] text-slate-500 font-bold uppercase">Expected Range</div>
+                <div className="font-bold text-slate-950 mt-0.5">{selectedFeature.nominalRange}</div>
               </div>
-              <div className="p-2 bg-slate-50 rounded border border-slate-200">
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Alert Saliency</div>
-                <div className="font-semibold text-indigo-700 mt-0.5">
+              <div className="p-2.5 bg-indigo-50/60 rounded-lg border-t border-t-white border-x border-x-indigo-200 border-b border-b-indigo-300 shadow-2xs">
+                <div className="text-[10px] text-indigo-900 font-bold uppercase">Alert Saliency</div>
+                <div className="font-bold text-indigo-950 mt-0.5">
                   {(currentScenario.clsAttributions[selectedFeatureIdx] * 100).toFixed(1)}% influence
                 </div>
               </div>
@@ -521,9 +514,9 @@ export function AttentionMatrix() {
 
             {/* Top Cross-Attention Partners */}
             <div className="space-y-2">
-              <div className="text-[11px] font-mono font-bold uppercase text-slate-600 flex items-center justify-between">
+              <div className="text-[11px] font-mono font-bold uppercase text-slate-700 flex items-center justify-between">
                 <span>Strongest Linked Clues:</span>
-                <span className="text-[10px] text-slate-400 font-normal">Cross-Attention</span>
+                <span className="text-[10px] text-slate-500 font-semibold">Cross-Attention</span>
               </div>
 
               <div className="space-y-1.5">
@@ -533,23 +526,23 @@ export function AttentionMatrix() {
                     <div
                       key={item.feature.key}
                       onClick={() => setSelectedFeatureIdx(item.feature.index)}
-                      className={`p-2 rounded-lg border text-xs transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-lg border-t border-x border-b text-xs transition-none cursor-pointer ${
                         item.isSelf
-                          ? "bg-slate-50/80 border-slate-200 text-slate-700"
-                          : "bg-white border-slate-200 hover:border-slate-300 text-slate-900 shadow-2xs"
+                          ? "bg-slate-100/90 border-t-white border-x-slate-200 border-b-slate-300 text-slate-800"
+                          : "bg-white border-t-white border-x-slate-200 border-b-slate-300 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(15,23,42,0.04)]"
                       }`}
                     >
                       <div className="flex items-center justify-between font-mono text-[11px] mb-1">
                         <span className="flex items-center gap-1.5 font-bold">
-                          <span className="text-slate-400 font-normal">#{rank + 1}</span>
+                          <span className="text-slate-500 font-normal">#{rank + 1}</span>
                           {item.feature.label}
                           {item.isSelf && (
-                            <span className="text-[9px] px-1 rounded bg-slate-200 text-slate-600 font-normal">
+                            <span className="text-[9px] px-1 rounded bg-slate-200 text-slate-700 font-bold">
                               SELF
                             </span>
                           )}
                         </span>
-                        <span className="font-bold text-slate-900">{pct}%</span>
+                        <span className="font-extrabold text-slate-950">{pct}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
@@ -566,12 +559,12 @@ export function AttentionMatrix() {
             </div>
 
             {/* Forensic Context Interpretation Box */}
-            <div className="p-3 bg-sky-50/70 border border-sky-200/80 rounded-lg text-xs space-y-1.5">
+            <div className="p-3.5 bg-sky-50 border-t border-t-sky-100 border-x border-x-sky-200 border-b border-b-sky-300 rounded-lg text-xs space-y-1.5 shadow-2xs">
               <div className="font-bold text-sky-950 flex items-center gap-1.5 font-mono text-[11px] uppercase">
                 <Crosshair className="w-3.5 h-3.5 text-sky-700" />
                 Detective A Forensic Insight:
               </div>
-              <p className="text-slate-700 leading-relaxed text-[11px]">
+              <p className="text-slate-800 leading-relaxed text-[11px] font-medium">
                 {selectedFeature.key === "max_output_fraction"
                   ? "A dominant output fraction strongly cross-attending with Total BTC Amount signals a classic peeling chain: over 90% of funds are secretly funneled to a fresh change address while a small amount peels off."
                   : selectedFeature.key === "equal_outputs_flag" || selectedFeature.key === "coinjoin_candidate_flag"
@@ -590,9 +583,9 @@ export function AttentionMatrix() {
                 const leadFeat = ORDERED_FEATURES.find((f) => f.key === leadKey);
                 setSelectedFeatureIdx(leadFeat ? leadFeat.index : 0);
               }}
-              className="w-full py-2 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full py-2.5 px-3 rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-slate-50 text-slate-900 text-xs font-mono font-bold flex items-center justify-center gap-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(15,23,42,0.05)] active:translate-y-[0.5px] cursor-pointer"
             >
-              <RefreshCw className="w-3 h-3 text-slate-400" />
+              <RefreshCw className="w-3 h-3 text-slate-600" />
               Focus Strongest Clue Anchor
             </button>
           </div>

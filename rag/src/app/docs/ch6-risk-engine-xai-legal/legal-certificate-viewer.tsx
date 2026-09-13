@@ -251,9 +251,9 @@ export function LegalCertificateViewer() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div className="bg-white rounded-xl border-t border-t-white border-x border-x-slate-200/90 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(15,23,42,0.06)] overflow-hidden">
       {/* Top Banner */}
-      <div className="bg-slate-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800">
+      <div className="bg-gradient-to-b from-slate-900 to-slate-950 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold tracking-wider uppercase border border-amber-400/30">
@@ -270,7 +270,7 @@ export function LegalCertificateViewer() {
 
         {/* Case / Wallet Selector */}
         <div className="flex items-center gap-2">
-          <label htmlFor="target-select" className="text-xs font-mono text-slate-400">Target:</label>
+          <label htmlFor="target-select" className="text-xs font-mono text-slate-300 font-semibold">Target:</label>
           <select
             id="target-select"
             value={selectedEntityIndex}
@@ -279,7 +279,7 @@ export function LegalCertificateViewer() {
               setIsTampered(false);
               setVerificationStatus("idle");
             }}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-mono border border-slate-700 cursor-pointer focus:outline-hidden"
+            className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-mono border-t border-t-slate-700 border-x border-x-slate-700 border-b border-b-slate-600 shadow-inner cursor-pointer focus:outline-hidden font-medium"
           >
             {SAMPLE_ENTITIES.map((ent, idx) => (
               <option key={ent.address} value={idx}>
@@ -291,26 +291,26 @@ export function LegalCertificateViewer() {
       </div>
 
       {/* Action & Verification Ribbon */}
-      <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-slate-50/90 border-b border-slate-200 px-5 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 font-mono text-xs">
+        <div className="flex items-center gap-2 font-mono text-xs">
           <button
             onClick={() => setActiveTab("certificate")}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 transition-all ${
               activeTab === "certificate"
-                ? "bg-slate-900 text-white shadow-xs font-bold"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+                ? "bg-slate-900 text-white font-bold border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1px_3px_rgba(0,0,0,0.3)]"
+                : "bg-white text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.05)]"
             }`}
           >
-            <Award className="w-3.5 h-3.5 text-amber-400" />
+            <Award className="w-3.5 h-3.5 text-amber-500" />
             Court Affidavit View
           </button>
           <button
             onClick={() => setActiveTab("json")}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 transition-all ${
               activeTab === "json"
-                ? "bg-slate-900 text-white shadow-xs font-bold"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+                ? "bg-slate-900 text-white font-bold border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1px_3px_rgba(0,0,0,0.3)]"
+                : "bg-white text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.05)]"
             }`}
           >
             <FileCode className="w-3.5 h-3.5 text-sky-500" />
@@ -318,10 +318,10 @@ export function LegalCertificateViewer() {
           </button>
           <button
             onClick={() => setActiveTab("custody")}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 transition-all ${
               activeTab === "custody"
-                ? "bg-slate-900 text-white shadow-xs font-bold"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+                ? "bg-slate-900 text-white font-bold border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1px_3px_rgba(0,0,0,0.3)]"
+                : "bg-white text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.05)]"
             }`}
           >
             <Clock className="w-3.5 h-3.5 text-emerald-500" />
@@ -333,10 +333,10 @@ export function LegalCertificateViewer() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggleTamper}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors border cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-mono cursor-pointer flex items-center gap-1.5 transition-all ${
               isTampered
-                ? "bg-rose-100 text-rose-800 border-rose-300 font-bold"
-                : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100"
+                ? "bg-rose-100 text-rose-950 border-t border-t-rose-200 border-x border-x-rose-300 border-b border-b-rose-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(15,23,42,0.04)] font-bold"
+                : "bg-white text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.05)] font-medium"
             }`}
             title="Simulate someone secretly altering the danger score in the database"
           >
@@ -346,7 +346,7 @@ export function LegalCertificateViewer() {
 
           <button
             onClick={verifyIntegrity}
-            className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-mono font-semibold transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-1.5 rounded-lg bg-gradient-to-b from-blue-600 via-blue-600 to-blue-700 text-white text-xs font-mono font-semibold border-t border-t-blue-400/60 border-x border-x-blue-600 border-b border-b-blue-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_6px_rgba(30,64,175,0.28)] active:translate-y-[0.5px] flex items-center gap-1.5 cursor-pointer"
           >
             <Fingerprint className="w-3.5 h-3.5" />
             Verify SHA-256 Seal
@@ -392,9 +392,9 @@ export function LegalCertificateViewer() {
         {activeTab === "certificate" && (
           <div className="space-y-6">
             {/* Plain-English Explainer Header */}
-            <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-start gap-3">
+            <div className="p-4 rounded-xl bg-gradient-to-b from-white to-blue-50/40 border-t border-t-blue-100 border-x border-x-blue-200/80 border-b border-b-blue-300/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(15,23,42,0.04)] flex items-start gap-3">
               <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-700 leading-relaxed space-y-1">
+              <div className="text-xs text-slate-800 leading-relaxed space-y-1">
                 <span className="font-bold text-blue-950 text-sm block">
                   Why this certificate matters in Indian Courts:
                 </span>
@@ -405,7 +405,7 @@ export function LegalCertificateViewer() {
             </div>
 
             {/* Official Looking Certificate Document Container */}
-            <div className="border-2 border-slate-300 rounded-xl bg-slate-50/40 p-6 sm:p-8 space-y-6 font-serif relative overflow-hidden shadow-xs">
+            <div className="border-2 border-slate-300 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/30 p-6 sm:p-8 space-y-6 font-serif relative overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_8px_rgba(15,23,42,0.06)]">
               {/* Official Watermark */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-5 text-slate-900 font-sans font-black text-6xl rotate-[-25deg] select-none text-center">
                 COURT ADMISSIBLE<br />SEC 65B / 63 BSA
@@ -413,16 +413,16 @@ export function LegalCertificateViewer() {
 
               {/* Certificate Header */}
               <div className="text-center border-b-2 border-slate-300 pb-5 font-sans space-y-1">
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-600">
                   GOVERNMENT OF INDIA &bull; NATIONAL TECHNICAL RESEARCH ORGANISATION
                 </div>
-                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+                <h2 className="text-lg sm:text-xl font-extrabold text-slate-950 tracking-tight">
                   CERTIFICATE UNDER SECTION 65B(4) INDIAN EVIDENCE ACT, 1872
                 </h2>
-                <div className="text-xs font-medium text-slate-600">
+                <div className="text-xs font-semibold text-slate-700">
                   (Also Certified under Section 63(4) of Bharatiya Sakshya Adhiniyam, 2023)
                 </div>
-                <div className="text-[11px] font-mono text-slate-500 pt-1">
+                <div className="text-[11px] font-mono text-slate-600 pt-1 font-medium">
                   Certificate Ref: <strong>{canonicalPayload.certificate_id}</strong> &bull; Date: {canonicalPayload.timestamp_ist}
                 </div>
               </div>
@@ -430,62 +430,62 @@ export function LegalCertificateViewer() {
               {/* 4 Essential Courtroom Proof Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans text-xs">
                 {/* Proof 1 */}
-                <div className="p-3.5 rounded-lg bg-white border border-slate-200 space-y-1">
+                <div className="p-3.5 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)] space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-slate-900">
                     <Lock className="w-3.5 h-3.5 text-emerald-600" />
                     <span>1. 100% Offline Air-Gap Attestation</span>
                   </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                  <p className="text-slate-700 text-[11px] leading-relaxed">
                     Produced on pure-CPU node <code>{canonicalPayload.system_integrity.server_node}</code> with zero outbound internet access. No cloud API or foreign server touched this data.
                   </p>
                 </div>
 
                 {/* Proof 2 */}
-                <div className="p-3.5 rounded-lg bg-white border border-slate-200 space-y-1">
+                <div className="p-3.5 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)] space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-slate-900">
                     <Fingerprint className="w-3.5 h-3.5 text-indigo-600" />
                     <span>2. SHA-256 Digital Tamper Seal</span>
                   </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed font-mono truncate">
+                  <p className="text-slate-700 text-[11px] leading-relaxed font-mono truncate">
                     Hash: {liveDigest.slice(0, 24)}... (Any change of 1 single byte invalidates this entire document).
                   </p>
                 </div>
 
                 {/* Proof 3 */}
-                <div className="p-3.5 rounded-lg bg-white border border-slate-200 space-y-1">
+                <div className="p-3.5 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)] space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-slate-900">
                     <HardDrive className="w-3.5 h-3.5 text-sky-600" />
                     <span>3. Algorithmic Reproducibility Manifest</span>
                   </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                  <p className="text-slate-700 text-[11px] leading-relaxed">
                     Tied to immutable AI model weights hash. A court defense expert running the same model on another PC will obtain identical findings.
                   </p>
                 </div>
 
                 {/* Proof 4 */}
-                <div className="p-3.5 rounded-lg bg-white border border-slate-200 space-y-1">
+                <div className="p-3.5 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)] space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-slate-900">
                     <Building className="w-3.5 h-3.5 text-amber-600" />
                     <span>4. Designated Jurisdiction &amp; Bench</span>
                   </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                  <p className="text-slate-700 text-[11px] leading-relaxed">
                     Prepared for immediate production before: <strong>{entity.courtDistrict}</strong>.
                   </p>
                 </div>
               </div>
 
               {/* Target Entity Evidentiary Details */}
-              <div className="p-4 rounded-lg bg-white border border-slate-200 font-sans text-xs space-y-2">
+              <div className="p-4 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(15,23,42,0.04)] font-sans text-xs space-y-2">
                 <div className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b pb-1">
                   Forensic Examination Findings:
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div>
-                    <span className="text-slate-500 block text-[10px]">Target Wallet Address:</span>
-                    <span className="font-mono font-bold text-slate-900 break-all">{entity.address}</span>
+                    <span className="text-slate-500 block text-[10px] font-semibold">Target Wallet Address:</span>
+                    <span className="font-mono font-bold text-slate-950 break-all">{entity.address}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[10px]">Composite Danger Rating:</span>
+                    <span className="text-slate-500 block text-[10px] font-semibold">Composite Danger Rating:</span>
                     <span
                       className={`font-mono font-bold text-sm ${
                         isTampered
@@ -501,8 +501,8 @@ export function LegalCertificateViewer() {
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[10px]">Peeling Chain Activity:</span>
-                    <span className="font-mono font-bold text-slate-900">
+                    <span className="text-slate-500 block text-[10px] font-semibold">Peeling Chain Activity:</span>
+                    <span className="font-mono font-bold text-slate-950">
                       {entity.peelingHops > 0 ? `${entity.peelingHops} Hops Detected` : "Zero Peeling Detected"}
                     </span>
                   </div>
@@ -511,21 +511,21 @@ export function LegalCertificateViewer() {
 
               {/* Statutory Declaration & Officer Signatures */}
               <div className="space-y-4 pt-2 font-sans">
-                <p className="text-xs text-slate-700 italic leading-relaxed border-l-2 border-slate-400 pl-3">
+                <p className="text-xs text-slate-800 italic leading-relaxed border-l-2 border-slate-400 pl-3">
                   &ldquo;{canonicalPayload.statutory_declaration}&rdquo;
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4 border-t border-slate-200 text-xs">
                   <div className="space-y-1">
-                    <div className="font-mono text-slate-400 text-[10px]">DIGITALLY SIGNED &bull; OFFICER IN CHARGE:</div>
-                    <div className="font-bold text-slate-900 text-sm">{entity.officerName}</div>
-                    <div className="text-slate-500 font-mono text-[11px]">{entity.officerBadge} &bull; NTRO Cyber Cell</div>
+                    <div className="font-mono text-slate-500 text-[10px] font-bold">DIGITALLY SIGNED &bull; OFFICER IN CHARGE:</div>
+                    <div className="font-bold text-slate-950 text-sm">{entity.officerName}</div>
+                    <div className="text-slate-600 font-mono text-[11px] font-medium">{entity.officerBadge} &bull; NTRO Cyber Cell</div>
                   </div>
 
                   <div className="space-y-1 sm:text-right">
-                    <div className="font-mono text-slate-400 text-[10px]">SYSTEM CUSTODIAN:</div>
-                    <div className="font-bold text-slate-900 text-sm">Air-Gapped Sovereign Node Engine</div>
-                    <div className="text-slate-500 font-mono text-[11px]">NTP Synchronized &bull; Zero Egress</div>
+                    <div className="font-mono text-slate-500 text-[10px] font-bold">SYSTEM CUSTODIAN:</div>
+                    <div className="font-bold text-slate-950 text-sm">Air-Gapped Sovereign Node Engine</div>
+                    <div className="text-slate-600 font-mono text-[11px] font-medium">NTP Synchronized &bull; Zero Egress</div>
                   </div>
                 </div>
               </div>
@@ -535,21 +535,21 @@ export function LegalCertificateViewer() {
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={copyJson}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-mono font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white text-slate-800 text-xs font-mono font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)] active:translate-y-[0.5px] flex items-center gap-1.5 cursor-pointer"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? "Copied" : "Copy Manifest"}
               </button>
               <button
                 onClick={downloadJson}
-                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-mono font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-b from-slate-800 to-slate-900 text-white text-xs font-mono font-medium border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_3px_rgba(0,0,0,0.3)] active:translate-y-[0.5px] flex items-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 Download JSON Bundle
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-mono font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-b from-blue-600 via-blue-600 to-blue-700 text-white text-xs font-mono font-semibold border-t border-t-blue-400/60 border-x border-x-blue-600 border-b border-b-blue-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_6px_rgba(30,64,175,0.28)] active:translate-y-[0.5px] flex items-center gap-1.5 cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 Print Court Affidavit
@@ -560,17 +560,17 @@ export function LegalCertificateViewer() {
 
         {activeTab === "json" && (
           <div className="space-y-3 font-mono">
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>CANONICAL EVIDENTIARY JSON MANIFEST (SHA-256 SEALED)</span>
+            <div className="flex items-center justify-between text-xs text-slate-600">
+              <span className="font-bold">CANONICAL EVIDENTIARY JSON MANIFEST (SHA-256 SEALED)</span>
               <button
                 onClick={copyJson}
-                className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                className="text-blue-700 font-semibold flex items-center gap-1 cursor-pointer"
               >
                 {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
                 {copied ? "Copied" : "Copy"}
               </button>
             </div>
-            <pre className="p-4 rounded-xl bg-slate-900 text-emerald-400 text-xs overflow-x-auto leading-relaxed max-h-96 border border-slate-800">
+            <pre className="p-4 rounded-xl bg-slate-900 text-emerald-400 text-xs overflow-x-auto leading-relaxed max-h-96 border border-slate-800 shadow-inner">
               {JSON.stringify(
                 {
                   ...canonicalPayload,
@@ -589,30 +589,30 @@ export function LegalCertificateViewer() {
 
         {activeTab === "custody" && (
           <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono">
               Cryptographic Chain of Custody &amp; Audit Trail:
             </h4>
-            <div className="border-l-2 border-slate-200 ml-3 space-y-6 pl-4 text-xs">
+            <div className="border-l-2 border-slate-300 ml-3 space-y-6 pl-4 text-xs">
               <div className="relative">
-                <div className="w-3 h-3 rounded-full bg-emerald-500 absolute -left-[23px] top-0.5" />
-                <div className="font-bold text-slate-900">Step 1: Offline Ingestion &amp; Checksum Baseline</div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
+                <div className="w-3 h-3 rounded-full bg-emerald-500 absolute -left-[23px] top-0.5 shadow-2xs" />
+                <div className="font-bold text-slate-950">Step 1: Offline Ingestion &amp; Checksum Baseline</div>
+                <div className="text-slate-600 text-[11px] mt-0.5 font-medium">
                   Raw CSV/JSON transaction bundle ingested via air-gapped optical drive into sovereign SSD storage.
                 </div>
               </div>
 
               <div className="relative">
-                <div className="w-3 h-3 rounded-full bg-indigo-500 absolute -left-[23px] top-0.5" />
-                <div className="font-bold text-slate-900">Step 2: Dual Transformer &amp; Heuristic Inference</div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
+                <div className="w-3 h-3 rounded-full bg-indigo-500 absolute -left-[23px] top-0.5 shadow-2xs" />
+                <div className="font-bold text-slate-950">Step 2: Dual Transformer &amp; Heuristic Inference</div>
+                <div className="text-slate-600 text-[11px] mt-0.5 font-medium">
                   Executed purely on sovereign CPU cores; 18-feature anomaly score and graph relation calculated in 4.2ms.
                 </div>
               </div>
 
               <div className="relative">
-                <div className="w-3 h-3 rounded-full bg-amber-500 absolute -left-[23px] top-0.5" />
-                <div className="font-bold text-slate-900">Step 3: Section 65B Digital Sealing</div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
+                <div className="w-3 h-3 rounded-full bg-amber-500 absolute -left-[23px] top-0.5 shadow-2xs" />
+                <div className="font-bold text-slate-950">Step 3: Section 65B Digital Sealing</div>
+                <div className="text-slate-600 text-[11px] mt-0.5 font-medium">
                   SHA-256 signature generated, binding officer ID and evidence tensors into permanent tamper-proof affidavit.
                 </div>
               </div>

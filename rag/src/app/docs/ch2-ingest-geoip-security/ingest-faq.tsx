@@ -181,7 +181,7 @@ export function IngestFaq() {
             className={`card-tactical rounded-xl border transition-all overflow-hidden ${
               isOpen
                 ? "border-slate-300 ring-1 ring-slate-900/5 bg-white shadow-xs"
-                : "border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-white"
+                : "border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white shadow-xs"
             }`}
           >
             <button

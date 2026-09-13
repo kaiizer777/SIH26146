@@ -181,11 +181,11 @@ export function ForensicCockpitPreview() {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs space-y-0">
+    <div className="rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(15,23,42,0.06)] space-y-0">
       {/* Top Banner: Cybercrime Officer Workflow HUD */}
-      <div className="p-3.5 bg-slate-950 text-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
+      <div className="p-3.5 bg-slate-950 text-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 border-t border-t-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
         <div className="flex items-center space-x-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-bold tracking-wider uppercase text-white">
@@ -205,35 +205,35 @@ export function ForensicCockpitPreview() {
         <div className="flex items-center space-x-1.5 font-mono text-xs">
           <button
             onClick={() => setActiveTab("cockpit")}
-            className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded text-xs font-mono font-bold cursor-pointer active:translate-y-[0.5px] flex items-center gap-1.5 ${
               activeTab === "cockpit"
-                ? "bg-sky-600 text-white shadow-xs"
-                : "text-slate-400 hover:text-white"
+                ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white border-t border-t-sky-300/60 border-x border-x-sky-600 border-b border-b-sky-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_4px_rgba(2,132,199,0.3)] font-bold"
+                : "text-slate-300 bg-slate-900 border-t border-t-slate-800 border-x border-x-slate-850 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
             }`}
           >
-            <Activity className="w-3.5 h-3.5" />
+            <Activity className="w-3.5 h-3.5 text-sky-300" />
             <span>Interactive Cockpit</span>
           </button>
           <button
             onClick={() => setActiveTab("court_dossier")}
-            className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded text-xs font-mono font-bold cursor-pointer active:translate-y-[0.5px] flex items-center gap-1.5 ${
               activeTab === "court_dossier"
-                ? "bg-indigo-600 text-white shadow-xs"
-                : "text-slate-400 hover:text-white"
+                ? "bg-gradient-to-b from-indigo-500 to-indigo-600 text-white border-t border-t-indigo-300/60 border-x border-x-indigo-600 border-b border-b-indigo-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_4px_rgba(79,70,229,0.3)] font-bold"
+                : "text-slate-300 bg-slate-900 border-t border-t-slate-800 border-x border-x-slate-850 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
             }`}
           >
-            <Scale className="w-3.5 h-3.5" />
+            <Scale className="w-3.5 h-3.5 text-indigo-300" />
             <span>Sec 65B Dossier</span>
           </button>
           <button
             onClick={() => setActiveTab("opsec")}
-            className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded text-xs font-mono font-bold cursor-pointer active:translate-y-[0.5px] flex items-center gap-1.5 ${
               activeTab === "opsec"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "text-slate-400 hover:text-white"
+                ? "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white border-t border-t-emerald-300/60 border-x border-x-emerald-600 border-b border-b-emerald-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_4px_rgba(5,150,105,0.3)] font-bold"
+                : "text-slate-300 bg-slate-900 border-t border-t-slate-800 border-x border-x-slate-850 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
             }`}
           >
-            <Lock className="w-3.5 h-3.5" />
+            <Lock className="w-3.5 h-3.5 text-emerald-300" />
             <span>OPSEC Privacy Sandbox</span>
           </button>
         </div>
@@ -306,7 +306,7 @@ export function ForensicCockpitPreview() {
               className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                 filterVerdict === "CRITICAL"
                   ? "bg-rose-50 border-rose-400 shadow-xs ring-1 ring-rose-300"
-                  : "bg-white border-slate-200 hover:bg-slate-50"
+                  : "bg-gradient-to-b from-white via-slate-50/70 to-slate-100/60 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(15,23,42,0.04)] active:translate-y-[0.5px]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -327,7 +327,7 @@ export function ForensicCockpitPreview() {
               className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                 filterVerdict === "HIGH"
                   ? "bg-orange-50 border-orange-400 shadow-xs ring-1 ring-orange-300"
-                  : "bg-white border-slate-200 hover:bg-slate-50"
+                  : "bg-gradient-to-b from-white via-slate-50/70 to-slate-100/60 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(15,23,42,0.04)] active:translate-y-[0.5px]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -348,7 +348,7 @@ export function ForensicCockpitPreview() {
               className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                 filterVerdict === "MEDIUM"
                   ? "bg-yellow-50 border-yellow-400 shadow-xs ring-1 ring-yellow-300"
-                  : "bg-white border-slate-200 hover:bg-slate-50"
+                  : "bg-gradient-to-b from-white via-slate-50/70 to-slate-100/60 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(15,23,42,0.04)] active:translate-y-[0.5px]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -369,7 +369,7 @@ export function ForensicCockpitPreview() {
               className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                 filterVerdict === "LOW"
                   ? "bg-emerald-50 border-emerald-400 shadow-xs ring-1 ring-emerald-300"
-                  : "bg-white border-slate-200 hover:bg-slate-50"
+                  : "bg-gradient-to-b from-white via-slate-50/70 to-slate-100/60 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(15,23,42,0.04)] active:translate-y-[0.5px]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -419,8 +419,8 @@ export function ForensicCockpitPreview() {
                           onClick={() => setSelectedTxid(row.txid)}
                           className={`h-[38px] cursor-pointer transition-colors ${
                             isSelected
-                              ? "bg-sky-50/90 font-semibold text-slate-900"
-                              : "hover:bg-slate-50/70 text-slate-700"
+                              ? "bg-sky-50/90 font-semibold text-slate-950 border-l-2 border-l-sky-600"
+                              : "bg-white even:bg-slate-50/70 text-slate-800"
                           }`}
                         >
                           <td className="px-3 whitespace-nowrap">
@@ -450,7 +450,7 @@ export function ForensicCockpitPreview() {
                                     e.stopPropagation();
                                     handleCopy(row.address);
                                   }}
-                                  className="text-slate-400 hover:text-slate-800"
+                                  className="text-slate-500 active:text-slate-900"
                                   title="Copy address"
                                 >
                                   {copiedAddr === row.address ? (
@@ -560,7 +560,7 @@ export function ForensicCockpitPreview() {
               <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                 <button
                   onClick={() => setShowExportModal(true)}
-                  className="w-full py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  className="w-full py-2 px-3 bg-gradient-to-b from-emerald-500 to-emerald-600 border-t border-t-emerald-400 border-x border-x-emerald-600 border-b border-b-emerald-800 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_4px_rgba(5,150,105,0.25)] active:translate-y-[0.5px] cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Generate Court PDF</span>
@@ -733,7 +733,7 @@ export function ForensicCockpitPreview() {
                   setShowExportModal(false);
                   setExportComplete(false);
                 }}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-slate-400 active:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -780,7 +780,7 @@ export function ForensicCockpitPreview() {
                 <button
                   onClick={handleExportSection65B}
                   disabled={exporting}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
+                  className="w-full py-3 bg-gradient-to-b from-emerald-500 to-emerald-600 border-t border-t-emerald-400 border-x border-x-emerald-600 border-b border-b-emerald-800 text-white rounded-lg font-bold flex items-center justify-center gap-2 cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_5px_rgba(5,150,105,0.3)] active:translate-y-[0.5px]"
                 >
                   {exporting ? (
                     <>

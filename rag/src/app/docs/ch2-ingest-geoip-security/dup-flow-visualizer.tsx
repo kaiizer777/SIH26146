@@ -249,7 +249,7 @@ export function DupFlowVisualizer() {
         <button
           type="button"
           onClick={() => setCurrentStep(0)}
-          className="p-1.5 px-3 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-xs font-mono flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+          className="p-1.5 px-3 rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-slate-100 text-slate-900 shadow-xs text-xs font-mono flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Reset Stepper</span>
@@ -270,7 +270,7 @@ export function DupFlowVisualizer() {
                 className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                   isSelected
                     ? "border-slate-900 bg-slate-900 text-white shadow-xs"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                    : "border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-slate-50 text-slate-800 shadow-xs"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -323,7 +323,7 @@ export function DupFlowVisualizer() {
                       ? "bg-slate-900 text-white shadow-xs"
                       : idx < currentStep
                       ? "bg-emerald-100 text-emerald-800"
-                      : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                      : "bg-slate-200 text-slate-700"
                   }`}
                 >
                   {idx + 1}
@@ -346,7 +346,7 @@ export function DupFlowVisualizer() {
                   className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                     isActive
                       ? "border-slate-900 bg-white ring-2 ring-slate-900/10 shadow-xs"
-                      : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300"
+                      : "border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white text-slate-800 shadow-xs"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
@@ -407,7 +407,7 @@ export function DupFlowVisualizer() {
                 type="button"
                 disabled={currentStep === 0}
                 onClick={() => setCurrentStep((c) => Math.max(0, c - 1))}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-[11px] cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-slate-800 text-white border-t border-t-slate-700 border-b border-b-black shadow-xs disabled:opacity-40 disabled:cursor-not-allowed text-[11px] cursor-pointer"
               >
                 ← Prev Step
               </button>
@@ -417,7 +417,7 @@ export function DupFlowVisualizer() {
                 onClick={() =>
                   setCurrentStep((c) => Math.min(activeScenario.steps.length - 1, c + 1))
                 }
-                className="px-3.5 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-bold cursor-pointer flex items-center gap-1"
+                className="btn-tactical-primary text-white disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-bold cursor-pointer flex items-center gap-1 px-3.5 py-1.5 rounded-lg shadow-xs"
               >
                 Next Step →
               </button>

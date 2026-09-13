@@ -222,9 +222,9 @@ export function ShapWaterfall() {
   const selectedFeature = selectedFeatureIndex !== null ? scenario.features[selectedFeatureIndex] : null;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div className="bg-white rounded-xl border-t border-t-white border-x border-x-slate-200/90 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(15,23,42,0.06)] overflow-hidden">
       {/* Top Banner */}
-      <div className="bg-slate-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800">
+      <div className="bg-gradient-to-b from-slate-900 to-slate-950 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold tracking-wider uppercase border border-emerald-400/30">
@@ -248,10 +248,10 @@ export function ShapWaterfall() {
                 setActiveScenarioId(s.id);
                 setSelectedFeatureIndex(0);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
+              className={`px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-all ${
                 activeScenarioId === s.id
-                  ? "bg-slate-800 text-white border-slate-600 shadow-xs font-semibold"
-                  : "bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-800/50"
+                  ? "bg-gradient-to-b from-slate-700 to-slate-800 text-white border-t border-t-slate-500 border-x border-x-slate-600 border-b border-b-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_3px_rgba(0,0,0,0.3)] font-semibold"
+                  : "bg-slate-800/90 text-slate-200 border-t border-t-slate-700 border-x border-x-slate-700 border-b border-b-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] font-medium"
               }`}
             >
               {s.id === "peeling-syndicate" ? "LockBit Peeling" : s.id === "coinjoin-mixer" ? "Whirlpool Mixing" : "Clean Cold Storage"}
@@ -265,17 +265,17 @@ export function ShapWaterfall() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono border ${
+              className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono border shadow-2xs ${
                 scenario.riskVerdict === "CRITICAL"
-                  ? "bg-rose-50 text-rose-800 border-rose-300"
+                  ? "bg-rose-100 text-rose-900 border-rose-300"
                   : scenario.riskVerdict === "HIGH"
-                  ? "bg-amber-50 text-amber-800 border-amber-300"
-                  : "bg-emerald-50 text-emerald-800 border-emerald-300"
+                  ? "bg-amber-100 text-amber-900 border-amber-300"
+                  : "bg-emerald-100 text-emerald-900 border-emerald-300"
               }`}
             >
               {scenario.badge}
             </span>
-            <span className="text-xs font-mono text-slate-500 truncate max-w-[280px]">
+            <span className="text-xs font-mono text-slate-600 truncate max-w-[280px]">
               TXID: {scenario.txid.slice(0, 10)}...{scenario.txid.slice(-6)}
             </span>
           </div>
@@ -284,7 +284,7 @@ export function ShapWaterfall() {
             <span>Base Baseline: {scenario.baseRiskFloor}%</span>
             <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
             <span
-              className={`px-2 py-0.5 rounded ${
+              className={`px-2 py-0.5 rounded shadow-2xs ${
                 scenario.riskVerdict === "CRITICAL"
                   ? "bg-rose-600 text-white"
                   : scenario.riskVerdict === "HIGH"
@@ -298,14 +298,14 @@ export function ShapWaterfall() {
         </div>
 
         {/* Highlighted Plain-English Verdict Quote */}
-        <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
-          <div className="text-[10px] font-mono font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+        <div className="p-4 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(15,23,42,0.04)] space-y-1.5">
+          <div className="text-[10px] font-mono font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1">
             <FileCheck2 className="w-3.5 h-3.5" /> Plain-English Court Statement
           </div>
-          <p className="text-sm font-semibold text-slate-900 leading-snug">
+          <p className="text-sm font-bold text-slate-950 leading-snug">
             &ldquo;{scenario.plainEnglishVerdict}&rdquo;
           </p>
-          <p className="text-xs text-slate-600 pt-0.5 leading-relaxed">
+          <p className="text-xs text-slate-700 pt-0.5 leading-relaxed font-normal">
             {scenario.executiveSummary}
           </p>
         </div>
@@ -316,10 +316,10 @@ export function ShapWaterfall() {
         {/* Left: The Visual Waterfall Bars (7 Cols) */}
         <div className="lg:col-span-7 space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono">
               Itemized Feature Receipt (Click a factor to inspect):
             </h4>
-            <span className="text-[11px] font-mono text-slate-400">
+            <span className="text-[11px] font-mono text-slate-500 font-medium">
               Red = Pushes Risk UP &bull; Green = Pulls Risk DOWN
             </span>
           </div>
@@ -334,10 +334,10 @@ export function ShapWaterfall() {
                 <div
                   key={feature.technicalKey}
                   onClick={() => setSelectedFeatureIndex(idx)}
-                  className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                  className={`p-3.5 rounded-xl transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-slate-50 border-slate-400 shadow-2xs"
-                      : "bg-white border-slate-200/80 hover:bg-slate-50/60"
+                      ? "bg-gradient-to-b from-slate-50 to-slate-100/90 border-t border-t-slate-300 border-x border-x-slate-300 border-b border-b-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_5px_rgba(15,23,42,0.08)] ring-1 ring-slate-400/40"
+                      : "bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)]"
                   }`}
                 >
                   <div className="flex items-center justify-between text-xs mb-1.5">
@@ -350,10 +350,10 @@ export function ShapWaterfall() {
                       {feature.featureName}
                     </span>
                     <span
-                      className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
+                      className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] shadow-2xs ${
                         isDanger
-                          ? "bg-rose-50 text-rose-800 border border-rose-200"
-                          : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                          ? "bg-rose-100 text-rose-900 border border-rose-300"
+                          : "bg-emerald-100 text-emerald-900 border border-emerald-300"
                       }`}
                     >
                       {feature.impactPercentage > 0 ? `+${feature.impactPercentage}%` : `${feature.impactPercentage}%`}
@@ -361,7 +361,7 @@ export function ShapWaterfall() {
                   </div>
 
                   {/* Horizontal Waterfall Bar */}
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden shadow-inner">
                     <div
                       style={{ width: `${barWidth}%` }}
                       className={`h-full rounded-full transition-all duration-300 ${
@@ -370,8 +370,8 @@ export function ShapWaterfall() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1.5 font-mono">
-                    <span>Observed: <strong className="text-slate-700">{feature.actualObserved}</strong></span>
+                  <div className="flex items-center justify-between text-[11px] text-slate-600 mt-1.5 font-mono">
+                    <span>Observed: <strong className="text-slate-900">{feature.actualObserved}</strong></span>
                     <span>Normal: {feature.normalBaseline}</span>
                   </div>
                 </div>
@@ -383,13 +383,13 @@ export function ShapWaterfall() {
         {/* Right: Selected Feature Deep-Dive Card (5 Cols) */}
         <div className="lg:col-span-5">
           {selectedFeature ? (
-            <div className="p-5 rounded-xl border border-slate-200 bg-slate-50/80 space-y-4 sticky top-6">
+            <div className="p-5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_6px_rgba(15,23,42,0.05)] space-y-4 sticky top-6">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-600">
                   Judicial Feature Explainer
                 </span>
                 <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase border ${
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase border shadow-2xs ${
                     selectedFeature.impactType === "danger"
                       ? "bg-rose-100 text-rose-900 border-rose-300"
                       : "bg-emerald-100 text-emerald-900 border-emerald-300"
@@ -400,41 +400,41 @@ export function ShapWaterfall() {
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                <h3 className="text-sm font-bold text-slate-950 leading-snug">
                   {selectedFeature.featureName}
                 </h3>
-                <div className="font-mono text-[11px] text-slate-500 mt-0.5">
-                  Telemetry Key: <code>{selectedFeature.technicalKey}</code>
+                <div className="font-mono text-[11px] text-slate-600 mt-0.5">
+                  Telemetry Key: <code className="bg-slate-100 px-1 py-0.5 rounded border border-slate-200 text-slate-800 font-semibold">{selectedFeature.technicalKey}</code>
                 </div>
               </div>
 
-              <div className="space-y-2 p-3 rounded-lg bg-white border border-slate-200 text-xs">
-                <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+              <div className="space-y-2 p-3.5 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)] text-xs">
+                <div className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-indigo-600" />
                   How to explain this to a Magistrate:
                 </div>
-                <p className="text-slate-800 leading-relaxed font-medium">
+                <p className="text-slate-800 leading-relaxed font-normal">
                   {selectedFeature.plainEnglishReason}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                <div className="p-2.5 rounded bg-white border border-slate-200">
-                  <div className="text-[10px] text-slate-400 uppercase">Observed in Tx</div>
-                  <div className="font-bold text-slate-900 mt-0.5 truncate">
+                <div className="p-2.5 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)]">
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Observed in Tx</div>
+                  <div className="font-bold text-slate-950 mt-0.5 truncate">
                     {selectedFeature.actualObserved}
                   </div>
                 </div>
-                <div className="p-2.5 rounded bg-white border border-slate-200">
-                  <div className="text-[10px] text-slate-400 uppercase">Standard Baseline</div>
-                  <div className="font-bold text-slate-600 mt-0.5 truncate">
+                <div className="p-2.5 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.04)]">
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Standard Baseline</div>
+                  <div className="font-bold text-slate-700 mt-0.5 truncate">
                     {selectedFeature.normalBaseline}
                   </div>
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-500 leading-normal border-t border-slate-200 pt-3">
-                <strong>Why this is bulletproof:</strong> Lloyd Shapley&rsquo;s Nobel Prize formula guarantees that each feature attribution sums mathematically to the final output score with zero hidden variables.
+              <div className="text-[11px] text-slate-600 leading-normal border-t border-slate-200 pt-3">
+                <strong className="text-slate-900">Why this is bulletproof:</strong> Lloyd Shapley&rsquo;s Nobel Prize formula guarantees that each feature attribution sums mathematically to the final output score with zero hidden variables.
               </div>
             </div>
           ) : (

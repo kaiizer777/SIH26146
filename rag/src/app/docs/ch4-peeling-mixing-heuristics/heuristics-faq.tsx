@@ -232,12 +232,12 @@ export function HeuristicsFaq() {
   };
 
   return (
-    <div className="card-tactical rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+    <div className="card-tactical rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white overflow-hidden shadow-[0_2px_6px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.9)]">
       {/* Header */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 border-b border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-md bg-slate-900 text-white">
+            <span className="p-1.5 rounded-lg bg-gradient-to-b from-slate-800 to-slate-950 text-white border-t border-t-slate-700 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.2)]">
               <HelpCircle className="w-4 h-4" />
             </span>
             <h3 className="text-base font-bold text-slate-900 tracking-tight">
@@ -258,21 +258,21 @@ export function HeuristicsFaq() {
             value={searchQuery}
             aria-label="Search FAQ"
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] font-medium"
           />
         </div>
       </div>
 
       {/* Category Filter Pills */}
-      <div className="p-3 border-b border-slate-200 bg-white flex flex-wrap gap-1.5">
+      <div className="p-3 border-b border-slate-200 bg-slate-50/50 flex flex-wrap gap-2">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer active:translate-y-[0.5px] transition-all ${
               selectedCategory === cat.id
-                ? "bg-slate-900 text-white font-bold shadow-2xs"
-                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                ? "bg-gradient-to-b from-slate-900 to-slate-950 text-white font-bold border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_3px_rgba(0,0,0,0.25)]"
+                : "bg-gradient-to-b from-white to-slate-100 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
             }`}
           >
             {cat.label}
@@ -283,24 +283,24 @@ export function HeuristicsFaq() {
       {/* FAQ Accordion List */}
       <div className="divide-y divide-slate-200">
         {filteredFaqs.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400 font-mono">
+          <div className="p-8 text-center text-xs text-slate-500 font-mono">
             No matching questions found. Try searching &quot;false alarm&quot; or &quot;judge&quot;.
           </div>
         ) : (
           filteredFaqs.map((faq) => {
             const isOpen = openFaqId === faq.id;
             return (
-              <div key={faq.id} className="transition-colors">
+              <div key={faq.id} className={isOpen ? "bg-slate-50/40" : "bg-white"}>
                 <button
                   onClick={() => toggleFaq(faq.id)}
-                  className="w-full text-left p-4 sm:p-5 flex items-start justify-between gap-4 hover:bg-slate-50/80 cursor-pointer"
+                  className="w-full text-left p-4 sm:p-5 flex items-start justify-between gap-4 cursor-pointer active:bg-slate-100/70 transition-colors"
                 >
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                      <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-slate-100 text-slate-900 border border-slate-300 shadow-2xs">
                         {faq.badgeText}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span className="text-[10px] font-mono text-slate-500 font-medium">
                         {faq.sourceFile}
                       </span>
                     </div>
@@ -310,8 +310,10 @@ export function HeuristicsFaq() {
                   </div>
 
                   <div
-                    className={`p-1.5 rounded-md text-slate-400 transition-transform duration-200 shrink-0 ${
-                      isOpen ? "rotate-180 text-slate-900 bg-slate-100" : ""
+                    className={`p-1.5 rounded-lg shrink-0 border transition-all ${
+                      isOpen
+                        ? "rotate-180 text-slate-950 bg-slate-200/90 border-slate-300 shadow-2xs"
+                        : "text-slate-600 bg-slate-100 border-slate-200/90 shadow-2xs"
                     }`}
                   >
                     <ChevronDown className="w-4 h-4" />
@@ -319,7 +321,7 @@ export function HeuristicsFaq() {
                 </button>
 
                 {isOpen && (
-                  <div className="px-4 pb-5 sm:px-5 sm:pb-6 pt-1 border-t border-slate-100 bg-slate-50/50 animate-in fade-in duration-150">
+                  <div className="px-4 pb-5 sm:px-5 sm:pb-6 pt-2 border-t border-slate-200/80 bg-gradient-to-b from-slate-50/70 to-white animate-in fade-in duration-150">
                     {faq.answer}
                   </div>
                 )}
