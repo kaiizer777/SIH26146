@@ -9,10 +9,10 @@ import {
   FileCheck2,
   Zap,
   ShieldCheck,
-  ArrowRight,
   CheckCircle2,
-  Layers,
   ChevronRight,
+  Sparkles,
+  Search,
 } from "lucide-react";
 
 interface PipelineStage {
@@ -21,13 +21,11 @@ interface PipelineStage {
   name: string;
   shortName: string;
   tagline: string;
-  accent: string;
-  accentBg: string;
-  accentBorder: string;
-  accentText: string;
+  badge: string;
   icon: React.ComponentType<{ className?: string }>;
   metric: string;
   metricLabel: string;
+  analogy: string;
   input: string;
   process: string;
   output: string;
@@ -38,92 +36,82 @@ const STAGES: PipelineStage[] = [
   {
     id: "ingest",
     num: "01",
-    name: "Multi-Format Ingestion & GeoIP",
-    shortName: "Ingest & GeoIP",
-    tagline: "Absorbs bulk transaction dumps and maps geographic origins without internet access",
-    accent: "emerald",
-    accentBg: "bg-emerald-50",
-    accentBorder: "border-emerald-200",
-    accentText: "text-emerald-700",
+    name: "Step 1: Read Files & Find Country Origins (Offline)",
+    shortName: "1. Ingest & GeoIP",
+    tagline: "Takes thousands of messy transaction records and maps where they came from in the physical world without using the internet.",
+    badge: "100% Offline Processing",
     icon: UploadCloud,
-    metric: "11,938 rows/s",
-    metricLabel: "Verified Throughput",
-    input: "Raw CSV, JSON, XML dumps from surveillance feeds",
-    process: "Pydantic normalization + local MaxMind MMDB Country & ASN resolution",
-    output: "Sanitized transactions + quarantine log for malformed rows",
-    whyItMatters: "Eliminates data corruption and enriches physical origin without external DNS or cloud leaks.",
+    metric: "11,938 rows/sec",
+    metricLabel: "Ingest Speed",
+    analogy: "Like airport customs scanning passports at lightning speed and stamping country names without needing to call headquarters.",
+    input: "Raw multi-format files (CSV, JSON, or XML dumps up to 500 MB)",
+    process: "Auto-sniffs format from first 512 bytes, validates rows via Pydantic, resolves country/ASN via local MaxMind MMDB files, and bulk-inserts via PostgreSQL COPY in 5,000-row chunks.",
+    output: "Clean, verified transactions stamped with country and ASN provider details without any external cloud calls.",
+    whyItMatters: "Fixes corrupt records and finds the physical location of suspects without alerting anyone on the internet.",
   },
   {
     id: "storage",
     num: "02",
-    name: "Dual-Storage Ledger & Graph Projection",
-    shortName: "Dual Storage",
-    tagline: "Stores immutable transaction ledger in SQL while projecting entity networks into Neo4j",
-    accent: "blue",
-    accentBg: "bg-blue-50",
-    accentBorder: "border-blue-200",
-    accentText: "text-blue-700",
+    name: "Step 2: Save in Vault & Draw the Crime Web",
+    shortName: "2. Vault & Web",
+    tagline: "Locks every record into a tamper-proof database and connects wallets and IPs into an interactive crime spiderweb.",
+    badge: "Dual Storage Engine",
     icon: Database,
-    metric: "100% ACID",
-    metricLabel: "Ledger Durability",
-    input: "Normalized transaction batches from Celery workers",
-    process: "PostgreSQL 16 writes ledger with native SQL arrays; Neo4j projects :CO_SPEND edges",
-    output: "Unified multi-tier graph (:Wallet, :Transaction, :IP)",
-    whyItMatters: "Decouples massive transaction writes from graph analysis, preventing database crashes.",
+    metric: "100% Tamper-Proof",
+    metricLabel: "Durability",
+    analogy: "PostgreSQL is our bank vault holding permanent receipts; Neo4j is the detective's corkboard connecting suspects with red string.",
+    input: "Clean transactions from Step 1",
+    process: "Saves unalterable receipts in PostgreSQL 16 (ACID durability, B-tree indexes) while projecting 24,673 wallets and 100k transactions into Neo4j 5.26 with GDS.",
+    output: "Dual-storage sync: permanent SQL financial audit trails + interactive Neo4j crime graph with co-spend clusters.",
+    whyItMatters: "Separates heavy storage from fast graph searching so the app stays fast and never crashes during an investigation.",
   },
   {
     id: "heuristics",
     num: "03",
-    name: "Laundering Heuristics & Louvain Clustering",
-    shortName: "Laundering Heuristics",
-    tagline: "Detects peeling chains, CoinJoin mixers, and groups multi-input co-spending entities",
-    accent: "amber",
-    accentBg: "bg-amber-50",
-    accentBorder: "border-amber-200",
-    accentText: "text-amber-700",
+    name: "Step 3: Catch Money Laundering Tricks Automatically",
+    shortName: "3. Catch Tricks",
+    tagline: "Automated tripwires that spot money 'peeling' (splitting cash across 20 wallets) and mixers (tumblers).",
+    badge: "Instant Rule Radar",
     icon: GitFork,
-    metric: "97.2% / 100%",
-    metricLabel: "Peeling / CoinJoin Accuracy",
-    input: "Projected wallet relationships in Neo4j GDS",
-    process: "Cypher pattern traversal + Louvain modularity clustering + PageRank from ransomware seeds",
-    output: "Flagged peeling sequences, identified mixing pools, and entity clusters",
-    whyItMatters: "Unmasks obfuscated laundering structures that manual inspection would miss across hops.",
+    metric: "97.2% Catch Rate",
+    metricLabel: "Peeling Recall",
+    analogy: "Like automated toll cameras flagging a getaway car changing license plates and taking 10 consecutive side exits.",
+    input: "The connected web of transactions, wallets, and IP links",
+    process: "Traverses graph paths >=5 hops deep to spot linear peeling flows (<=5% change, >=80% forward) and equal-output CoinJoin pools (>=3 inputs/outputs within +-1%).",
+    output: "Red-flag alerts isolating peeling chains (97.2% recall), CoinJoin mixing pools (100% recall), and syndicate clusters.",
+    whyItMatters: "Instantly uncovers complex money-splitting tricks that would take a human analyst weeks to trace manually.",
   },
   {
     id: "ml-engine",
     num: "04",
-    name: "Dual Transformer & Deep Learning Engine",
-    shortName: "Neural ML Engine",
-    tagline: "Combines unsupervised anomaly detection with graph neural network classification on CPU",
-    accent: "purple",
-    accentBg: "bg-purple-50",
-    accentBorder: "border-purple-200",
-    accentText: "text-purple-700",
+    name: "Step 4: AI Detective Scan (Dual Transformers)",
+    shortName: "4. AI Detectives",
+    tagline: "Two specialized Transformer models team up: FT-Transformer audits 18 financial traits, Relational Graph Transformer traces syndicate links.",
+    badge: "Dual Transformers (CPU)",
     icon: Cpu,
-    metric: "25.4ms",
-    metricLabel: "CPU Inference Latency",
-    input: "18 transaction features + 8 topological graph node embeddings",
-    process: "18-Feature Autoencoder (MSE anomaly) + 3-Layer GraphSAGE GNN with Focal Loss",
-    output: "Composite risk score (0.00 - 1.00) with confidence interval",
-    whyItMatters: "Detects zero-day laundering tactics with zero dependence on GPU drivers or cloud servers.",
+    metric: "4.8 milliseconds",
+    metricLabel: "CPU Latency",
+    analogy: "Detective 1 (FT-Transformer) audits unusual payment traits; Detective 2 (Graph Transformer) traces multi-hop syndicate relationships via 4-head attention.",
+    input: "18 tabular features (velocity, amount, fee rate, output entropy) + multi-relation graph topology",
+    process: "Both Transformer models evaluate data simultaneously on pure laptop CPU (<250 KB total weights) without requiring any GPUs.",
+    output: "A calibrated Risk Score from 0.00 (Safe) to 1.00 (Severe Threat) with composite breakdown (0.35 anomaly + 0.45 risk + 0.15 rules + 0.05 mixing).",
+    whyItMatters: "Detects brand new, sneaky money-laundering patterns that simple rules might miss, in just 4.8ms per entity.",
   },
   {
     id: "evidence",
     num: "05",
-    name: "Explainable AI & Legal Dossier",
-    shortName: "Legal Dossier (§65B)",
-    tagline: "Translates neural risk scores into court-admissible forensic evidence and visual explanations",
-    accent: "sky",
-    accentBg: "bg-sky-50",
-    accentBorder: "border-sky-200",
-    accentText: "text-sky-700",
+    name: "Step 5: Generate Court-Ready Evidence Dossier",
+    shortName: "5. Court Dossier",
+    tagline: "Turns AI predictions and transaction history into a certified, plain-English legal report ready for court.",
+    badge: "Section 65B Certified",
     icon: FileCheck2,
-    metric: "Section 65B",
-    metricLabel: "Evidence Act Certified",
-    input: "Model predictions, cluster context, and raw cryptographic hashes",
-    process: "SHAP waterfall feature attribution + GNNExplainer subgraph masks + narrative compiler",
-    output: "Court-ready PDF dossier with timestamped cryptographic chain of custody",
-    whyItMatters: "Ensures technical intelligence stands up in judicial scrutiny with explainable proof.",
+    metric: "Section 65B / 63 BSA",
+    metricLabel: "Legal Standard",
+    analogy: "Translates high-tech AI analysis into a clean police dossier with digital signatures that a judge can easily understand and trust.",
+    input: "Composite risk scores, 18-feature SHAP attributions, relational attention weights, and raw telemetry",
+    process: "Computes deterministic SHA-256 cryptographic digest, logs ISO 8601 UTC & IST timestamps, and attaches statutory legal declaration.",
+    output: "Complete certified Section 65B (IEA) / Section 63 (BSA 2023) digital dossier (1-click JSON and printable PDF).",
+    whyItMatters: "Intelligence is useless if thrown out of court. This makes sure our evidence is 100% legally solid and admissible.",
   },
 ];
 
@@ -134,7 +122,7 @@ export function PipelineStepper() {
 
   return (
     <div className="space-y-5">
-      {/* 5-Stage Stepper Header / Progress Tabs */}
+      {/* 5-Stage Stepper Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {STAGES.map((stage, idx) => {
           const isSelected = activeStage === idx;
@@ -143,7 +131,7 @@ export function PipelineStepper() {
             <button
               key={stage.id}
               onClick={() => setActiveStage(idx)}
-              className={`text-left p-2.5 sm:p-3 rounded-lg border transition-all cursor-pointer relative ${
+              className={`text-left p-3 rounded-xl border transition-all cursor-pointer relative ${
                 isSelected
                   ? "bg-gradient-to-b from-blue-600 to-blue-700 border-t border-t-blue-400/80 border-x border-x-blue-700 border-b border-b-blue-900 text-white shadow-md shadow-blue-500/25 ring-1 ring-blue-600"
                   : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50/80"
@@ -182,7 +170,7 @@ export function PipelineStepper() {
 
               {/* Bottom active indicator */}
               {isSelected && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-white rounded-full shadow-xs" />
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-5 h-1 bg-white rounded-full shadow-xs" />
               )}
             </button>
           );
@@ -194,7 +182,7 @@ export function PipelineStepper() {
         {/* Stage Header & KPI Badge */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-[10px] bg-gradient-to-b from-blue-500 to-blue-600 border-t border-t-blue-300/70 border-b border-b-blue-800 text-white flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_5px_rgba(37,99,235,0.25)] flex-shrink-0">
+            <div className="w-11 h-11 rounded-[10px] bg-gradient-to-b from-blue-500 to-blue-600 border-t border-t-blue-300/70 border-b border-b-blue-800 text-white flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_5px_rgba(37,99,235,0.25)] flex-shrink-0">
               <Icon className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -204,7 +192,7 @@ export function PipelineStepper() {
                 </span>
                 <span className="text-slate-300">•</span>
                 <span className="text-[10.5px] font-mono font-semibold text-blue-600 uppercase">
-                  Autonomous Pipeline
+                  {current.badge}
                 </span>
               </div>
               <h3 className="text-lg font-bold text-slate-950 tracking-tight">
@@ -214,7 +202,7 @@ export function PipelineStepper() {
           </div>
 
           {/* Benchmark Metric Pill */}
-          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg flex-shrink-0 self-start sm:self-auto">
+          <div className="flex items-center space-x-2.5 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg flex-shrink-0 self-start sm:self-auto">
             <Zap className="w-4 h-4 text-blue-600" />
             <div>
               <div className="text-[9.5px] font-mono text-slate-500 uppercase leading-none">
@@ -228,11 +216,20 @@ export function PipelineStepper() {
         </div>
 
         {/* High-Level Punchline */}
-        <div className="bg-slate-50/80 rounded-lg p-3.5 border border-slate-200/70 flex items-start space-x-2.5">
+        <div className="bg-slate-50/90 rounded-lg p-3.5 border border-slate-200/80 flex items-start space-x-2.5">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
           <p className="text-xs sm:text-sm font-medium text-slate-800 leading-relaxed">
             {current.tagline}
           </p>
+        </div>
+
+        {/* Real-World Analogy Pill */}
+        <div className="bg-amber-50/70 border border-amber-200/80 rounded-lg p-3 flex items-start space-x-2.5">
+          <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-900 leading-relaxed">
+            <strong className="font-semibold text-amber-950">Simple Analogy: </strong>
+            {current.analogy}
+          </div>
         </div>
 
         {/* 3-Part Progression Flow (Input -> Engine -> Output) */}
@@ -273,13 +270,13 @@ export function PipelineStepper() {
           <div className="flex items-center space-x-2 text-slate-600">
             <ShieldCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
             <span>
-              <strong>Operational Benefit:</strong> {current.whyItMatters}
+              <strong className="text-slate-900">Why It Matters:</strong> {current.whyItMatters}
             </span>
           </div>
 
           <button
             onClick={() => setActiveStage((activeStage + 1) % STAGES.length)}
-            className="btn-tactical-secondary text-slate-800 text-xs font-semibold px-3 py-1.5 rounded-md inline-flex items-center space-x-1 self-end sm:self-auto cursor-pointer"
+            className="btn-tactical-secondary text-slate-800 text-xs font-semibold px-3.5 py-1.5 rounded-md inline-flex items-center space-x-1.5 self-end sm:self-auto cursor-pointer"
           >
             <span>Next Stage</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />

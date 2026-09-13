@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   RotateCcw,
   ShieldAlert,
+  ShieldCheck,
   Terminal,
   Cpu,
   ArrowRight,
@@ -15,6 +16,7 @@ import {
   Sliders,
   DollarSign,
   Info,
+  Waves,
 } from "lucide-react";
 
 interface ParticipantInput {
@@ -75,7 +77,7 @@ const PRESETS: Record<string, PresetConfig> = {
 
 export function CoinjoinVisualizer() {
   const [selectedPresetKey, setSelectedPresetKey] = useState<string>("wasabi");
-  const [activeTab, setActiveTab] = useState<"flow" | "algorithm" | "fp-guard">("flow");
+  const [activeTab, setActiveTab] = useState<"flow" | "analogy" | "algorithm" | "fp-guard">("flow");
   const [relativeTolPercent, setRelativeTolPercent] = useState<number>(1.0); // default 1.0% (0.01)
   const [injectedNoise, setInjectedNoise] = useState<number>(0.0); // allows testing tolerance failure
 
@@ -100,7 +102,7 @@ export function CoinjoinVisualizer() {
       const noise = i === 1 ? injectedNoise : 0;
       const amt = parseFloat((denom + noise).toFixed(5));
       outputs.push({
-        address: `bc1q_mix_${i + 1}_${(9812 + i * 41).toString(16)}...`,
+        address: `bc1q_clean_${i + 1}_${(9812 + i * 41).toString(16)}...`,
         amount: amt,
         isEqualGroup: true,
         type: "equal",
@@ -135,21 +137,19 @@ export function CoinjoinVisualizer() {
     const sortedAmounts = outputs.map((o) => o.amount).sort((a, b) => a - b);
 
     let maxEqualGroup = 1;
-    let matchingGroupIndices: number[] = [];
 
     for (let i = 0; i < sortedAmounts.length; i++) {
-      const currentGroup: number[] = [i];
+      let currentGroupCount = 1;
       const a_i = sortedAmounts[i];
       for (let j = i + 1; j < sortedAmounts.length; j++) {
         const a_j = sortedAmounts[j];
         const denomMax = Math.max(a_i, a_j);
         if (denomMax > 0 && Math.abs(a_j - a_i) / denomMax <= tolDecimal + eps) {
-          currentGroup.push(j);
+          currentGroupCount += 1;
         }
       }
-      if (currentGroup.length > maxEqualGroup) {
-        maxEqualGroup = currentGroup.length;
-        matchingGroupIndices = currentGroup;
+      if (currentGroupCount > maxEqualGroup) {
+        maxEqualGroup = currentGroupCount;
       }
     }
 
@@ -172,8 +172,8 @@ export function CoinjoinVisualizer() {
 
   return (
     <div className="card-tactical rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
-      {/* Tactical Header */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Component Header with Relatable Analogy */}
+      <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-md bg-slate-900 text-white">
@@ -182,44 +182,45 @@ export function CoinjoinVisualizer() {
             <h3 className="text-base font-bold text-slate-900 tracking-tight">
               CoinJoin Equal-Output Matrix Visualizer
             </h3>
-            <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              HEURISTIC F3 • DUAL-STAGE
+            <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              THE &quot;DIGITAL LAUNDROMAT&quot; ANALOGY
             </span>
           </div>
-          <p className="text-xs text-slate-500">
-            Multi-party anonymity set decomposition: isolate coordinator fees, change leakage, and identical denomination clusters.
+          <p className="text-xs text-slate-600">
+            Deconstruct how multi-party tumblers pool coins and emit identical denomination outputs to break blockchain tracing.
           </p>
         </div>
 
         {/* Live Heuristic Status Badge */}
         <div>
           {simulation.isCoinJoinDetected ? (
-            <div className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/90 text-emerald-800 flex items-center gap-2 shadow-xs">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
+            <div className="px-3.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2 shadow-xs">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
               </span>
-              <div className="font-mono text-[11px] font-bold">
+              <div className="font-mono text-xs font-bold flex items-center gap-1">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
                 COINJOIN DETECTED (is_mixing = true)
               </div>
             </div>
           ) : (
-            <div className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-slate-400" />
-              <div className="font-mono text-[11px] font-semibold">
-                NORMAL MULTI-PAYMENT (is_mixing = false)
+            <div className="px-3.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <div className="font-mono text-xs font-semibold">
+                CLEARED: ORDINARY MULTI-PAYMENT
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Preset Selector & Controls */}
+      {/* Protocol Fingerprint Selector Bar */}
       <div className="p-4 sm:p-5 border-b border-slate-200 bg-white space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-semibold text-slate-500 mr-1 font-mono uppercase">
-              Protocol Fingerprint:
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-700 font-mono uppercase mr-1">
+              Select Mixer Protocol:
             </span>
             {Object.entries(PRESETS).map(([key, p]) => (
               <button
@@ -230,16 +231,16 @@ export function CoinjoinVisualizer() {
                 }}
                 className={`px-3 py-1.5 rounded-md font-mono text-xs transition-all cursor-pointer ${
                   selectedPresetKey === key
-                    ? "bg-slate-900 text-white font-bold shadow-xs"
+                    ? "bg-slate-900 text-white font-bold shadow-xs ring-2 ring-slate-900/20"
                     : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
                 }`}
               >
-                {p.name.split(" ")[0]} ({p.denomination} BTC)
+                {p.name.split(" ")[0]} ({p.denomination} BTC Pool)
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-xs font-mono">
+          <div className="flex items-center gap-1 bg-slate-200/80 p-0.5 rounded-lg text-xs font-mono">
             <button
               onClick={() => setActiveTab("flow")}
               className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
@@ -248,7 +249,17 @@ export function CoinjoinVisualizer() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Matrix Flow
+              Laundromat Matrix
+            </button>
+            <button
+              onClick={() => setActiveTab("analogy")}
+              className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                activeTab === "analogy"
+                  ? "tab-tactical-active text-slate-900 font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Analogy Breakdown
             </button>
             <button
               onClick={() => setActiveTab("algorithm")}
@@ -258,7 +269,7 @@ export function CoinjoinVisualizer() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Stage 1 &amp; 2 Code
+              Detection Logic
             </button>
             <button
               onClick={() => setActiveTab("fp-guard")}
@@ -268,7 +279,7 @@ export function CoinjoinVisualizer() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              IEEE 754 &epsilon; Guard
+              IEEE Epsilon Guard
             </button>
           </div>
         </div>
@@ -278,8 +289,8 @@ export function CoinjoinVisualizer() {
           <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold text-slate-900">{currentPreset.name}:</span>{" "}
-            {currentPreset.description} Target Pool Denomination:{" "}
-            <span className="font-mono font-bold text-slate-900">
+            {currentPreset.description} Each participant receives exactly{" "}
+            <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
               {currentPreset.denomination} BTC
             </span>
             .
@@ -292,10 +303,10 @@ export function CoinjoinVisualizer() {
             <div className="flex items-center justify-between text-xs">
               <label htmlFor="relative-tolerance" className="font-semibold text-slate-700 flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-slate-400" />
-                Relative Tolerance Window (&plusmn;%)
+                Matching Tolerance Window (&plusmn;%)
               </label>
               <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
-                &plusmn;{relativeTolPercent.toFixed(2)}% (Formula: |a-b|/max(a,b) &le; tol)
+                &plusmn;{relativeTolPercent.toFixed(2)}%
               </span>
             </div>
             <input
@@ -309,13 +320,16 @@ export function CoinjoinVisualizer() {
               onChange={(e) => setRelativeTolPercent(parseFloat(e.target.value))}
               className="w-full accent-slate-900 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
             />
+            <div className="text-[10px] text-slate-500">
+              Allows catching mixers even if coordinator fees slightly alter output pennies.
+            </div>
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <label htmlFor="noise-delta" className="font-semibold text-slate-700 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-slate-400" />
-                Simulate IEEE Jitter / Adversarial Output Delta
+                Simulate Adversarial Jitter (&Delta;)
               </label>
               <span
                 className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
@@ -348,6 +362,9 @@ export function CoinjoinVisualizer() {
                 </button>
               )}
             </div>
+            <div className="text-[10px] text-slate-500">
+              Test what happens when criminals intentionally jitter output amounts to evade detection.
+            </div>
           </div>
         </div>
       </div>
@@ -358,10 +375,12 @@ export function CoinjoinVisualizer() {
           <div className="space-y-6">
             {/* Visual Multi-Party Transaction Matrix */}
             <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
-              {/* Inputs Column */}
+              {/* Inputs Column: Dirty Clothes */}
               <div className="md:col-span-3 space-y-2">
                 <div className="flex items-center justify-between text-[11px] font-mono font-bold pb-1 border-b border-slate-200 text-slate-600">
-                  <span>INPUTS ({simulation.inputs.length})</span>
+                  <span className="flex items-center gap-1">
+                    🧺 INPUTS ({simulation.inputs.length})
+                  </span>
                   <span>TOTAL: {simulation.totalIn} BTC</span>
                 </div>
                 {simulation.inputs.map((inp, idx) => (
@@ -370,7 +389,7 @@ export function CoinjoinVisualizer() {
                     className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono space-y-0.5 hover:border-slate-300 transition-colors"
                   >
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-slate-800">User #{idx + 1}</span>
+                      <span className="font-bold text-slate-800">Depositor #{idx + 1}</span>
                       <span className="font-extrabold text-slate-900">
                         {inp.amount.toFixed(4)} BTC
                       </span>
@@ -386,19 +405,19 @@ export function CoinjoinVisualizer() {
                 <div className="w-px h-6 bg-slate-200 md:hidden" />
               </div>
 
-              {/* Central Mixer Node */}
+              {/* Central Mixer Node: The Washing Machine */}
               <div className="md:col-span-3 p-4 rounded-xl bg-slate-900 text-white shadow-xs space-y-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
-                  <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                  CoinJoin Round Tx
+                <div className="flex items-center justify-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
+                  <Waves className="w-4 h-4 animate-spin" />
+                  The Washing Machine (Mixer Tx)
                 </div>
                 <div className="font-mono text-xs font-bold text-slate-100 truncate">
                   tx_coinjoin_{selectedPresetKey}_92a7...
                 </div>
-                <div className="space-y-1 pt-2 border-t border-slate-800 text-[11px] font-mono">
+                <div className="space-y-1.5 pt-2 border-t border-slate-800 text-[11px] font-mono">
                   <div className="flex justify-between text-slate-300">
-                    <span className="text-slate-400">Total Inflow:</span>
-                    <span>{simulation.totalIn} BTC</span>
+                    <span className="text-slate-400">Total Pooled:</span>
+                    <span className="font-bold">{simulation.totalIn} BTC</span>
                   </div>
                   <div className="flex justify-between text-slate-300">
                     <span className="text-slate-400">Target Denom:</span>
@@ -412,8 +431,8 @@ export function CoinjoinVisualizer() {
                   </div>
                 </div>
                 <div className="pt-2 border-t border-slate-800">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                    Equal Denom Group Size: {simulation.maxEqualGroup}
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                    Identical Outputs Group: {simulation.maxEqualGroup}
                   </span>
                 </div>
               </div>
@@ -424,10 +443,12 @@ export function CoinjoinVisualizer() {
                 <div className="w-px h-6 bg-slate-200 md:hidden" />
               </div>
 
-              {/* Outputs Column */}
+              {/* Outputs Column: Clean Shirts */}
               <div className="md:col-span-3 space-y-2">
                 <div className="flex items-center justify-between text-[11px] font-mono font-bold pb-1 border-b border-slate-200 text-slate-600">
-                  <span>OUTPUTS ({simulation.outputs.length})</span>
+                  <span className="flex items-center gap-1">
+                    👕 OUTPUTS ({simulation.outputs.length})
+                  </span>
                   <span>TOTAL: {simulation.totalOut} BTC</span>
                 </div>
                 <div className="space-y-1.5 max-h-[360px] overflow-y-auto pr-1">
@@ -436,18 +457,18 @@ export function CoinjoinVisualizer() {
                       key={idx}
                       className={`p-2.5 rounded-lg border text-xs font-mono space-y-0.5 transition-colors ${
                         out.type === "equal"
-                          ? "bg-emerald-50/70 border-emerald-300/90"
+                          ? "bg-emerald-50/80 border-emerald-300"
                           : "bg-slate-50 border-slate-200"
                       }`}
                     >
                       <div className="flex justify-between items-center">
                         <span
                           className={`text-[10px] font-bold uppercase ${
-                            out.type === "equal" ? "text-emerald-900" : "text-slate-500"
+                            out.type === "equal" ? "text-emerald-900 font-extrabold" : "text-slate-500"
                           }`}
                         >
                           {out.type === "equal"
-                            ? `Equal Pool #${idx + 1}`
+                            ? `✨ Clean Pool Output #${idx + 1}`
                             : `Change Output #${idx + 1}`}
                         </span>
                         <span
@@ -465,37 +486,37 @@ export function CoinjoinVisualizer() {
               </div>
             </div>
 
-            {/* Heuristic Gate Matrix Checklist */}
+            {/* Heuristic Gate Checklist */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 1: Inputs (&ge; 3)</div>
+                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 1: Multi-Party Inputs</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  {simulation.inputs.length} Distinct Wallets
+                  {simulation.inputs.length} Inputs (&ge; 3)
                 </div>
-                <p className="text-[10px] text-slate-500">Multi-party co-spend signature.</p>
+                <p className="text-[10px] text-slate-500">Filters 1-to-1 bilateral transfers.</p>
               </div>
 
               <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 2: Outputs (&ge; 3)</div>
+                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 2: Multi-Party Outputs</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  {simulation.outputs.length} Output Wallets
+                  {simulation.outputs.length} Outputs (&ge; 3)
                 </div>
-                <p className="text-[10px] text-slate-500">Separates change from pool.</p>
+                <p className="text-[10px] text-slate-500">Requires multi-participant payout.</p>
               </div>
 
               <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 3: Total BTC (&ge; 0.05)</div>
+                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 3: Meaningful Value</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  {simulation.totalIn} BTC Inflow
+                  {simulation.totalIn} BTC (&ge; 0.05)
                 </div>
-                <p className="text-[10px] text-slate-500">Disregards dust micro-transactions.</p>
+                <p className="text-[10px] text-slate-500">Eliminates dusting attacks and fee spam.</p>
               </div>
 
               <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 4: Equal Output Set</div>
+                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Gate 4: Identical Outputs</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold">
                   {simulation.maxEqualGroup >= 2 ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -503,11 +524,43 @@ export function CoinjoinVisualizer() {
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
                   )}
                   <span className={simulation.maxEqualGroup >= 2 ? "text-slate-900" : "text-rose-700"}>
-                    {simulation.maxEqualGroup} Matching Outputs
+                    {simulation.maxEqualGroup} Identical Denominations
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500">&plusmn;{relativeTolPercent}% tolerance window.</p>
+                <p className="text-[10px] text-slate-500">The smoking gun signature of mixers.</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "analogy" && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-950 space-y-3">
+              <div className="font-bold flex items-center gap-2 font-mono text-sm text-emerald-900">
+                <Info className="w-4 h-4 text-emerald-600" />
+                The Digital Laundromat Analogy: Explained Simply
+              </div>
+              <p className="leading-relaxed">
+                Imagine 50 people walk into a laundromat, each holding a dirty shirt with their name stitched inside. 
+                If they all wash their shirts in separate machines, any detective waiting outside can see exactly who washed which shirt.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                <div className="p-3 bg-white rounded-lg border border-emerald-200 space-y-1">
+                  <div className="font-bold text-slate-900">1. All Clothes In One Tub</div>
+                  <p className="text-slate-600">All 50 people cut out their name tags and throw their dirty shirts into <strong>one massive industrial washing machine</strong> (the CoinJoin transaction).</p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border border-emerald-200 space-y-1">
+                  <div className="font-bold text-slate-900">2. Identical White Shirts</div>
+                  <p className="text-slate-600">The machine spins and washes them. When it finishes, 50 <strong>identical, unmarked white shirts (0.1 BTC each)</strong> are handed back to the participants.</p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border border-emerald-200 space-y-1">
+                  <div className="font-bold text-slate-900">3. Mathematical De-Linking</div>
+                  <p className="text-slate-600">A police officer standing outside sees 50 people walk out with clean shirts, but <strong>cannot mathematically prove</strong> which shirt belonged to the ransomware hacker.</p>
+                </div>
+              </div>
+              <p className="text-slate-700 font-medium">
+                <strong>How NTRO Catches It:</strong> While the mixer hides *which* individual got *which* specific shirt, it leaves an unmistakable fingerprint on the public ledger: <strong>multiple inputs emitting identical amounts simultaneously</strong>. Our system flags the entire transaction as <code className="font-mono text-emerald-900 bg-emerald-100 px-1 py-0.5 rounded font-bold">is_mixing = true</code> so criminals cannot hide behind the crowd.
+              </p>
             </div>
           </div>
         )}
@@ -522,15 +575,15 @@ export function CoinjoinVisualizer() {
                   <span className="text-[10px] text-slate-500 font-mono">detect_coinjoin.py#L63</span>
                 </div>
                 <div className="bg-slate-950 text-slate-100 p-3.5 rounded-xl font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800">
-                  <div className="text-slate-500">// Cypher candidates passing count &amp; BTC threshold</div>
+                  <div className="text-slate-500">// Filter candidate transactions with &gt;=3 inputs &amp; &gt;=3 outputs</div>
                   <div className="text-emerald-400">MATCH (in_w:Wallet)-[:SENDS]-&gt;(tx:Transaction)</div>
                   <div className="text-sky-300">WHERE tx.total_in &gt;= $min_btc</div>
                   <div className="text-sky-300">WITH tx, count(DISTINCT in_w) AS n_in</div>
-                  <div className="text-sky-300">WHERE n_in &gt;= $min_inputs</div>
+                  <div className="text-sky-300">WHERE n_in &gt;= 3</div>
                   <div className="text-amber-300">MATCH (tx)-[r:RECEIVES]-&gt;(out_w:Wallet)</div>
                   <div className="text-amber-300">WITH tx, n_in, count(DISTINCT out_w) AS n_out,</div>
                   <div className="text-amber-300 pl-4">collect(r.amount) AS out_amounts</div>
-                  <div className="text-rose-300">WHERE n_out &gt;= $min_outputs</div>
+                  <div className="text-rose-300">WHERE n_out &gt;= 3</div>
                   <div className="text-emerald-400">RETURN tx.txid, tx.total_in, out_amounts;</div>
                 </div>
               </div>
@@ -559,8 +612,7 @@ export function CoinjoinVisualizer() {
             </div>
 
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
-              <strong>Architectural Separation:</strong> We avoid evaluating the pairwise floating-point arithmetic inside Cypher string functions. 
-              Cypher streams the candidates in 500-node chunks, while Python evaluates the $O(n^2)$ equal-output matrix in sub-millisecond vectorized loops.
+              <strong>Why Two Stages?</strong> Stage 1 uses fast Neo4j indexed graph queries to filter out 99% of normal transactions. Stage 2 uses sub-millisecond Python math to check for equal denominations with floating-point safety.
             </div>
           </div>
         )}
@@ -570,27 +622,20 @@ export function CoinjoinVisualizer() {
             <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-200 space-y-3 text-xs text-amber-900 leading-relaxed">
               <div className="font-bold flex items-center gap-2 text-amber-950 font-mono text-sm">
                 <ShieldAlert className="w-4 h-4 text-amber-600" />
-                The IEEE-754 Epsilon Boundary Hazard
+                The IEEE-754 Epsilon Boundary Hazard (Plain English)
               </div>
               <p>
-                In standard 64-bit floating-point IEEE-754 arithmetic, binary fractional representations cannot represent every decimal fraction exactly. 
-                For instance:
+                Computers store decimal numbers in binary (base-2), which means numbers like <strong>0.1</strong> cannot always be stored with 100% mathematical perfection.
               </p>
               <div className="bg-slate-900 text-slate-200 p-3 rounded font-mono text-[11px] leading-relaxed">
                 <div>// Without epsilon guard:</div>
                 <div>a = 0.10000000000000000</div>
                 <div>b = 0.09900000000000000</div>
                 <div>abs(a - b) / max(a, b) = 0.010000000000000009  // &gt; 0.010000000000000000!</div>
-                <div className="text-rose-400">// Fails strict &lt;= 0.01 check due to floating-point truncation!</div>
+                <div className="text-rose-400">// Fails strict check due to an invisible microscopic fraction!</div>
               </div>
               <p>
-                To eliminate false negative dropouts on boundary-equal denominations, NTRO implements an explicit safety guard:
-              </p>
-              <div className="bg-slate-900 text-emerald-300 p-3 rounded font-mono text-[11px]">
-                |a_j - a_i| / max(a_j, a_i) &le; tolerance + 1e-9
-              </div>
-              <p>
-                This ensures that legitimate mixing rounds with exact 1.00% coordinator fee deductions are never misclassified due to host hardware FPU rounding quirks.
+                If an algorithm naively compares <code className="font-mono text-amber-950 bg-amber-100 px-1 py-0.5 rounded">delta &lt;= 0.01</code>, a real mixer transaction might slip right through the cracks because of microscopic CPU rounding jitter. NTRO adds an explicit <code className="font-mono text-amber-950 bg-amber-100 px-1 py-0.5 rounded">+ 1e-9</code> epsilon guard so no criminal escapes.
               </p>
             </div>
           </div>

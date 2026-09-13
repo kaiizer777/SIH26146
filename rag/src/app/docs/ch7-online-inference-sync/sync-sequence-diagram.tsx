@@ -2,229 +2,203 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Server,
-  Database,
-  Cpu,
-  RefreshCw,
   Play,
   Pause,
   RotateCcw,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  Lock,
-  Terminal,
-  Layers,
-  AlertTriangle,
-  FileSpreadsheet,
+  Clock,
   Zap,
-  Activity,
+  ShieldAlert,
   ShieldCheck,
+  Eye,
+  Activity,
+  Layers,
+  Sparkles,
+  Search,
+  Radio,
+  Share2,
+  Lock,
 } from "lucide-react";
 
 interface StepDetail {
   step: number;
   title: string;
-  source: string;
+  subtitle: string;
+  badge: string;
+  badgeColor: string;
+  actor: string;
   target: string;
-  action: string;
-  protocol: string;
-  description: string;
-  frontendState: string;
-  redisState: string;
-  celeryState: string;
-  fastapiState: string;
-  terminalLogs: string[];
+  latency: string;
+  analogy: string;
+  whatHappens: string;
+  detectiveStatus: string;
+  technicalDetails: {
+    event: string;
+    protocol: string;
+    dataPoint: string;
+  };
 }
 
-const STEPS: StepDetail[] = [
+const WATCHTOWER_STEPS: StepDetail[] = [
   {
     step: 1,
-    title: "File Ingest & Asynchronous Enqueue",
-    source: "Next.js Frontend",
-    target: "FastAPI Engine",
-    action: "POST /ingest (multipart CSV/JSON)",
-    protocol: "HTTP/1.1 MultiPart -> Redis Broker",
-    description:
-      "Operator uploads a transaction batch via IngestModal. FastAPI streams chunks, records the SHA-256 hash in Redis with a 24h TTL idempotency guard, and enqueues task 'process_ingest_file.delay()' to the Redis Celery broker.",
-    frontendState: "State: UPLOADING -> task_id received, starts polling",
-    redisState: "file_hash:7a9c... = 'task-8f4e-2b9c' | celery_queue: [task-8f4e-2b9c]",
-    celeryState: "IDLE (worker pool listening on Redis 'celery' key)",
-    fastapiState: "HTTP 202 Accepted returned. xai_store untouched (17,020 indexed records)",
-    terminalLogs: [
-      "[FASTAPI 20:11:02] POST /ingest HTTP/1.1 202 Accepted | size=2.4MB hash=7a9c20be...",
-      "[REDIS   20:11:02] SET file_hash:7a9c20be... '8f4e2b9c-5a12-4f89-b9d2-7c3a1e0f4567' EX 86400",
-      "[CELERY  20:11:02] Received task: app.tasks.ingest.process_ingest_file[8f4e2b9c-5a12-4f89-b9d2-7c3a1e0f4567]",
-    ],
+    title: "The Transaction Lands in the Waiting Room",
+    subtitle: "Criminal broadcasts transaction to the Bitcoin P2P network",
+    badge: "STAGE 1: BROADCAST",
+    badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
+    actor: "Criminal / Sender Wallet",
+    target: "Bitcoin Mempool (Waiting Room)",
+    latency: "T + 0.0s",
+    analogy:
+      "Think of a bank robber stepping into a bank lobby before reaching the teller window. The robbery is initiated, but not yet locked in the vault.",
+    whatHappens:
+      "A 2.50 BTC transfer is broadcast into the decentralized network. It enters the 'Mempool' — the public queue where transactions wait to be picked up by Bitcoin miners. It is unconfirmed and completely vulnerable to interception.",
+    detectiveStatus: "Waiting Room populated. Transaction is public but invisible to traditional block explorers.",
+    technicalDetails: {
+      event: "inv / tx broadcast over Bitcoin P2P gossip protocol",
+      protocol: "Bitcoin P2P (Port 8333) -> ZeroMQ rawtx stream",
+      dataPoint: "TXID: 8f4e2b9c... • 1 Input (2.50 BTC) -> 2 Outputs (0.15 BTC + 2.35 BTC change)",
+    },
   },
   {
     step: 2,
-    title: "Isolated OS Process Bulk Ingestion",
-    source: "Celery Ingest Worker",
-    target: "PostgreSQL & Redis",
-    action: "PostgreSQL COPY & Redis Task SUCCESS",
-    protocol: "OS Process Boundary • psycopg2 COPY",
-    description:
-      "Celery worker runs in an isolated OS process (pool=solo on Windows / multiprocessing on Linux). It streams rows into PostgreSQL via bulk COPY. Once inserted, it writes task state SUCCESS into Redis with metadata (txids, total_inserted=1000). Crucially, Celery cannot modify FastAPI's in-memory xai_store.",
-    frontendState: "POLLING: GET /ingest/status/8f4e2b9c... (interval: 1000ms)",
-    redisState: "celery-task-meta-8f4e2b9c: {status: 'SUCCESS', total_inserted: 1000, txids: ['tx-01', ...]}",
-    celeryState: "PROCESSING -> Bulk COPY completed in 563ms. Status SUCCESS committed.",
-    fastapiState: "NO ACCESS: FastAPI xai_store remains unaware of the 1,000 new rows.",
-    terminalLogs: [
-      "[CELERY  20:11:03] Task process_ingest_file: streaming 1,000 rows into PostgreSQL...",
-      "[POSTGRES 20:11:03] COPY 1000 transactions (0 duplicates, 1000 committed)",
-      "[CELERY  20:11:03] Task succeeded in 0.563s: total_inserted=1000, total_wallets=42",
-      "[REDIS   20:11:03] Task 8f4e2b9c state -> SUCCESS stored in backend key",
-    ],
+    title: "The Watchtower Sniffs the Packet",
+    subtitle: "NTRO listeners intercept the transaction before it settles",
+    badge: "STAGE 2: SNIFF & CAPTURE",
+    badgeColor: "bg-sky-50 text-sky-800 border-sky-200",
+    actor: "NTRO Watchtower Daemon",
+    target: "FastAPI Ingestion Pipeline",
+    latency: "T + 0.03s (30ms)",
+    analogy:
+      "An automated airport security scanner reading the ticket the exact second the traveler walks into the queue — no waiting in line required.",
+    whatHappens:
+      "Our lightweight Watchtower listener captures the raw transaction packet directly from memory. It extracts the sender wallet, receiver addresses, fee rate, and UTXO lineage without waiting for block miners.",
+    detectiveStatus: "Target packet acquired! ZeroMQ listener forwards raw payload into AI pipeline.",
+    technicalDetails: {
+      event: "ZeroMQ rawtx message deserialized in 1.2ms",
+      protocol: "Async WebSocket / IPC pipe",
+      dataPoint: "Wallet sender: bc1q98xk... • Detected peeling split structure",
+    },
   },
   {
     step: 3,
-    title: "Polling Completion Handshake",
-    source: "Next.js Frontend",
-    target: "Redis (via FastAPI)",
-    action: "GET /ingest/status/{task_id} -> status: 'SUCCESS'",
-    protocol: "AsyncResult Query",
-    description:
-      "Frontend's polling loop queries GET /ingest/status/8f4e2b9c. FastAPI checks Redis AsyncResult. State evaluates to SUCCESS. The frontend intercepts the completion event and immediately coordinates the live sync trigger before unblocking the operator UI.",
-    frontendState: "POLL DETECTED SUCCESS! Prepares immediate POST /ingest/sync trigger.",
-    redisState: "Task state remains SUCCESS. sync_done key not yet set.",
-    celeryState: "IDLE (Task execution finished; waiting for next broker job)",
-    fastapiState: "Returned {status: 'SUCCESS', result: {total_inserted: 1000}}",
-    terminalLogs: [
-      "[NEXTJS  20:11:04] Polling loop: received status === 'SUCCESS' for task 8f4e2b9c",
-      "[FASTAPI 20:11:04] GET /ingest/status/8f4e2b9c-5a12-4f89-b9d2-7c3a1e0f4567 HTTP/1.1 200 OK",
-      "[NEXTJS  20:11:04] Dispatching auto-sync handshake: POST /ingest/sync/8f4e2b9c...",
-    ],
+    title: "Under-5ms AI Risk Scoring",
+    subtitle: "Neural network & peel heuristics evaluate illicit threat in real-time",
+    badge: "STAGE 3: INSTANT AI VERDICT",
+    badgeColor: "bg-rose-50 text-rose-800 border-rose-200",
+    actor: "Inline Inference Scorer",
+    target: "Threat Scoring Matrix",
+    latency: "T + 0.035s (<5ms)",
+    analogy:
+      "Facial recognition flagging a wanted fugitive in 4 milliseconds flat while they are still reaching for their wallet.",
+    whatHappens:
+      "Our FT-Transformer and peeling-chain heuristic rules inspect the transaction. In under 5 milliseconds, the model spots a classic 5-hop peeling chain signature and matches the destination to known Ransomware extortion wallets.",
+    detectiveStatus: "CRITICAL ALERT (Risk: 0.88)! Flagged as active Ransomware funnel.",
+    technicalDetails: {
+      event: "FT-Transformer CPU inference (3.8ms) + Heuristic rule check (0.4ms)",
+      protocol: "PyTorch CPU inline model + Redis risk cache",
+      dataPoint: "Score: 0.88 • High Anomaly MSE (0.048) • Rule: PEELING_CHAIN_CANDIDATE",
+    },
   },
   {
     step: 4,
-    title: "Direct Sync Trigger & Idempotency Lock",
-    source: "Next.js Frontend",
-    target: "FastAPI Ingest Router",
-    action: "POST /ingest/sync/8f4e2b9c-5a12-4f89-b9d2-7c3a1e0f4567",
-    protocol: "HTTP/1.1 Direct FastAPI IPC Trigger",
-    description:
-      "Frontend calls POST /ingest/sync/{task_id} directly on FastAPI. FastAPI verifies the Celery task state in Redis, enforces an atomic Redis SETNX lock ('sync_done:{task_id}' with TTL=3600), and queries PostgreSQL for newly inserted rows by task txids.",
-    frontendState: "Awaiting sync response (modal shows 'Synchronizing XAI memory index...')",
-    redisState: "sync_done:8f4e2b9c = '1' EX 3600 (Atomic SETNX acquired; prevents double-sync)",
-    celeryState: "IDLE (Uninvolved in sync; decoupling isolates worker from web server)",
-    fastapiState: "SELECT * FROM transactions WHERE txid = ANY(:txids) -> 1,000 rows retrieved",
-    terminalLogs: [
-      "[FASTAPI 20:11:04] POST /ingest/sync/8f4e2b9c-5a12-4f89-b9d2-7c3a1e0f4567 received",
-      "[REDIS   20:11:04] SET sync_done:8f4e2b9c '1' NX EX 3600 -> OK (Lock reserved)",
-      "[POSTGRES 20:11:04] Executing SELECT * FROM transactions WHERE txid = ANY(:txids)",
-      "[FASTAPI 20:11:04] Fetched 1,000 transactions across 42 unique wallet entities",
-    ],
+    title: "Detective Pinboard Updates Live",
+    subtitle: "Neo4j graph and analyst dashboard link new nodes smoothly",
+    badge: "STAGE 4: LIVE PINBOARD SYNC",
+    badgeColor: "bg-indigo-50 text-indigo-800 border-indigo-200",
+    actor: "FastAPI Graph Sync Handler",
+    target: "Neo4j Detective Pinboard & Frontend",
+    latency: "T + 0.08s (80ms)",
+    analogy:
+      "Like a detective's corkboard where a new polaroid photo and red string pin themselves to the board automatically in real time without dropping any existing pins.",
+    whatHappens:
+      "The suspicious wallet and its unconfirmed flow are drawn onto the analyst's investigation board with an amber 'Provisional' badge. Enforcement teams receive an alert before the money can move another step.",
+    detectiveStatus: "Live alert active on Command Center! Warrant preparation can begin immediately.",
+    technicalDetails: {
+      event: "Non-blocking Neo4j Cypher merge + SWR cache revalidation",
+      protocol: "WebSocket / SSE event push to Command Center UI",
+      dataPoint: "Node created: bc1q98xk... • Tag: PROVISIONAL_UNCONFIRMED",
+    },
   },
   {
     step: 5,
-    title: "Inline FT-Transformer Scoring & RLock Upsert",
-    source: "FastAPI Process",
-    target: "xai_store In-Memory Dicts",
-    action: "inline_scorer.score_batch() -> threading.RLock Upsert",
-    protocol: "In-Process PyTorch CPU + threading.RLock",
-    description:
-      "FastAPI's internal worker thread invokes inline_scorer.score_batch(). 18 continuous tabular features are standardized and passed through the FT-Transformer (<15ms CPU). Heuristic rules check for peeling chains and Ransomwhere seed matches. With _store_lock: xai_store atomically upserts composite and evidence records.",
-    frontendState: "Awaiting sync response...",
-    redisState: "sync_done:8f4e2b9c active. Redis holds transaction metadata.",
-    celeryState: "IDLE",
-    fastapiState: "RLock acquired. _composite updated: 17,020 -> 17,062 (+42 novel wallets)",
-    terminalLogs: [
-      "[INLINE-SCORER 20:11:04] Extracting 18 features for 1,000 rows...",
-      "[FT-TRANSFORMER 20:11:04] CPU Batch Anomaly inference: 1,000 rows scored in 8.42ms",
-      "[HEURISTICS    20:11:04] Detected 3 Peeling Chains, 1 Ransomwhere seed recipient",
-      "[XAI-STORE     20:11:04] with _store_lock: upserted=42 novel wallets, skipped_existing=0",
-      "[FASTAPI       20:11:04] Returning IngestSyncResponse: {scored: 1000, upserted: 42}",
-    ],
+    title: "Miners Confirm & Seal in Stone",
+    subtitle: "Block is mined 10 minutes later; pinboard turns permanent",
+    badge: "STAGE 5: FINAL CONFIRMATION",
+    badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    actor: "Bitcoin Miners & Blockchain",
+    target: "Permanent Sovereign Dossier",
+    latency: "T + 10 Minutes (~600s)",
+    analogy:
+      "The bank finally stamps the ledger in ink 10 minutes later — but the police were already positioned at the exit 9 minutes and 50 seconds ago.",
+    whatHappens:
+      "A Bitcoin mining pool mines Block #892,104 containing the transaction. The pinboard seamlessly updates the status from 'Provisional' to 'Confirmed & Sealed'. If the transaction had been canceled or replaced (RBF), the pinboard would flag the diversion instantly.",
+    detectiveStatus: "Transaction confirmed on-chain! Court-admissible Section 65B dossier sealed.",
+    technicalDetails: {
+      event: "Block #892,104 mined • Depth = 1 confirmation",
+      protocol: "PostgreSQL status update: PROVISIONAL -> PERMANENT",
+      dataPoint: "Block height: 892,104 • Confirmed in 582s • Section 65B hash verified",
+    },
   },
-  {
-    step: 6,
-    title: "Zero-404 Alert Resolution & UI Refresh",
-    source: "FastAPI Engine",
-    target: "Next.js Frontend",
-    action: "HTTP 200 OK -> onSuccess() Alert Grid Auto-Refresh",
-    protocol: "JSON Response -> React SWR Revalidation",
-    description:
-      "FastAPI responds with HTTP 200 {scored: 1000, upserted: 42}. Frontend closes IngestModal, triggers onSuccess(), and revalidates the AlertTable. When an analyst clicks any newly ingested wallet, GET /entity/{addr}/explain hits the updated xai_store immediately: zero 404s, returning a live Provisional Dossier!",
-    frontendState: "MODAL CLOSED. AlertTable auto-refreshed. Operator clicks new wallet -> 200 OK!",
-    redisState: "sync_done key persists for 1 hour to reject redundant duplicate sync calls",
-    celeryState: "IDLE (Ready for next bulk archive)",
-    fastapiState: "Serving GET /entity/{address}/explain in 1.2ms from synchronized in-memory index",
-    terminalLogs: [
-      "[FASTAPI 20:11:04] HTTP/1.1 200 OK -> {scored: 1000, upserted: 42, skipped_existing: 0}",
-      "[NEXTJS  20:11:04] IngestModal onSuccess() called. Revalidating /api/alerts...",
-      "[NEXTJS  20:11:05] Analyst clicks bc1q98x... -> GET /entity/bc1q98x.../explain",
-      "[FASTAPI 20:11:05] GET /entity/bc1q98x/explain HTTP/1.1 200 OK (Provisional Dossier served in 1.4ms)",
-    ],
-  },
-];
-
-const ACTORS = [
-  { id: "frontend", name: "Next.js Frontend", icon: Server, port: "Port 3000", tag: "Client UI" },
-  { id: "redis", name: "Redis Broker & State", icon: Database, port: "Port 6379", tag: "IPC Coordinator" },
-  { id: "celery", name: "Celery Worker", icon: Cpu, port: "Worker Process", tag: "Isolated OS Process" },
-  { id: "fastapi", name: "FastAPI + xai_store", icon: RefreshCw, port: "Port 8000", tag: "In-Memory Host" },
 ];
 
 export function SyncSequenceDiagram() {
-  const [activeStep, setActiveStep] = useState<number>(1);
+  const [currentStep, setCurrentStep] = useState<number>(1);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [showTechnical, setShowTechnical] = useState<boolean>(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isPlaying) {
       timer = setInterval(() => {
-        setActiveStep((prev) => (prev >= STEPS.length ? 1 : prev + 1));
+        setCurrentStep((prev) => (prev < WATCHTOWER_STEPS.length ? prev + 1 : 1));
       }, 3500);
     }
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  const current = STEPS[activeStep - 1];
+  const step = WATCHTOWER_STEPS[currentStep - 1];
 
   return (
     <div className="card-tactical rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-6 shadow-xs">
-      {/* Header Controller */}
+      {/* Top Header & Interactive Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
-              INTERACTIVE IPC SEQUENCE VISUALIZER
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              WATCHTOWER INTERCEPT SEQUENCE
             </span>
-            <span className="text-xs text-slate-400 font-mono">STEP {activeStep} OF {STEPS.length}</span>
+            <span className="text-xs text-slate-400 font-mono">STEP-BY-STEP WORKFLOW</span>
           </div>
           <h3 className="text-base font-bold text-slate-900 mt-1">
-            FastAPI &harr; Celery Process Boundary &amp; Post-Ingest Sync Handshake
+            How NTRO Catches the Criminal in 5 Milliseconds
           </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Follow the transaction from the moment it enters the waiting room to when it is written in stone.
+          </p>
         </div>
 
-        {/* Step controls */}
-        <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-xs">
-          <button
-            onClick={() => {
-              setIsPlaying(false);
-              setActiveStep((prev) => Math.max(1, prev - 1));
-            }}
-            disabled={activeStep === 1}
-            className="p-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
-            aria-label="Previous step"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-
+        {/* Playback Controls */}
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="px-3 py-1.5 rounded btn-tactical-primary text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors ${
+              isPlaying
+                ? "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
+                : "btn-tactical-primary text-white"
+            }`}
           >
             {isPlaying ? (
               <>
-                <Pause className="w-3.5 h-3.5 text-amber-400" />
+                <Pause className="w-3.5 h-3.5" />
                 <span>Pause</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 text-sky-400" />
-                <span>Auto-Step</span>
+                <Play className="w-3.5 h-3.5" />
+                <span>Auto-Play Flow</span>
               </>
             )}
           </button>
@@ -232,215 +206,172 @@ export function SyncSequenceDiagram() {
           <button
             onClick={() => {
               setIsPlaying(false);
-              setActiveStep((prev) => Math.min(STEPS.length, prev + 1));
+              setCurrentStep(1);
             }}
-            disabled={activeStep === STEPS.length}
-            className="p-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
-            aria-label="Next step"
-          >
-            <ArrowRight className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={() => {
-              setIsPlaying(false);
-              setActiveStep(1);
-            }}
-            className="p-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-900 cursor-pointer transition-colors shadow-xs"
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
             title="Reset to Step 1"
-            aria-label="Reset to Step 1"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Step Pills Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
-        {STEPS.map((s) => {
-          const isActive = s.step === activeStep;
-          const isPassed = s.step < activeStep;
+      {/* Visual Step Tracker Pills */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        {WATCHTOWER_STEPS.map((s) => {
+          const isActive = s.step === currentStep;
+          const isPassed = s.step < currentStep;
           return (
             <button
               key={s.step}
               onClick={() => {
                 setIsPlaying(false);
-                setActiveStep(s.step);
+                setCurrentStep(s.step);
               }}
-              className={`text-left p-2.5 rounded-lg border text-xs transition-all cursor-pointer ${
+              className={`text-left p-2.5 rounded-lg border transition-all cursor-pointer ${
                 isActive
-                  ? "bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/10"
+                  ? "bg-indigo-50/80 border-indigo-400 shadow-xs ring-1 ring-indigo-300"
                   : isPassed
-                  ? "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                  : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                  ? "bg-slate-50 border-slate-300 text-slate-700 hover:border-slate-400"
+                  : "bg-white border-slate-200 text-slate-400 hover:border-slate-300"
               }`}
             >
-              <div className="flex items-center justify-between font-mono text-[10px] mb-1">
-                <span>STAGE 0{s.step}</span>
-                {isPassed && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
-                {isActive && <Activity className="w-3 h-3 text-sky-400 animate-pulse" />}
+              <div className="flex items-center justify-between text-[10px] font-mono">
+                <span className="font-bold">0{s.step}</span>
+                {isPassed && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                {isActive && <Activity className="w-3 h-3 text-indigo-600 animate-pulse" />}
               </div>
-              <div className="font-semibold truncate text-[11px] leading-tight">
-                {s.title.split(" ")[0]} {s.title.split(" ")[1] || ""}
+              <div
+                className={`text-xs font-semibold mt-1 truncate ${
+                  isActive ? "text-indigo-950" : isPassed ? "text-slate-800" : "text-slate-500"
+                }`}
+              >
+                {s.step === 1 && "1. Waiting Room"}
+                {s.step === 2 && "2. Watchtower"}
+                {s.step === 3 && "3. AI Verdict"}
+                {s.step === 4 && "4. Pinboard Sync"}
+                {s.step === 5 && "5. Mined in Stone"}
               </div>
+              <div className="text-[10px] font-mono text-slate-500 mt-0.5">{s.latency}</div>
             </button>
           );
         })}
       </div>
 
-      {/* 4 Process Pillars Visual Diagram */}
-      <div className="p-5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-          {ACTORS.map((actor) => {
-            const Icon = actor.icon;
-            const isSource = current.source.toLowerCase().includes(actor.id);
-            const isTarget = current.target.toLowerCase().includes(actor.id);
-            const isCurrentInvolved = isSource || isTarget;
+      {/* Main Visual Stage Card */}
+      <div className="p-5 sm:p-6 rounded-xl bg-slate-50/70 border border-slate-200 space-y-5">
+        {/* Stage Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-0.5 rounded text-[11px] font-mono font-bold border ${step.badgeColor}`}>
+              {step.badge}
+            </span>
+            <span className="text-xs font-mono font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1">
+              <Clock className="w-3 h-3 text-indigo-600" />
+              Elapsed Time: {step.latency}
+            </span>
+          </div>
 
-            return (
-              <div
-                key={actor.id}
-                className={`p-3.5 rounded-lg border transition-all ${
-                  isCurrentInvolved
-                    ? "bg-white border-sky-400 shadow-xs ring-1 ring-sky-400/30"
-                    : "bg-white/80 border-slate-200 opacity-70"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className={`w-7 h-7 rounded flex items-center justify-center ${
-                        isCurrentInvolved ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 leading-none">{actor.name}</div>
-                      <div className="text-[10px] font-mono text-slate-400 mt-0.5">{actor.port}</div>
-                    </div>
-                  </div>
-                  {isCurrentInvolved && (
-                    <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />
-                  )}
-                </div>
+          <div className="text-xs font-mono text-slate-600 flex items-center gap-1.5">
+            <span className="text-slate-400 font-normal">Actor:</span>
+            <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+              {step.actor}
+            </span>
+            <ArrowRight className="w-3 h-3 text-slate-400" />
+            <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+              {step.target}
+            </span>
+          </div>
+        </div>
 
-                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono">
-                  <span className="text-slate-400 uppercase">{actor.tag}</span>
-                  {isSource && (
-                    <span className="text-sky-700 bg-sky-50 px-1.5 py-0.2 rounded font-bold">
-                      ORIGIN
-                    </span>
-                  )}
-                  {isTarget && (
-                    <span className="text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded font-bold">
-                      TARGET
-                    </span>
-                  )}
-                </div>
+        {/* Step Title & Plain English Explanation */}
+        <div className="space-y-2">
+          <h4 className="text-lg font-bold text-slate-900 tracking-tight">{step.title}</h4>
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+            {step.whatHappens}
+          </p>
+        </div>
+
+        {/* Real-World Analogy Box */}
+        <div className="p-4 rounded-lg bg-amber-50/60 border border-amber-200/80 flex items-start gap-3">
+          <div className="p-1.5 rounded bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-900">
+              Real-World Analogy (Judge-Friendly)
+            </div>
+            <p className="text-xs text-amber-950 mt-1 leading-relaxed">{step.analogy}</p>
+          </div>
+        </div>
+
+        {/* Live Detective Status Pill */}
+        <div className="p-3.5 rounded-lg bg-white border border-slate-200 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-700">
+            <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+            <span>
+              <strong className="text-slate-900">Detective Pinboard State: </strong>
+              {step.detectiveStatus}
+            </span>
+          </div>
+          <span className="shrink-0 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-700">
+            STEP {currentStep} OF 5
+          </span>
+        </div>
+
+        {/* Technical Deep Dive (Expandable) */}
+        <div className="pt-2 border-t border-slate-200/80">
+          <button
+            onClick={() => setShowTechnical(!showTechnical)}
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+          >
+            {showTechnical ? "Hide Technical Data Trace" : "Show Technical Data Trace (For Engineers / Technical Judges)"}
+            <ArrowRight className={`w-3 h-3 transition-transform ${showTechnical ? "rotate-90" : ""}`} />
+          </button>
+
+          {showTechnical && (
+            <div className="mt-3 p-3.5 rounded-lg bg-slate-900 text-slate-200 font-mono text-xs space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-800 pb-1">
+                <span>SYSTEM EVENT LOG</span>
+                <span>STATUS: VERIFIED</span>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Dynamic Action Banner between Source and Target */}
-        <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 font-mono text-xs">
-              <span className="font-bold text-slate-900 uppercase">TRANSMISSION:</span>
-              <span className="text-sky-700 font-semibold">{current.source}</span>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-indigo-700 font-semibold">{current.target}</span>
+              <div className="text-[11px] text-sky-400">Event: {step.technicalDetails.event}</div>
+              <div className="text-[11px] text-slate-300">Protocol: {step.technicalDetails.protocol}</div>
+              <div className="text-[11px] text-emerald-400">Data: {step.technicalDetails.dataPoint}</div>
             </div>
-            <div className="text-xs text-slate-600">
-              <code className="font-mono text-[11px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-900 font-semibold">
-                {current.action}
-              </code>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 font-mono text-[11px] bg-slate-50 px-3 py-1.5 rounded border border-slate-200">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="text-slate-500">PROTOCOL:</span>
-            <span className="text-slate-900 font-semibold">{current.protocol}</span>
-          </div>
-        </div>
-
-        {/* Deep Explanatory Description */}
-        <div className="text-xs text-slate-700 leading-relaxed bg-white/60 p-3.5 rounded-lg border border-slate-200/80">
-          <p className="font-sans">{current.description}</p>
-        </div>
-
-        {/* Live Entity States Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          <div className="bg-white p-3 rounded-lg border border-slate-200 font-mono text-[11px] space-y-1">
-            <div className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5">
-              <Server className="w-3 h-3 text-sky-500" />
-              Next.js Client State
-            </div>
-            <div className="text-slate-800 text-[11px] font-semibold">{current.frontendState}</div>
-          </div>
-
-          <div className="bg-white p-3 rounded-lg border border-slate-200 font-mono text-[11px] space-y-1">
-            <div className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5">
-              <Database className="w-3 h-3 text-emerald-500" />
-              Redis IPC State
-            </div>
-            <div className="text-slate-800 text-[11px] font-semibold break-all">{current.redisState}</div>
-          </div>
-
-          <div className="bg-white p-3 rounded-lg border border-slate-200 font-mono text-[11px] space-y-1">
-            <div className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5">
-              <Cpu className="w-3 h-3 text-amber-500" />
-              Celery Worker Process
-            </div>
-            <div className="text-slate-800 text-[11px] font-semibold">{current.celeryState}</div>
-          </div>
-
-          <div className="bg-white p-3 rounded-lg border border-slate-200 font-mono text-[11px] space-y-1">
-            <div className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5">
-              <RefreshCw className="w-3 h-3 text-indigo-500" />
-              FastAPI Process (xai_store)
-            </div>
-            <div className="text-slate-800 text-[11px] font-semibold">{current.fastapiState}</div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Simulated Production Terminal Logs */}
-      <div className="rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xs font-mono text-xs">
-        <div className="bg-slate-950 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-slate-400 text-[11px]">
-          <div className="flex items-center gap-2">
-            <Terminal className="w-3.5 h-3.5 text-sky-400" />
-            <span className="font-bold text-slate-200">ORCHESTRATION TERMINAL STREAM • STAGE 0{current.step}</span>
-          </div>
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>IPC MONITORED</span>
-          </div>
+      {/* Navigation Prev / Next Buttons */}
+      <div className="flex items-center justify-between pt-1">
+        <button
+          onClick={() => {
+            setIsPlaying(false);
+            setCurrentStep((prev) => Math.max(prev - 1, 1));
+          }}
+          disabled={currentStep === 1}
+          className="btn-tactical-secondary text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Previous Step</span>
+        </button>
+
+        <div className="text-xs font-mono text-slate-500">
+          Step {currentStep} of {WATCHTOWER_STEPS.length}
         </div>
-        <div className="p-4 space-y-1.5 overflow-x-auto text-[11px] text-slate-300">
-          {current.terminalLogs.map((log, idx) => (
-            <div key={idx} className="flex items-start gap-2">
-              <span className="text-slate-600 select-none">&gt;</span>
-              <span
-                className={
-                  log.includes("FASTAPI")
-                    ? "text-sky-300"
-                    : log.includes("CELERY")
-                    ? "text-amber-300"
-                    : log.includes("REDIS")
-                    ? "text-emerald-300"
-                    : log.includes("XAI-STORE")
-                    ? "text-purple-300 font-bold"
-                    : "text-slate-200"
-                }
-              >
-                {log}
-              </span>
-            </div>
-          ))}
-        </div>
+
+        <button
+          onClick={() => {
+            setIsPlaying(false);
+            setCurrentStep((prev) => Math.min(prev + 1, WATCHTOWER_STEPS.length));
+          }}
+          disabled={currentStep === WATCHTOWER_STEPS.length}
+          className="btn-tactical-primary text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <span>Next Step</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );

@@ -10,16 +10,15 @@ import {
   HardDrive,
   Clock,
   ShieldCheck,
-  Binary,
   Layers,
   Sparkles,
-  ArrowUpRight,
   Fingerprint,
 } from "lucide-react";
 
 interface ModelBenchmark {
   modelName: string;
   shortName: string;
+  detectiveRole: string;
   category: "tabular" | "graph";
   status: "Active SOTA Production Engine" | "Legacy Baseline Reference";
   isSota: boolean;
@@ -42,7 +41,8 @@ interface ModelBenchmark {
 const BENCHMARK_DATA: ModelBenchmark[] = [
   {
     modelName: "Relational Graph Transformer (PyG TransformerConv)",
-    shortName: "Relational Graph Transformer",
+    shortName: "Detective B (Graph Transformer)",
+    detectiveRole: "Syndicate Web Tracker",
     category: "graph",
     status: "Active SOTA Production Engine",
     isSota: true,
@@ -54,16 +54,17 @@ const BENCHMARK_DATA: ModelBenchmark[] = [
     peelingRecall: "94.8%",
     paramCount: "34,865",
     modelSizeKb: "145.42 KB (~1.2 MB full pt)",
-    cpuLatency: "0.0120 ms/node (295.5 ms / 24,673 nodes; 4.8 ms ego-net)",
-    edgeRelations: "3 Discrete Relations (CO_SPEND, TX_FLOW, PEELING_FLOW)",
-    lossFunction: "Focal Loss (γ=2.0, α=6.20 class-balanced)",
-    xaiMechanism: "Native Multi-Head Relational Attention Edge Weights (α ∈ [0, 1])",
+    cpuLatency: "4.8 ms local ego-net (0.012 ms / node)",
+    edgeRelations: "3 Discrete Relations (Co-Spend, Tx Flow, Peeling Flow)",
+    lossFunction: "Smart Class-Balanced Focus (Needle-in-a-Haystack)",
+    xaiMechanism: "Visual Attention Glow (Cyan Edge Highlighting on HUD)",
     checkpointFilename: "graph_transformer_20260909.pt",
     gateStatus: "PASS",
   },
   {
     modelName: "GraphSAGE GNN Baseline (PyTorch Geometric)",
-    shortName: "GraphSAGE Baseline",
+    shortName: "Legacy GraphSAGE Baseline",
+    detectiveRole: "Old Single-Relation Baseline",
     category: "graph",
     status: "Legacy Baseline Reference",
     isSota: false,
@@ -75,16 +76,17 @@ const BENCHMARK_DATA: ModelBenchmark[] = [
     peelingRecall: "81.2%",
     paramCount: "6,465",
     modelSizeKb: "30.93 KB",
-    cpuLatency: "0.0010 ms/node (25.4 ms / 24,673 nodes)",
-    edgeRelations: "Single Homogeneous Adjacency (:CO_SPEND only)",
-    lossFunction: "Standard Binary Cross Entropy / Focal Loss Baseline",
-    xaiMechanism: "Post-hoc GNNExplainer edge masking (150ms per entity)",
+    cpuLatency: "0.0010 ms / node (Uniform mean pooling)",
+    edgeRelations: "Single Homogeneous Link (Treated all links identically)",
+    lossFunction: "Standard Binary Cross Entropy",
+    xaiMechanism: "Slow external edge masking (150ms delay per entity)",
     checkpointFilename: "graphsage_20260908.pt",
     gateStatus: "BASELINE",
   },
   {
     modelName: "FT-Transformer (Feature Tokenizer Transformer)",
-    shortName: "FT-Transformer",
+    shortName: "Detective A (FT-Transformer)",
+    detectiveRole: "Forensic Accountant",
     category: "tabular",
     status: "Active SOTA Production Engine",
     isSota: true,
@@ -96,16 +98,17 @@ const BENCHMARK_DATA: ModelBenchmark[] = [
     peelingRecall: "N/A (Tabular Anomaly)",
     paramCount: "18,930",
     modelSizeKb: "85.54 KB (~350 KB full pt)",
-    cpuLatency: "0.0222 ms/sample (3.2 ms batch slice, <5ms SLA)",
-    edgeRelations: "N/A (18 Tabular Features)",
-    lossFunction: "Normalized Reconstruction MSE Error",
-    xaiMechanism: "Free Native 18×18 Cross-Feature & [CLS] Attention Extraction (0.0ms)",
+    cpuLatency: "0.022 ms / sample (3.2 ms batch slice)",
+    edgeRelations: "N/A (18 Numeric Transaction Traits)",
+    lossFunction: "Reconstruction Fit Check (Normal vs Illicit)",
+    xaiMechanism: "Free Native 18×18 Cross-Trait Attention Heatmap (0.0ms delay)",
     checkpointFilename: "ft_transformer_20260909.pt",
     gateStatus: "PASS",
   },
   {
     modelName: "Deep MLP Autoencoder Baseline",
-    shortName: "Autoencoder Baseline",
+    shortName: "Legacy Autoencoder Baseline",
+    detectiveRole: "Old Monolithic Bottleneck",
     category: "tabular",
     status: "Legacy Baseline Reference",
     isSota: false,
@@ -117,10 +120,10 @@ const BENCHMARK_DATA: ModelBenchmark[] = [
     peelingRecall: "N/A (Tabular Anomaly)",
     paramCount: "7,650",
     modelSizeKb: "34.44 KB",
-    cpuLatency: "0.0100 ms/sample (1.0 s / 100,000 scored)",
-    edgeRelations: "N/A (18 Tabular Features)",
-    lossFunction: "Bottleneck Reconstruction MSE (Val 95th %ile threshold: 0.034618)",
-    xaiMechanism: "GradientExplainer / KernelSHAP Perturbation (~250ms per entity)",
+    cpuLatency: "0.010 ms / sample",
+    edgeRelations: "N/A (18 Numeric Transaction Traits)",
+    lossFunction: "Flat Bottleneck Reconstruction Error",
+    xaiMechanism: "Heavy Perturbation Tools (~250ms delay per entity)",
     checkpointFilename: "autoencoder_20260907.pt",
     gateStatus: "BASELINE",
   },
@@ -153,11 +156,11 @@ export function MlBenchmarkMatrix() {
             </div>
             <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-500" />
-              Canonical Production vs Baseline ML Benchmark Scorecard
+              Empirical Scorecard: Two AI Detectives vs Legacy Baselines
             </h3>
             <p className="text-xs text-slate-600 max-w-2xl leading-relaxed mt-1">
-              Empirical ground truth logged from <code className="text-slate-800 font-mono">data/models/BENCHMARK_TRUTH.json</code>.
-              Evaluated on identical held-out test splits under strict air-gapped CPU execution.
+              Logged directly from <code className="text-slate-800 font-mono">data/models/BENCHMARK_TRUTH.json</code>.
+              Evaluated under strict air-gapped CPU conditions on identical held-out test splits.
             </p>
           </div>
 
@@ -181,7 +184,7 @@ export function MlBenchmarkMatrix() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Graph Models
+              Detective B (Graph)
             </button>
             <button
               onClick={() => setFilterMode("tabular")}
@@ -191,7 +194,7 @@ export function MlBenchmarkMatrix() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Tabular Anomaly
+              Detective A (Traits)
             </button>
             <button
               onClick={() => setFilterMode("deltas")}
@@ -202,7 +205,7 @@ export function MlBenchmarkMatrix() {
               }`}
             >
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-              SOTA Deltas
+              SOTA Leap
             </button>
           </div>
         </div>
@@ -210,21 +213,21 @@ export function MlBenchmarkMatrix() {
         {/* Head-to-Head Lift Highlights */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-3 border-t border-slate-200/80 font-mono">
           <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Graph F1 Lift</div>
+            <div className="text-[10px] text-slate-400 uppercase font-bold">Graph F1 Score</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5 flex items-center gap-1">
               0.8696 &rarr; 0.9209
               <span className="text-[10px] text-emerald-600 font-extrabold">+5.9%</span>
             </div>
-            <div className="text-[9px] text-slate-500">Multi-Relational GraphSAGE baseline</div>
+            <div className="text-[9px] text-slate-500">Detective B vs GraphSAGE</div>
           </div>
 
           <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Peeling-Chain Recall</div>
+            <div className="text-[10px] text-slate-400 uppercase font-bold">Peeling-Chain Catch Rate</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5 flex items-center gap-1">
               81.2% &rarr; 94.8%
               <span className="text-[10px] text-emerald-600 font-extrabold">+13.6%</span>
             </div>
-            <div className="text-[9px] text-slate-500">Peeling flow attention encoding</div>
+            <div className="text-[9px] text-slate-500">3-relation connection lenses</div>
           </div>
 
           <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs">
@@ -233,16 +236,16 @@ export function MlBenchmarkMatrix() {
               0.0931 &rarr; 0.6972
               <span className="text-[10px] text-emerald-600 font-extrabold">+648%</span>
             </div>
-            <div className="text-[9px] text-slate-500">Cross-feature attention vs MLP bottleneck</div>
+            <div className="text-[9px] text-slate-500">Detective A vs flat autoencoder</div>
           </div>
 
           <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">XAI Extraction Latency</div>
+            <div className="text-[10px] text-slate-400 uppercase font-bold">Inference on Normal CPU</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5 flex items-center gap-1">
-              250ms &rarr; 0.0ms
+              4.8 ms
               <span className="text-[10px] text-emerald-600 font-extrabold">Instant</span>
             </div>
-            <div className="text-[9px] text-slate-500">Free attention matrix extraction</div>
+            <div className="text-[9px] text-slate-500">100% Air-gapped, zero cloud GPU</div>
           </div>
         </div>
       </div>
@@ -255,20 +258,19 @@ export function MlBenchmarkMatrix() {
             <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/30 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-100 text-indigo-900 border border-indigo-200">
-                  GRAPH REASONING LEAP
+                  DETECTIVE B ADVANTAGE
                 </span>
                 <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                   PROMOTION GATE: PASSED (F1 ≥ 0.88)
                 </span>
               </div>
               <h4 className="text-sm font-bold text-slate-900">
-                GraphSAGE &rarr; Relational Graph Transformer (`TransformerConv`)
+                Legacy GraphSAGE &rarr; Detective B (Relational Graph Transformer)
               </h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                GraphSAGE relied on uniform neighborhood averaging over an unweighted, single-relation co-spend adjacency.
-                By contrast, the Relational Graph Transformer dynamically conditions attention weights on <strong>3 distinct edge types</strong>.
-                When money is peeled through multi-hop laundering chains, the model assigns prioritized relational attention weights (0.91 on co-spend, 0.84 on tx flow, 0.78 on peeling flow),
-                driving peeling recall up by <strong>+13.6%</strong> and overall multi-relational test F1 to <strong>0.9209</strong>.
+                GraphSAGE treated all graph connections identically (treating a simple merchant payment the same as a complex peeling hop).
+                Detective B uses <strong>3 distinct relationship lenses</strong> to understand the forensic meaning of every link.
+                When money is peeled across multi-hop laundering chains, Detective B assigns prioritized attention, driving peeling catch rate up by <strong>+13.6%</strong> to an industry-leading <strong>94.8%</strong>.
               </p>
               <div className="p-2.5 bg-white rounded-lg border border-indigo-200 font-mono text-[11px] space-y-1 text-slate-700">
                 <div className="flex justify-between">
@@ -276,11 +278,11 @@ export function MlBenchmarkMatrix() {
                   <strong>0.8696</strong>
                 </div>
                 <div className="flex justify-between text-indigo-900 font-bold">
-                  <span>Relational Graph Transformer F1:</span>
+                  <span>Detective B Test F1:</span>
                   <strong>0.9209 (+5.9% relative lift)</strong>
                 </div>
                 <div className="flex justify-between text-emerald-700 font-bold">
-                  <span>Peeling Chain Recall:</span>
+                  <span>Peeling Chain Catch Rate:</span>
                   <strong>81.2% &rarr; 94.8% (+13.6% delta)</strong>
                 </div>
               </div>
@@ -290,32 +292,32 @@ export function MlBenchmarkMatrix() {
             <div className="p-4 rounded-xl border border-sky-200 bg-sky-50/30 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-100 text-sky-900 border border-sky-200">
-                  TABULAR ANOMALY LEAP
+                  DETECTIVE A ADVANTAGE
                 </span>
                 <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                   PROMOTION GATE: PASSED (F1 ≥ 0.65)
                 </span>
               </div>
               <h4 className="text-sm font-bold text-slate-900">
-                Deep MLP Autoencoder &rarr; Tabular FT-Transformer
+                Legacy Deep Autoencoder &rarr; Detective A (Tabular FT-Transformer)
               </h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Standard MLP autoencoders compress all 18 features into a continuous flat bottleneck (16 dims), destroying discrete feature identity and requiring
-                expensive perturbation passes (KernelSHAP / GradientExplainer taking 250ms+ per entity).
-                FT-Transformer maps each tabular feature into continuous latent space &reals;<sup>32</sup>, prepends a [CLS] token, and runs 4-head self-attention.
-                Result: F1 explodes from <strong>0.0931 to 0.6972</strong>, while cross-feature attention matrices <strong>A</strong><sub>18&times;18</sub> and [CLS] saliencies are computed in <strong>0.0ms overhead</strong>.
+                Standard autoencoders mash all 18 transaction features into a single blurry average, destroying individual clues and requiring
+                slow external tools (taking 250ms+ per transaction) to explain why an alert fired.
+                Detective A gives each of the 18 traits its own rich digital token and cross-examines them using 4 self-attention lenses.
+                Result: F1 accuracy rockets from <strong>0.0931 to 0.6972</strong> (+648%), while visual explanations are generated in <strong>0.0ms delay</strong>!
               </p>
               <div className="p-2.5 bg-white rounded-lg border border-sky-200 font-mono text-[11px] space-y-1 text-slate-700">
                 <div className="flex justify-between">
-                  <span>Deep MLP Autoencoder F1:</span>
-                  <strong>0.0931 (Unsupervised MSE)</strong>
+                  <span>Legacy Autoencoder F1:</span>
+                  <strong>0.0931 (Blurry Bottleneck)</strong>
                 </div>
                 <div className="flex justify-between text-sky-900 font-bold">
-                  <span>FT-Transformer F1:</span>
+                  <span>Detective A F1:</span>
                   <strong>0.6972 (Precision: 0.7379 / Recall: 0.6609)</strong>
                 </div>
                 <div className="flex justify-between text-emerald-700 font-bold">
-                  <span>ROC-AUC Trajectory:</span>
+                  <span>ROC-AUC Accuracy:</span>
                   <strong>0.5210 &rarr; 0.9739 (+86.9% lift)</strong>
                 </div>
               </div>
@@ -328,15 +330,15 @@ export function MlBenchmarkMatrix() {
           <table className="w-full text-left text-xs border-collapse min-w-[760px]">
             <thead>
               <tr className="bg-slate-100/80 text-slate-700 font-mono uppercase text-[10px] border-y border-slate-200">
-                <th className="py-2.5 px-3">Model &amp; Architecture</th>
+                <th className="py-2.5 px-3">Model &amp; Role</th>
                 <th className="py-2.5 px-3">Status</th>
                 <th className="py-2.5 px-3 text-right">F1 Score</th>
                 <th className="py-2.5 px-3 text-right">Precision</th>
                 <th className="py-2.5 px-3 text-right">Recall</th>
                 <th className="py-2.5 px-3 text-right">ROC-AUC</th>
-                <th className="py-2.5 px-3">CPU Latency</th>
-                <th className="py-2.5 px-3">Parameters / Disk</th>
-                <th className="py-2.5 px-3">XAI Mechanism</th>
+                <th className="py-2.5 px-3">Speed (CPU Latency)</th>
+                <th className="py-2.5 px-3">Model Size</th>
+                <th className="py-2.5 px-3">Explainability (XAI)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-600">
@@ -350,7 +352,7 @@ export function MlBenchmarkMatrix() {
                         : "hover:bg-slate-50/50"
                     }`}
                   >
-                    {/* Model Name & Architecture */}
+                    {/* Model Name & Role */}
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-1.5">
                         {m.isSota && (
@@ -359,10 +361,7 @@ export function MlBenchmarkMatrix() {
                         <span className="font-bold text-slate-900">{m.shortName}</span>
                       </div>
                       <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        {m.architectureType}
-                      </div>
-                      <div className="text-[9px] text-slate-400 font-mono">
-                        {m.checkpointFilename}
+                        {m.detectiveRole} &bull; {m.architectureType}
                       </div>
                     </td>
 
@@ -428,7 +427,7 @@ export function MlBenchmarkMatrix() {
           {/* Table Footnote */}
           <div className="mt-3 pt-3 border-t border-slate-200 text-[10px] font-mono text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              *Promotion test split values evaluated on held-out test split (Precision: 0.9341, Recall: 0.9081) at calibrated threshold 0.70.
+              *Promotion test split evaluated on held-out test split (Precision: 0.9341, Recall: 0.9081) under Section 65B protocols.
             </div>
             <div className="flex items-center gap-1.5 text-slate-500 font-semibold">
               <Fingerprint className="w-3 h-3 text-sky-600" />

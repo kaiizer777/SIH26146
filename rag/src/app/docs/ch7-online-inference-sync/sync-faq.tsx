@@ -8,226 +8,174 @@ import {
   Zap,
   Sparkles,
   Layers,
-  Lock,
   Search,
   CheckCircle2,
-  Server,
-  Database,
-  Cpu,
+  Clock,
+  Scale,
+  Activity,
   AlertTriangle,
-  FileCode,
   ArrowRight,
-  BookOpen,
 } from "lucide-react";
 
 interface FAQItem {
   id: string;
   question: string;
-  category: "ARCHITECTURE_IPC" | "HANDSHAKE_SAFETY" | "CONCURRENCY_LOCKS" | "STATUTORY_PROVISIONAL";
+  category: "JUDGES_FAVORITES" | "HOW_IT_WORKS" | "LEGAL_EVIDENCE" | "SPEED_AND_TECH";
   badgeText: string;
-  technicalNote?: string;
-  answer: React.ReactNode;
+  badgeColor: string;
+  analogy: string;
+  answer: string;
+  keyTakeaway: string;
 }
 
 const FAQS: FAQItem[] = [
   {
-    id: "why-not-redis-for-xai-store",
-    question: "Why didn't we just store xai_store in Redis instead of FastAPI process memory?",
-    category: "ARCHITECTURE_IPC",
-    badgeText: "SUB-MILLISECOND RAM LATENCY",
-    technicalNote: "RAM Pointer: ~400ns vs Redis Socket + JSON SerDe: 12–25ms",
-    answer: (
-      <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-        <p>
-          While Redis is an exceptional distributed cache and message broker, relying entirely on Redis for the primary XAI artifact store creates fatal latency and serialization bottlenecks for high-throughput forensic investigations:
-        </p>
-        <ul className="list-disc pl-4 space-y-1.5 text-slate-700">
-          <li>
-            <strong>JSON Serialization / Deserialization Penalty:</strong> The XAI store houses over 17,020 composite risk records, 17,020 evidence trails, 4,839 18-feature SHAP waterfall vectors, and 500 topological GNN subgraphs. Storing these in Redis requires continual JSON stringification and parsing (<code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">json.loads</code>/<code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">json.dumps</code>) on every API request, consuming 12ms to 25ms of CPU time per query.
-          </li>
-          <li>
-            <strong>Sub-Microsecond Memory Pointers:</strong> By storing Python dictionaries (<code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">dict[str, Any]</code>) directly inside FastAPI&rsquo;s virtual address space, dictionary lookups (<code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">_composite[address]</code>) resolve in <strong>~400 nanoseconds</strong> via hash table pointer dereferencing with zero TCP socket overhead.
-          </li>
-          <li>
-            <strong>Hybrid Division of Responsibilities:</strong> Redis is preserved for what it does best: distributed task brokering, temporary idempotency locks (<code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">file_hash:*</code> and <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">sync_done:*</code>), and task status tracking. FastAPI RAM holds the hot analytical graph artifacts.
-          </li>
-        </ul>
-      </div>
-    ),
+    id: "why-not-wait-for-blockchain",
+    question: "Why not just wait 10 minutes for the transaction to confirm on the blockchain?",
+    category: "JUDGES_FAVORITES",
+    badgeText: "THE 10-MINUTE FATAL FLAW",
+    badgeColor: "bg-rose-50 text-rose-700 border-rose-200",
+    analogy:
+      "Waiting for a block is like waiting for a printed bank statement in the mail 10 days after a bank robbery. By then, the getaway car has crossed state borders.",
+    answer:
+      "Bitcoin blocks take an average of 10 minutes to mine. In high-speed cybercrime, modern money-laundering bots don't wait for confirmation — they spend unconfirmed change outputs immediately across 5 nested hops. If law enforcement waits 10 minutes, the funds have already been swapped into anonymous privacy coins or cashed out at an off-ramp. Our Watchtower catches them in 5 milliseconds while the money is still in the lobby.",
+    keyTakeaway: "Waiting 10 minutes means losing the criminal. Catching them in the Mempool preserves the chase.",
   },
   {
-    id: "why-frontend-triggers-sync",
-    question: "Why does the frontend trigger the sync instead of Celery calling FastAPI directly?",
-    category: "ARCHITECTURE_IPC",
-    badgeText: "AIR-GAPPED NETWORK TOPOLOGY",
-    technicalNote: "Decoupled Unidirectional Ingress • Zero Circular HTTP Dependencies",
-    answer: (
-      <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-        <p>
-          Having the Next.js client initiate <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">POST /ingest/sync/{'{task_id}'}</code> upon detecting task success is an intentional architectural design for tactical defense networks:
-        </p>
-        <ul className="list-disc pl-4 space-y-1.5 text-slate-700">
-          <li>
-            <strong>Network Topology &amp; Firewall Isolation:</strong> In air-gapped sovereign military enclaves, background worker nodes often operate on isolated backend compute subnets with outbound database access to PostgreSQL and Redis, but <em>zero inbound HTTP routes</em> back to the reverse-proxy or FastAPI ingress. Requiring Celery to initiate HTTP calls back to FastAPI would fail in partitioned container networks.
-          </li>
-          <li>
-            <strong>Elimination of Circular Dependencies:</strong> Making Celery depend on FastAPI&rsquo;s HTTP port introduces an operational loop: FastAPI calls Celery, and Celery calls FastAPI. If FastAPI is under heavy analyst query load, worker tasks could timeout waiting for FastAPI HTTP responses, blocking the worker pool.
-          </li>
-          <li>
-            <strong>Client-Side Orchestration:</strong> The Next.js frontend is already polling <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">/ingest/status/{'{task_id}'}</code> to manage the upload progress modal. Making the frontend the coordinator guarantees that the alert grid refresh is perfectly sequenced with the memory synchronization.
-          </li>
-        </ul>
-      </div>
-    ),
+    id: "what-is-the-mempool-waiting-room",
+    question: "What exactly is the Mempool, and how does the Watchtower sniff it?",
+    category: "HOW_IT_WORKS",
+    badgeText: "THE WAITING ROOM CONCEPT",
+    badgeColor: "bg-sky-50 text-sky-700 border-sky-200",
+    analogy:
+      "The Mempool is the airport departure lounge where passengers gather before boarding the airplane (the mined block).",
+    answer:
+      "When someone sends Bitcoin, it doesn't appear on the blockchain instantly. It is broadcast to thousands of network nodes and waits in an in-memory queue called the Mempool. The NTRO Watchtower connects directly to this gossip network, listening to raw packet broadcasts. The moment a transaction is announced, our system copies and analyzes it without needing any permission from miners.",
+    keyTakeaway: "The Mempool is public, instant, and completely transparent to our real-time listeners.",
   },
   {
-    id: "user-closes-tab-during-sync",
-    question: "What happens if an operator closes the browser tab before the sync request completes?",
-    category: "HANDSHAKE_SAFETY",
-    badgeText: "FAULT RECOVERY & IDEMPOTENCY",
-    technicalNote: "Zero Data Loss • PostgreSQL Committed • Lazy Reconciliation",
-    answer: (
-      <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-        <p>
-          The system architecture guarantees zero data loss and clean self-healing even if an operator forcibly terminates the browser mid-sync:
-        </p>
-        <ul className="list-disc pl-4 space-y-1.5 text-slate-700">
-          <li>
-            <strong>PostgreSQL Ground Truth is Immutable:</strong> Celery&rsquo;s bulk <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">COPY</code> transaction commits directly to PostgreSQL <em>before</em> the task state is marked <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">SUCCESS</code>. All ledger transactions and foreign keys are safely persisted on disk.
-          </li>
-          <li>
-            <strong>Idempotent Sync Recovery:</strong> If the sync HTTP request never fired, the Redis key <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">sync_done:{'{task_id}'}</code> was never locked. When any operator re-opens the alert dashboard or calls the sync endpoint, the sync executes cleanly without conflict.
-          </li>
-          <li>
-            <strong>Scheduled Re-conciliation:</strong> In production deployments, a lightweight Celery beat cron task or the periodic GDS retraining pipeline inspects PostgreSQL for any un-indexed rows (<code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">ingested_at &gt; last_sync</code>) and converges the store automatically.
-          </li>
-        </ul>
-      </div>
-    ),
+    id: "how-can-ai-run-in-under-5ms",
+    question: "How can deep learning score complex transactions in under 5 milliseconds?",
+    category: "SPEED_AND_TECH",
+    badgeText: "SUB-5MS INLINE INFERENCE",
+    badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
+    analogy:
+      "Like a veteran border officer spotting a forged passport with a quick glance at key security holograms rather than sending the entire passport to a laboratory.",
+    answer:
+      "Full graph recalculation across millions of wallets takes time, but initial triage doesn't have to. We deploy a lightweight, quantized FT-Transformer CPU model paired with inline heuristic rules. In under 5 milliseconds, it checks 18 critical parameters: peeling chain ratios, rapid velocity, and known illicit seed lists. This gives investigators an instant provisional verdict while heavy offline graph models run in the background.",
+    keyTakeaway: "Fast triage in 5ms; deep structural retraining asynchronously. Best of both worlds.",
   },
   {
-    id: "provisional-vs-fully-converged",
-    question: "What is the technical and legal difference between a Provisional Dossier and a Fully Converged Dossier?",
-    category: "STATUTORY_PROVISIONAL",
-    badgeText: "DUAL PIPELINE MATURITY",
-    technicalNote: "Provisional: <15ms Inline FT-Transformer vs Fully Converged: Neo4j GDS + SHAP",
-    answer: (
-      <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[11px] p-2 bg-slate-50 border border-slate-200 rounded">
-          <div className="p-2 bg-white rounded border border-amber-200">
-            <div className="text-amber-800 font-bold uppercase text-[10px]">Provisional Dossier (Phase 11)</div>
-            <div className="text-slate-600 mt-1">&bull; Latency: &lt;15ms online</div>
-            <div className="text-slate-600">&bull; FT-Transformer Tabular MSE: LIVE</div>
-            <div className="text-slate-600">&bull; Heuristic Rules: LIVE (Peeling/Seeds)</div>
-            <div className="text-slate-600">&bull; GNN Risk / Louvain: DEFERRED (—)</div>
-            <div className="text-amber-700 font-semibold mt-1">&bull; Statutory Caveat Attached</div>
-          </div>
-          <div className="p-2 bg-white rounded border border-emerald-200">
-            <div className="text-emerald-800 font-bold uppercase text-[10px]">Fully Converged Dossier (Phases 0–9)</div>
-            <div className="text-slate-600 mt-1">&bull; Latency: Offline batch cycle</div>
-            <div className="text-slate-600">&bull; FT-Transformer Tabular MSE: Indexed</div>
-            <div className="text-slate-600">&bull; Relational Graph Transformer: CONVERGED</div>
-            <div className="text-slate-600">&bull; Neo4j Louvain Modularity: Complete</div>
-            <div className="text-emerald-700 font-semibold mt-1">&bull; Full 18-Feature SHAP Waterfall</div>
-          </div>
-        </div>
-        <p>
-          <strong>Evidentiary Rationale:</strong> Under the Indian Evidence Act Section 65B and Bharatiya Sakshya Adhiniyam (BSA 2023) Section 63, electronic evidence must never misrepresent its computational origin. Labeling fresh entities with <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">"provisional": true</code> guarantees that investigating officers understand the graph metrics are awaiting periodic topological convergence, preventing misleading assertions in court.
-        </p>
-      </div>
-    ),
+    id: "can-criminal-cancel-or-rbf",
+    question: "What happens if the criminal cancels or replaces the transaction (Replace-By-Fee)?",
+    category: "JUDGES_FAVORITES",
+    badgeText: "RBF & DOUBLE-SPEND DEFENSE",
+    badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    analogy:
+      "A suspect tries to switch get-away cars mid-chase, but the helicopter spotlight tracks the switch in real time.",
+    answer:
+      "Bitcoin allows transactions to be replaced with a higher fee (Replace-By-Fee, or RBF). If a criminal attempts to cancel or divert their payment, the Watchtower detects the conflicting replacement packet immediately. The Neo4j detective pinboard links both transactions together, exposing the criminal's panic diversion as additional incriminating behavioral evidence.",
+    keyTakeaway: "RBF attempts don't fool the Watchtower; they actually give investigators extra behavioral proof.",
   },
   {
-    id: "how-rlock-prevents-race-conditions",
-    question: "How does threading.RLock prevent race conditions during high-volume analyst queries?",
-    category: "CONCURRENCY_LOCKS",
-    badgeText: "THREAD-SAFE RE-ENTRANT MUTEX",
-    technicalNote: "Non-blocking Re-entrancy • Atomic Batch Dictionary Writes",
-    answer: (
-      <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-        <p>
-          FastAPI executes synchronous service functions inside an AnyIO thread pool (<code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">ThreadPoolExecutor</code>) to prevent blocking the asynchronous event loop. This means multiple worker threads concurrently access the module-level dictionaries <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">_composite</code> and <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">_evidence</code>.
-        </p>
-        <ul className="list-disc pl-4 space-y-1.5 text-slate-700">
-          <li>
-            <strong>Dictionary Size Mutation Hazard:</strong> In CPython, writing to a dictionary while another thread iterates over it (e.g. during <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">verdict_counts()</code> or full-index scans) raises an unhandled <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">RuntimeError: dictionary changed size during iteration</code>, crashing the query.
-          </li>
-          <li>
-            <strong>Why RLock over Standard Lock:</strong> A standard <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">threading.Lock</code> cannot be acquired multiple times by the same thread without causing an immediate self-deadlock. With <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">threading.RLock()</code> (Re-entrant Lock), a thread that already holds the lock can call nested helper methods without deadlocking, while external reader threads wait for the atomic batch upsert to release.
-          </li>
-          <li>
-            <strong>Preservation of Pre-Indexed Baseline:</strong> Inside <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">upsert_batch()</code>, the lock guarantees that if an address already exists in the 17,020 pre-indexed verified set, it is never overwritten by a provisional stub:
-            <pre className="p-2 bg-slate-900 text-slate-200 rounded font-mono text-[10px] mt-1 overflow-x-auto">
-{`with _store_lock:
-    for item in scored_items:
-        addr = item["address"]
-        existing = _composite.get(addr)
-        if existing is not None and not existing.get("provisional", False):
-            skipped += 1
-        else:
-            _composite[addr] = item["composite_record"]
-            _evidence[addr] = item["evidence_record"]
-            upserted += 1`}
-            </pre>
-          </li>
-        </ul>
-      </div>
-    ),
+    id: "what-is-provisional-dossier-legal",
+    question: "What does 'Provisional' mean, and is this legal evidence in court under Section 65B?",
+    category: "LEGAL_EVIDENCE",
+    badgeText: "STATUTORY INTEGRITY (SEC 65B)",
+    badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    analogy:
+      "An urgent APB (All-Points Bulletin) sent to patrol cars versus a final certified forensic autopsy report presented at trial.",
+    answer:
+      "A 'Provisional Dossier' is an unconfirmed alert meant for immediate tactical containment (such as serving an urgent freeze notice under Section 91/102 CrPC). To strictly uphold Section 65B of the Indian Evidence Act and Section 63 of the BSA 2023, our system stamps these alerts with a clear 'Provisional' badge. Once the block is mined 10 minutes later, the system automatically seals the permanent cryptographic hash without human tampering.",
+    keyTakeaway: "Immediate operational alerts for police; strict judicial transparency for the judge.",
+  },
+  {
+    id: "live-graph-pinboard-no-crash",
+    question: "How does the Neo4j detective pinboard update in real time without freezing or crashing?",
+    category: "SPEED_AND_TECH",
+    badgeText: "NON-BLOCKING GRAPH SYNC",
+    badgeColor: "bg-purple-50 text-purple-700 border-purple-200",
+    analogy:
+      "Adding sticky notes to an ongoing investigation board without knocking over the table or asking everyone to leave the room.",
+    answer:
+      "Our backend uses re-entrant threading locks (RLock) and atomic in-memory stores. When new Mempool alerts arrive, FastAPI merges the new node and edge into the live graph store in under 1.2ms without blocking analysts who are actively reading or querying existing cases. The frontend updates smoothly via event streams with zero page refreshes.",
+    keyTakeaway: "Smooth, zero-lag detective pinboard updates that never interrupt an active investigation.",
   },
 ];
 
 export function SyncFaq() {
-  const [openId, setOpenId] = useState<string | null>("why-not-redis-for-xai-store");
-  const [activeCategory, setActiveCategory] = useState<string>("ALL");
+  const [openId, setOpenId] = useState<string>("why-not-wait-for-blockchain");
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const filteredFaqs = useMemo(() => {
     return FAQS.filter((faq) => {
-      const matchesCategory = activeCategory === "ALL" || faq.category === activeCategory;
-      const matchesQuery =
-        searchQuery.trim() === "" ||
+      const matchesCat = selectedCategory === "ALL" || faq.category === selectedCategory;
+      const matchesSearch =
         faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        faq.badgeText.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesQuery;
+        faq.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        faq.analogy.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCat && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [selectedCategory, searchQuery]);
 
   return (
-    <div className="space-y-4">
-      {/* Category Pills & Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
-          {["ALL", "ARCHITECTURE_IPC", "HANDSHAKE_SAFETY", "CONCURRENCY_LOCKS", "STATUTORY_PROVISIONAL"].map(
-            (cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-2.5 py-1 rounded border transition-colors cursor-pointer ${
-                  activeCategory === cat
-                    ? "bg-slate-900 text-white border-slate-900 font-bold shadow-xs"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                {cat.replace("_", " ")}
-              </button>
-            )
-          )}
+    <div className="card-tactical rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-6 shadow-xs">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              NON-TECHNICAL DEFENSE FAQ
+            </span>
+            <span className="text-xs text-slate-400 font-mono">JUDGE &amp; TEAMMATE Q&amp;A</span>
+          </div>
+          <h3 className="text-base font-bold text-slate-900 mt-1">
+            Questions Hackathon Judges Love to Ask (And How to Answer Them)
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Clear, jargon-free explanations to defend real-time Mempool sniffing and live graph sync.
+          </p>
         </div>
 
+        {/* Search Input */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search sync & IPC defense..."
+            placeholder="Search questions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-900 shadow-xs"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white text-slate-900"
           />
         </div>
       </div>
 
-      {/* Accordion List */}
-      <div className="space-y-2.5">
+      {/* Category Filter Pills */}
+      <div className="flex flex-wrap gap-2 text-xs font-mono">
+        {[
+          { id: "ALL", label: "All Questions" },
+          { id: "JUDGES_FAVORITES", label: "Judge Favorites" },
+          { id: "HOW_IT_WORKS", label: "How It Works" },
+          { id: "LEGAL_EVIDENCE", label: "Legal & Court Proof" },
+          { id: "SPEED_AND_TECH", label: "Speed & Tech" },
+        ].map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`px-3 py-1 rounded-md transition-all cursor-pointer font-semibold ${
+              selectedCategory === cat.id
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* FAQ Accordion List */}
+      <div className="space-y-3">
         {filteredFaqs.map((faq) => {
           const isOpen = openId === faq.id;
           return (
@@ -235,45 +183,58 @@ export function SyncFaq() {
               key={faq.id}
               className={`rounded-xl border transition-all ${
                 isOpen
-                  ? "bg-white border-slate-300 shadow-xs ring-1 ring-slate-900/5"
-                  : "bg-white/80 border-slate-200 hover:border-slate-300"
+                  ? "border-indigo-300 bg-indigo-50/20 shadow-xs"
+                  : "border-slate-200 bg-white hover:border-slate-300"
               }`}
             >
               <button
-                onClick={() => setOpenId(isOpen ? null : faq.id)}
-                className="w-full p-4 text-left flex items-start justify-between gap-4 cursor-pointer select-none"
+                onClick={() => setOpenId(isOpen ? "" : faq.id)}
+                className="w-full p-4 text-left flex items-start justify-between gap-3 cursor-pointer"
               >
-                <div className="space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.2 rounded text-[10px] font-mono font-bold border ${faq.badgeColor}`}>
                       {faq.badgeText}
                     </span>
-                    {faq.technicalNote && (
-                      <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1">
-                        <Lock className="w-3 h-3 text-slate-400" />
-                        {faq.technicalNote}
-                      </span>
-                    )}
                   </div>
-                  <div className="text-sm font-bold text-slate-900 leading-snug">
+                  <h4 className="text-sm font-bold text-slate-900 leading-snug">
                     {faq.question}
-                  </div>
+                  </h4>
                 </div>
-
                 <div
-                  className={`w-6 h-6 rounded flex items-center justify-center shrink-0 border transition-transform ${
-                    isOpen
-                      ? "bg-slate-900 text-white border-slate-900 rotate-180"
-                      : "bg-slate-50 text-slate-400 border-slate-200"
+                  className={`p-1 rounded-full text-slate-400 transition-transform mt-0.5 shrink-0 ${
+                    isOpen ? "rotate-180 text-indigo-600" : ""
                   }`}
                 >
-                  <ChevronDown className="w-3.5 h-3.5" />
+                  <ChevronDown className="w-4 h-4" />
                 </div>
               </button>
 
               {isOpen && (
-                <div className="px-4 pb-4 pt-1 border-t border-slate-100">
-                  {faq.answer}
+                <div className="px-4 pb-4 pt-1 space-y-3.5 border-t border-slate-100 text-xs leading-relaxed text-slate-700">
+                  {/* Analogy Callout */}
+                  <div className="p-3 rounded-lg bg-amber-50/80 border border-amber-200/80 flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-mono font-bold uppercase text-[10px] text-amber-900">
+                        Visual Analogy:{" "}
+                      </span>
+                      <span className="text-amber-950 font-medium">{faq.analogy}</span>
+                    </div>
+                  </div>
+
+                  {/* Main Plain English Answer */}
+                  <p className="font-sans text-slate-800 text-[13px] leading-relaxed">
+                    {faq.answer}
+                  </p>
+
+                  {/* Key Takeaway Banner */}
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 font-mono text-[11px] text-slate-800 flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>
+                      <strong>Judge Takeaway:</strong> {faq.keyTakeaway}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -281,8 +242,8 @@ export function SyncFaq() {
         })}
 
         {filteredFaqs.length === 0 && (
-          <div className="p-8 text-center text-xs text-slate-400 font-mono border border-dashed border-slate-200 rounded-xl bg-slate-50">
-            No technical FAQ entries match your search query.
+          <div className="text-center py-8 text-xs text-slate-500 font-mono">
+            No matching questions found for &ldquo;{searchQuery}&rdquo;.
           </div>
         )}
       </div>

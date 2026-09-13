@@ -14,6 +14,7 @@ import {
   Cpu,
   Info,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 
 type SchemaCategory = "nodes" | "edges";
@@ -36,6 +37,7 @@ interface SchemaEntity {
   badgeBg: string;
   cardinality: string;
   cardinalitySub: string;
+  analogy: string;
   summary: string;
   properties: PropertyDefinition[];
   cypherQuery: string;
@@ -49,59 +51,60 @@ const SCHEMA_ENTITIES: Record<string, SchemaEntity> = {
     id: "wallet",
     name: ":Wallet",
     kind: "node",
-    categoryLabel: "BLOCKCHAIN ENTITY NODE",
+    categoryLabel: "THE SUSPECT'S WALLET (NODE)",
     badgeColor: "text-amber-700",
     badgeBorder: "border-amber-200",
     badgeBg: "bg-amber-50",
     cardinality: "24,673 Nodes",
-    cardinalitySub: "100% Clustered via Louvain",
+    cardinalitySub: "100% Grouped into Syndicates",
+    analogy: "Detective's Pinboard: Suspect Photo",
     summary:
-      "Represents a discrete cryptographic Bitcoin address (Base58 P2PKH/P2SH, Bech32 SegWit, or Bech32m Taproot). Serves as the atomic building block for entity clustering, anomaly evaluation, and GraphSAGE risk inference.",
+      "Every cryptocurrency address is like a suspect's digital bank account. Even though criminals use fake names, their wallet addresses are permanently recorded on the blockchain. Our AI groups these addresses into criminal syndicates.",
     properties: [
       {
         name: "address",
         type: "STRING",
-        constraint: "UNIQUE CONSTRAINT (btree)",
-        description: "Public key hash or script hash address string",
+        constraint: "UNIQUE (btree)",
+        description: "Public wallet address (like a bank account number)",
         example: "'1BoatSLRHtKNngkdXEeobR76b53LETtpyT'",
       },
       {
         name: "cluster_id",
         type: "INTEGER",
-        constraint: "INDEXED (btree)",
-        description: "Louvain community partition ID synced from GDS in-memory projection",
-        example: "9451",
+        constraint: "INDEXED",
+        description: "Crime Syndicate ID (grouped automatically by Louvain clustering)",
+        example: "9451 (Ransomware Group)",
       },
       {
         name: "risk_score",
         type: "FLOAT",
-        constraint: "INDEXED (range)",
-        description: "Composite GNN risk probability computed by 3-layer GraphSAGE [0.0, 1.0]",
-        example: "0.8924",
+        constraint: "INDEXED",
+        description: "AI Danger Rating: from 0.0 (clean) to 1.0 (dangerous criminal)",
+        example: "0.89 (High Risk)",
       },
       {
         name: "anomaly_score",
         type: "FLOAT",
         constraint: "OPTIONAL",
-        description: "Reconstruction Mean Squared Error (MSE) from 18-feature deep autoencoder",
-        example: "0.0481",
+        description: "Weirdness Rating: flags abnormal spending surges or bot activity",
+        example: "0.048",
       },
       {
         name: "is_seed_illicit",
         type: "BOOLEAN",
-        constraint: "INDEXED (lookup)",
-        description: "True if address matches the 11,186 curated Ransomwhere seed intelligence list",
+        constraint: "INDEXED",
+        description: "True if verified by law enforcement intelligence as a ransomware gang",
         example: "true",
       },
       {
         name: "seed_proximity",
         type: "FLOAT",
         constraint: "OPTIONAL",
-        description: "Personalized PageRank (PPR) random walk score rooted at Ransomwhere seeds",
+        description: "Proximity score: how closely connected this wallet is to known hackers",
         example: "0.1428",
       },
     ],
-    cypherQuery: `// 1. Enforce Uniqueness & B-Tree Indexes
+    cypherQuery: `// 1. Enforce Uniqueness & Fast B-Tree Indexes
 CREATE CONSTRAINT wallet_address_unique IF NOT EXISTS
 FOR (w:Wallet) REQUIRE w.address IS UNIQUE;
 
@@ -111,71 +114,72 @@ FOR (w:Wallet) ON (w.cluster_id);
 CREATE INDEX wallet_risk_idx IF NOT EXISTS
 FOR (w:Wallet) ON (w.risk_score);
 
-// 2. Sample Inspection of High-Risk Cluster Members
+// 2. Sample Inspection: Find Most Dangerous Wallets in Syndicate #9451
 MATCH (w:Wallet)
 WHERE w.cluster_id = 9451
 RETURN w.address, w.risk_score, w.anomaly_score, w.is_seed_illicit
 ORDER BY w.risk_score DESC
 LIMIT 10;`,
     queryDescription:
-      "Strict schema constraints ensure sub-millisecond lookup and deduplication during high-speed batch ingest.",
+      "Strict schema rules guarantee sub-millisecond wallet lookup and instant syndicate filtering.",
     hardeningRule:
-      "Indexed on (cluster_id) and (risk_score) so API endpoints like /api/v1/graph/{cluster_id} execute in <15ms without full graph scans.",
+      "Indexed on (cluster_id) and (risk_score) so when an investigator searches an alert, the entire syndicate loads in <15ms.",
     sourceFile: "backend/scripts/build_graph.py",
   },
   transaction: {
     id: "transaction",
     name: ":Transaction",
     kind: "node",
-    categoryLabel: "LEDGER STATE TRANSITION NODE",
+    categoryLabel: "THE MONEY TRANSFER (NODE)",
     badgeColor: "text-emerald-700",
     badgeBorder: "border-emerald-200",
     badgeBg: "bg-emerald-50",
     cardinality: "100,000 Nodes",
-    cardinalitySub: "Full Multi-Input/Output Ledger",
+    cardinalitySub: "Full Multi-Input Ledger",
+    analogy: "Detective's Pinboard: Wire Transfer Receipt",
     summary:
-      "Represents a verified on-chain Bitcoin transaction. Binds sender inputs to recipient outputs and links physical network propagation telemetry (IP/ASN) to the ledger state.",
+      "Represents the actual transfer of Bitcoin on the immutable ledger. It binds sender input wallets to recipient output wallets and links physical internet broadcast servers (IP/ASN) to the money flow.",
     properties: [
       {
         name: "txid",
         type: "STRING",
-        constraint: "UNIQUE CONSTRAINT (btree)",
-        description: "64-character double-SHA256 transaction hash identifier",
+        constraint: "UNIQUE (btree)",
+        description: "Unique 64-character transaction hash (wire confirmation code)",
         example: "'9f8b2c4e...d81a3'",
       },
       {
         name: "ts",
-        type: "DATETIME / STRING",
-        constraint: "TEMPORAL INDEX",
-        description: "Block confirmation timestamp or mempool initial arrival time (ISO 8601)",
+        type: "DATETIME",
+        constraint: "TIME INDEX",
+        description: "Exact timestamp when the transaction occurred",
         example: "'2026-09-07T18:21:04Z'",
       },
       {
         name: "total_in",
-        type: "FLOAT / SATOSHI",
+        type: "FLOAT",
         constraint: "REQUIRED",
-        description: "Aggregate sum of all resolved UTXO input values",
-        example: "4.52000000",
+        description: "Total Bitcoin collected from all input wallets combined",
+        example: "4.52000000 BTC",
       },
       {
         name: "total_out",
-        type: "FLOAT / SATOSHI",
+        type: "FLOAT",
         constraint: "REQUIRED",
-        description: "Aggregate sum of all generated UTXO output values",
-        example: "4.51950000",
+        description: "Total Bitcoin paid out to recipient and change wallets",
+        example: "4.51950000 BTC",
       },
       {
         name: "fee",
-        type: "FLOAT / SATOSHI",
+        type: "FLOAT",
         constraint: "REQUIRED",
-        description: "Miner fee (total_in - total_out) in BTC/satoshis",
-        example: "0.00050000",
+        description: "Miner processing fee (total_in minus total_out)",
+        example: "0.00050000 BTC",
       },
       {
         name: "anomaly_score",
         type: "FLOAT",
         constraint: "OPTIONAL",
-        description: "Autoencoder reconstruction error flagging abnormal fee/entropy ratios",
+        description: "Unusual fee or transaction structure warning score",
         example: "0.0892",
       },
     ],
@@ -183,7 +187,7 @@ LIMIT 10;`,
 CREATE CONSTRAINT tx_txid_unique IF NOT EXISTS
 FOR (t:Transaction) REQUIRE t.txid IS UNIQUE;
 
-// 2. High-Volume Batch Upsert via UNWIND
+// 2. High-Speed Batch Ingest via UNWIND
 UNWIND $batch AS row
 MERGE (t:Transaction {txid: row.txid})
 ON CREATE SET 
@@ -193,50 +197,51 @@ ON CREATE SET
   t.fee = row.fee,
   t.anomaly_score = row.anomaly_score;`,
     queryDescription:
-      "Batch-upserted in chunks of 1,000 items with ON CREATE SET to prevent duplicate node instantiation.",
+      "Batch-upserted in chunks of 1,000 items to prevent duplicate transactions without locking the database.",
     hardeningRule:
-      "Transactional nodes are bounded in API queries (base quota: 25% of max_nodes, capped at 35) to prevent mega-transactions from flooding the D3 viewport.",
+      "Bounded display quota (capped at 35 transactions per view) ensures the interactive 3D/graph canvas never freezes.",
     sourceFile: "backend/scripts/build_graph.py",
   },
   ip: {
     id: "ip",
     name: ":IP",
     kind: "node",
-    categoryLabel: "NETWORK TELEMETRY NODE",
+    categoryLabel: "CRIME SCENE LOCATION (NODE)",
     badgeColor: "text-sky-700",
     badgeBorder: "border-sky-200",
     badgeBg: "bg-sky-50",
     cardinality: "32,840 Nodes",
-    cardinalitySub: "Enriched via MaxMind mmdb",
+    cardinalitySub: "Enriched with Sovereign GeoIP",
+    analogy: "Detective's Pinboard: Crime Scene Map Marker",
     summary:
-      "Represents a physical or proxy IP address observed broadcasting or relaying transaction packets across the Bitcoin P2P network. Enriched offline with sovereign GeoLite2 data.",
+      "The physical internet IP address and server location that transmitted the transaction across the web. Enriched 100% offline using local GeoIP files so we know the hosting provider and country.",
     properties: [
       {
         name: "address",
         type: "STRING",
-        constraint: "UNIQUE CONSTRAINT (btree)",
-        description: "IPv4 or IPv6 broadcast origin address",
+        constraint: "UNIQUE (btree)",
+        description: "Physical IPv4 or IPv6 internet broadcast address",
         example: "'185.220.101.5'",
       },
       {
         name: "country",
         type: "STRING (ISO-2)",
         constraint: "INDEXED",
-        description: "Two-letter ISO geographic sovereign country code",
-        example: "'DE' (Germany)",
+        description: "Sovereign country code where the server is located",
+        example: "'DE' (Germany), 'BG' (Bulgaria)",
       },
       {
         name: "asn",
         type: "INTEGER",
         constraint: "INDEXED",
-        description: "Autonomous System Number resolved from local GeoLite2-ASN database",
-        example: "208323",
+        description: "Network provider number (bulletproof hosting datacenter ID)",
+        example: "208323 (Bulletproof Hosting)",
       },
       {
         name: "src_port",
         type: "INTEGER",
         constraint: "OPTIONAL",
-        description: "Source port recorded by packet sniffer / collector daemon",
+        description: "Port used to relay the Bitcoin transaction packet",
         example: "8333",
       },
     ],
@@ -244,61 +249,62 @@ ON CREATE SET
 CREATE CONSTRAINT ip_address_unique IF NOT EXISTS
 FOR (ip:IP) REQUIRE ip.address IS UNIQUE;
 
-// 2. Correlate IP Telemetry to Multi-Input Suspicious Flows
+// 2. Trace Malicious Server to Criminal Syndicates
 MATCH (ip:IP)-[:OBSERVED]->(t:Transaction)<-[:SENDS]-(w:Wallet)
-WHERE w.risk_score > 0.85
-RETURN ip.country, ip.asn, count(DISTINCT t) AS suspicious_txs, collect(DISTINCT w.cluster_id) AS clusters
-ORDER BY suspicious_txs DESC
+WHERE ip.asn = 208323 AND w.risk_score > 0.85
+RETURN ip.address, ip.country, count(DISTINCT t) AS illicit_txs, collect(DISTINCT w.cluster_id) AS syndicates
+ORDER BY illicit_txs DESC
 LIMIT 10;`,
     queryDescription:
-      "Direct multi-hop traversal linking physical network routing (ASNs, hosting providers, Tor exit relays) to high-risk blockchain clusters.",
+      "Direct multi-hop traversal linking physical servers to high-risk criminal syndicates.",
     hardeningRule:
-      "Network IP nodes are isolated from wallet nodes; they connect strictly to :Transaction via :OBSERVED to maintain strict separation of physical network and ledger layers.",
+      "IP nodes connect strictly to :Transaction via :OBSERVED to maintain clean separation between physical internet wiring and on-chain wallets.",
     sourceFile: "backend/app/services/graph_service.py",
   },
   cospend: {
     id: "cospend",
     name: ":CO_SPEND",
     kind: "edge",
-    categoryLabel: "COMMON-INPUT OWNERSHIP EDGE",
+    categoryLabel: "THE PIZZA BILL CONNECTION (EDGE)",
     badgeColor: "text-indigo-700",
     badgeBorder: "border-indigo-200",
     badgeBg: "bg-indigo-50",
     cardinality: "79,240 Edges",
-    cardinalitySub: "Canonical addr1 < addr2",
+    cardinalitySub: "Saved with Friendship Rule",
+    analogy: "Detective's Pinboard: The Smoking Gun Red String",
     summary:
-      "Direct peer relationship between two :Wallet nodes established by the Common-Input Ownership Heuristic (CIOH). If Address A and Address B sign inputs to the same transaction, they are proven to belong to the same spending entity.",
+      "The smoking gun! If Wallet A and Wallet B are both spent together to pay for a single transaction, they must be controlled by the exact same suspect (Common-Input Ownership Heuristic).",
     properties: [
       {
         name: "addr1",
         type: "STRING",
-        constraint: "LEXICOGRAPHIC MIN",
-        description: "Canonical first address satisfying addr1 < addr2",
+        constraint: "ALPHABETICAL MIN",
+        description: "First wallet address in the pair (alphabetically smaller)",
         example: "'1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'",
       },
       {
         name: "addr2",
         type: "STRING",
-        constraint: "LEXICOGRAPHIC MAX",
-        description: "Canonical second address satisfying addr1 < addr2",
+        constraint: "ALPHABETICAL MAX",
+        description: "Second wallet address in the pair (alphabetically larger)",
         example: "'3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy'",
       },
       {
         name: "weight",
-        type: "FLOAT (GDS projection)",
-        constraint: "IMPLICIT / 1.0",
-        description: "Co-occurrence frequency across multi-input transactions",
+        type: "FLOAT",
+        constraint: "FREQUENCY",
+        description: "Connection strength: how many times they spent coins together",
         example: "1.0",
       },
     ],
-    cypherQuery: `// Projection of Pairwise CO_SPEND with Anti-Explosion Guard
+    cypherQuery: `// 1. Create Pairwise CO_SPEND with Anti-Explosion Rule
 UNWIND $batch AS row
 MATCH (w1:Wallet {address: row.addr1})
 MATCH (w2:Wallet {address: row.addr2})
 WHERE row.addr1 < row.addr2
 MERGE (w1)-[:CO_SPEND]->(w2);
 
-// In-Memory GDS Projection for Louvain
+// 2. In-Memory Graph Projection for Rapid Louvain Clustering
 CALL gds.graph.project(
   'wallet_cospend',
   'Wallet',
@@ -308,37 +314,38 @@ CALL gds.graph.project(
 )
 YIELD graphName, nodeCount, relationshipCount;`,
     queryDescription:
-      "Strictly creates edges only where addr1 < addr2, cutting edge storage by exactly 50% and preventing reciprocal graph explosion.",
+      "Only creates edges where addr1 < addr2, cutting database storage by exactly 50% and eliminating duplicate lines.",
     hardeningRule:
-      "Crucial: Louvain projects :CO_SPEND as UNDIRECTED in GDS RAM. Storing single directed edges saves 50% disk/RAM while preserving symmetric graph modularity calculation.",
+      "Storing single directed edges cuts disk storage and memory by 50% while Louvain analyzes them symmetrically in RAM.",
     sourceFile: "backend/scripts/cluster_wallets.py",
   },
   sends: {
     id: "sends",
     name: ":SENDS",
     kind: "edge",
-    categoryLabel: "INPUT FUNDING FLOW EDGE",
+    categoryLabel: "MONEY LEAVING WALLET (EDGE)",
     badgeColor: "text-amber-700",
     badgeBorder: "border-amber-200",
     badgeBg: "bg-amber-50",
     cardinality: "138,000 Edges",
     cardinalitySub: "Wallet → Transaction",
+    analogy: "Detective's Pinboard: Outgoing Payment Flow",
     summary:
-      "Directed flow from a spending :Wallet to a :Transaction. Records the exact input amount consumed and the cryptographic script type used to authorize the expenditure.",
+      "Directed flow from a suspect's wallet to the transaction they funded. Records the exact amount of Bitcoin supplied and the address type used.",
     properties: [
       {
         name: "amount",
-        type: "FLOAT / SATOSHI",
-        constraint: "NON-NEGATIVE",
-        description: "Satoshis or BTC contributed by this input address",
-        example: "1.25000000",
+        type: "FLOAT",
+        constraint: "POSITIVE",
+        description: "Bitcoin amount contributed from this input wallet",
+        example: "1.25000000 BTC",
       },
       {
         name: "script_type",
         type: "STRING",
-        constraint: "VALIDATED ENUM",
-        description: "Script category (P2PKH, P2SH, P2WPKH, P2TR Taproot)",
-        example: "'p2wpkh'",
+        constraint: "SCRIPT TYPE",
+        description: "Bitcoin address category (Legacy, SegWit, or modern Taproot)",
+        example: "'p2wpkh' (SegWit)",
       },
     ],
     cypherQuery: `// Batch Upsert of SENDS Input Edges
@@ -347,30 +354,31 @@ MATCH (w:Wallet {address: row.wallet_addr})
 MATCH (t:Transaction {txid: row.txid})
 MERGE (w)-[r:SENDS {amount: row.amount, script_type: row.script_type}]->(t);`,
     queryDescription:
-      "Maps the UTXO consumption flow into the transaction execution node.",
+      "Maps the source funds flowing into the transaction execution node.",
     hardeningRule:
-      "Edge amounts are typed as IEEE-754 double floats in Neo4j and synchronized with NUMERIC(16,8) in PostgreSQL to avoid rounding drift.",
+      "Amounts are synchronized with high-precision decimals in PostgreSQL to guarantee zero rounding errors across millions of transactions.",
     sourceFile: "backend/scripts/build_graph.py",
   },
   receives: {
     id: "receives",
     name: ":RECEIVES",
     kind: "edge",
-    categoryLabel: "OUTPUT DISBURSEMENT FLOW EDGE",
+    categoryLabel: "MONEY ARRIVING AT WALLET (EDGE)",
     badgeColor: "text-emerald-700",
     badgeBorder: "border-emerald-200",
     badgeBg: "bg-emerald-50",
     cardinality: "188,342 Edges",
     cardinalitySub: "Transaction → Wallet",
+    analogy: "Detective's Pinboard: Incoming Payout Flow",
     summary:
-      "Directed flow from a :Transaction to a destination :Wallet. Captures change addresses, forward peeling hops, and final beneficiary payouts.",
+      "Directed flow from a transaction to a destination wallet. Captures payments to merchants, payouts to accomplices, and change addresses returning unspent coins to the sender.",
     properties: [
       {
         name: "amount",
-        type: "FLOAT / SATOSHI",
-        constraint: "NON-NEGATIVE",
-        description: "Output value created by transaction in BTC/satoshis",
-        example: "0.04500000",
+        type: "FLOAT",
+        constraint: "POSITIVE",
+        description: "Bitcoin amount received by this destination wallet",
+        example: "0.04500000 BTC",
       },
     ],
     cypherQuery: `// Batch Upsert of RECEIVES Output Edges
@@ -379,36 +387,37 @@ MATCH (t:Transaction {txid: row.txid})
 MATCH (w:Wallet {address: row.wallet_addr})
 MERGE (t)-[r:RECEIVES {amount: row.amount}]->(w);`,
     queryDescription:
-      "Enables linear forward hop tracing for peeling-chain and fund-flow tracking.",
+      "Enables linear forward tracing for peeling chains and fund tracking.",
     hardeningRule:
-      "Used extensively in Phase 6 peeling-chain detection to follow the 1-in-2-out forward hops (≥80% peel, ≤5% change).",
+      "Used extensively by our Peeling Chain Detector to trace money hop-by-hop as criminals peel off small amounts to wash their loot.",
     sourceFile: "backend/scripts/build_graph.py",
   },
   observed: {
     id: "observed",
     name: ":OBSERVED",
     kind: "edge",
-    categoryLabel: "BROADCAST TELEMETRY EDGE",
+    categoryLabel: "CAUGHT ON CAMERA (EDGE)",
     badgeColor: "text-sky-700",
     badgeBorder: "border-sky-200",
     badgeBg: "bg-sky-50",
     cardinality: "100,000 Edges",
     cardinalitySub: "IP → Transaction Link",
+    analogy: "Detective's Pinboard: Network Wiretap Link",
     summary:
-      "Directed telemetry observation linking an :IP node to a :Transaction node. Establishes the physical network socket that initially relayed the raw transaction bytes.",
+      "Connects the physical internet IP address to the transaction it broadcasted across the web. This is the crucial bridge connecting physical location to the blockchain ledger.",
     properties: [
       {
         name: "ts",
-        type: "DATETIME / STRING",
-        constraint: "ISO 8601",
-        description: "Time of packet arrival at the NTRO passive capture tap",
+        type: "DATETIME",
+        constraint: "TIMESTAMP",
+        description: "Exact time the transaction packet arrived at the network sensor",
         example: "'2026-09-07T18:21:04Z'",
       },
       {
         name: "dst_port",
         type: "INTEGER",
-        constraint: "VALID PORT (0-65535)",
-        description: "Destination port on peer node receiving broadcast",
+        constraint: "PORT (0-65535)",
+        description: "Destination port on the Bitcoin node receiving the packet",
         example: "8333",
       },
     ],
@@ -418,14 +427,14 @@ MATCH (ip:IP {address: row.ip_addr})
 MATCH (t:Transaction {txid: row.txid})
 MERGE (ip)-[r:OBSERVED {ts: row.ts, dst_port: row.dst_port}]->(t);
 
-// Network-to-Blockchain Multi-Hop Correlation
+// Network-to-Blockchain Correlation: Which Syndicates Use This Malicious ASN?
 MATCH (ip:IP)-[:OBSERVED]->(t:Transaction)<-[:SENDS]-(w:Wallet)
 WHERE ip.asn = 208323
 RETURN w.cluster_id, count(t) AS tx_volume, collect(DISTINCT ip.country) AS countries;`,
     queryDescription:
-      "Correlates raw network traffic metadata (IP address, ASN, destination port) directly with the cryptographic spending entity.",
+      "Correlates raw internet network traffic metadata directly with the cryptographic spending entity.",
     hardeningRule:
-      "In WORK-2 §4, the router was hardened to query (ip:IP)-[:OBSERVED]-(t:Transaction) with DISTINCT and local set deduplication, eliminating duplicated link rendering in the D3 canvas.",
+      "Deduplicated in Python memory before rendering so the forensic graph never renders duplicate red strings.",
     sourceFile: "backend/app/routers/graph.py",
   },
 };
@@ -454,14 +463,14 @@ export function SchemaInspector() {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
             <span className="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              INTERACTIVE GRAPH TOPOLOGY &amp; SCHEMA INSPECTOR
+              INTERACTIVE DETECTIVE PINBOARD SCHEMA
             </span>
           </div>
           <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
-            Neo4j 5.26 Property Graph &amp; Cypher Blueprint
+            The Evidence Map: Nodes &amp; Red Strings
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Click any node label or relationship type to inspect schema constraints, properties, verified cardinalities, and copy production Cypher queries.
+            Click any node or connection below to inspect real-world analogies, properties, and production Cypher queries.
           </p>
         </div>
 
@@ -478,7 +487,7 @@ export function SchemaInspector() {
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Node Labels (3)
+            Evidence Nodes (3)
           </button>
           <button
             onClick={() => {
@@ -491,7 +500,7 @@ export function SchemaInspector() {
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Relationships (4)
+            Red String Edges (4)
           </button>
         </div>
       </div>
@@ -564,6 +573,13 @@ export function SchemaInspector() {
                 <span className="text-[10px] text-slate-400 ml-1.5">({activeEntity.cardinalitySub})</span>
               </div>
             </div>
+
+            {/* Analogy Badge */}
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-xs font-medium">
+              <Sparkles className="w-3 h-3 text-amber-600" />
+              <span>{activeEntity.analogy}</span>
+            </div>
+
             <p className="text-xs text-slate-600 leading-relaxed pt-1">
               {activeEntity.summary}
             </p>
@@ -574,7 +590,7 @@ export function SchemaInspector() {
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-slate-500" />
-                Property Definitions &amp; Constraints
+                Evidence Properties &amp; Meaning
               </span>
               <span className="text-[10px] font-mono text-slate-400">
                 {activeEntity.properties.length} properties defined
@@ -586,10 +602,10 @@ export function SchemaInspector() {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100/80 text-slate-600 font-mono text-[10px] uppercase border-b border-slate-200">
                     <tr>
-                      <th className="py-2 px-3">Property</th>
+                      <th className="py-2 px-3">Field</th>
                       <th className="py-2 px-2">Type</th>
-                      <th className="py-2 px-2">Index / Rule</th>
-                      <th className="py-2 px-3">Description</th>
+                      <th className="py-2 px-2">Index Rule</th>
+                      <th className="py-2 px-3">Plain-English Meaning</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -632,7 +648,7 @@ export function SchemaInspector() {
           <div className="p-3 bg-sky-50/50 rounded-lg border border-sky-100 text-xs text-slate-700 space-y-1">
             <div className="flex items-center gap-1.5 font-bold text-sky-900">
               <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-              Engine Hardening Rule
+              Forensic Reliability Rule
             </div>
             <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
               {activeEntity.hardeningRule}
@@ -640,16 +656,16 @@ export function SchemaInspector() {
           </div>
         </div>
 
-        {/* Right Column: Interactive Schema Visualizer & Production Cypher (5 cols) */}
+        {/* Right Column: Visual Triad Mini-Map & Cypher Box (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           {/* Visual Topology Mini-Map */}
           <div className="p-4 rounded-lg bg-slate-900 text-white space-y-3 shadow-xs">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Network className="w-3.5 h-3.5 text-sky-400" />
-                Relational Triad Topology
+                The Detective&apos;s Pinboard Web
               </span>
-              <span className="text-[10px] text-emerald-400 font-semibold">GDS 2.13 PROJECTION</span>
+              <span className="text-[10px] text-emerald-400 font-semibold">INTERACTIVE MINI-MAP</span>
             </div>
 
             {/* SVG Visual Triad */}
@@ -692,17 +708,6 @@ export function SchemaInspector() {
                     orient="auto-start-reverse"
                   >
                     <path d="M 0 1 L 7 5 L 0 9 z" fill="#0284c7" />
-                  </marker>
-                  <marker
-                    id="arrow-indigo"
-                    viewBox="0 0 10 10"
-                    refX="7"
-                    refY="5"
-                    markerWidth="6"
-                    markerHeight="6"
-                    orient="auto-start-reverse"
-                  >
-                    <path d="M 0 1 L 7 5 L 0 9 z" fill="#6366f1" />
                   </marker>
                 </defs>
                 <rect width="320" height="180" fill="url(#grid-pattern)" />
@@ -771,7 +776,7 @@ export function SchemaInspector() {
                     :Wallet
                   </text>
                   <text x="55" y="63" fill="#94a3b8" fontSize="7" fontFamily="monospace" textAnchor="middle">
-                    (Input)
+                    (Sender)
                   </text>
                 </g>
 
@@ -812,7 +817,7 @@ export function SchemaInspector() {
                     :Tx
                   </text>
                   <text x="189" y="60" fill="#94a3b8" fontSize="7" fontFamily="monospace" textAnchor="middle">
-                    100k
+                    Transfer
                   </text>
                 </g>
 
@@ -833,7 +838,7 @@ export function SchemaInspector() {
                     :Wallet
                   </text>
                   <text x="275" y="136" fill="#94a3b8" fontSize="6.5" fontFamily="monospace" textAnchor="middle">
-                    (Output)
+                    (Receiver)
                   </text>
                 </g>
 
@@ -854,13 +859,13 @@ export function SchemaInspector() {
                     :IP
                   </text>
                   <text x="150" y="160" fill="#38bdf8" fontSize="6.5" fontFamily="monospace" textAnchor="middle">
-                    GeoIP
+                    Server
                   </text>
                 </g>
               </svg>
             </div>
             <div className="text-[11px] text-slate-400 text-center font-mono">
-              Triad model: Blockchain layer (:Wallet, :Tx) decoupled from Network layer (:IP) via :OBSERVED
+              Click any node or line above to inspect its properties and queries
             </div>
           </div>
 
@@ -897,7 +902,7 @@ export function SchemaInspector() {
 
             <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-[10px] font-mono text-slate-500 flex items-center justify-between">
               <span>Source: {activeEntity.sourceFile}</span>
-              <span className="text-emerald-700 font-semibold">GDS 2.13 Verified</span>
+              <span className="text-emerald-700 font-semibold">100% Offline Neo4j 5.26</span>
             </div>
           </div>
         </div>
