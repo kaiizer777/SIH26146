@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Radio, Activity, ShieldAlert, AlertTriangle, Zap, Sparkles, ShieldCheck, Database, BadgeCheck, ArrowLeft, ArrowRight } from "lucide-react";
 import { SyncPlayground } from "./sync-playground";
 import { SyncSequenceDiagram } from "./sync-sequence-diagram";
-import { SyncFaq } from "./sync-faq";
 
 export const metadata = {
   title: "Chapter 7: The Watchtower — Real-Time Mempool Sniffing & Live Graph Sync — NTRO KB",
@@ -220,17 +219,7 @@ export default function Chapter7Page() {
         <SyncSequenceDiagram />
       </section>
 
-      {/* SECTION 5: Frequently Asked Questions (Teammate Cheat Sheet) */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-[8px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-xs flex-shrink-0">05</div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">Frequently Asked Questions (Teammate Cheat Sheet)</h2>
-            <p className="text-xs text-slate-500 font-mono">Defensible answers on zero-conf legal validity, RBF double-spend handling, and real-time Neo4j concurrency</p>
-          </div>
-        </div>
-        <SyncFaq />
-      </section>
+
 
       {/* CHAPTER FOOTER NAVIGATION */}
       <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">

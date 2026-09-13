@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Network, GitMerge, HardDrive, Users, ShieldAlert, ShieldCheck, CheckCircle2, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { ClusteringSimulator } from "./clustering-simulator";
 import { SchemaInspector } from "./schema-inspector";
-import { GraphFaq } from "./graph-faq";
 
 export const metadata = {
   title: "Chapter 3: Graph Topology & Entity Clustering — NTRO KB",
@@ -242,19 +241,7 @@ export default function Chapter3Page() {
         <SchemaInspector />
       </section>
 
-      {/* SECTION 5: Frequently Asked Questions (Teammate Cheat Sheet) */}
-      <section className="space-y-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-[8px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_2px_5px_rgba(37,99,235,0.25)] flex-shrink-0">
-            05
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">Frequently Asked Questions (Teammate Cheat Sheet)</h2>
-            <p className="text-xs text-slate-500 font-mono">Direct, concise answers to technical and investigative questions asked during reviews and evaluator demos</p>
-          </div>
-        </div>
-        <GraphFaq />
-      </section>
+
 
       {/* CHAPTER FOOTER NAVIGATION */}
       <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">

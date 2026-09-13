@@ -7,7 +7,6 @@ import {
 import { RiskCalculator } from "./risk-calculator";
 import { ShapWaterfall } from "./shap-waterfall";
 import { LegalCertificateViewer } from "./legal-certificate-viewer";
-import { RiskFaq } from "./risk-faq";
 
 export const metadata = {
   title: "Chapter 6: Risk Engine, Explainable AI & Section 65B Legal Dossier — NTRO KB",
@@ -228,17 +227,7 @@ export default function Chapter6Page() {
         <LegalCertificateViewer />
       </section>
 
-      {/* SECTION 6: Frequently Asked Questions (Teammate Cheat Sheet) */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-[8px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-xs flex-shrink-0">06</div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">Frequently Asked Questions (Teammate Cheat Sheet)</h2>
-            <p className="text-xs text-slate-500 font-mono">Defensible answers on Lloyd Shapley game theory, Section 65B legal validity, and Indian Evidence Act</p>
-          </div>
-        </div>
-        <RiskFaq />
-      </section>
+
 
       {/* CHAPTER FOOTER NAVIGATION */}
       <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">

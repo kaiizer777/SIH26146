@@ -28,7 +28,6 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { TopologyDiagram } from "./topology-diagram";
-import { FaqAccordion } from "./faq-accordion";
 import { PipelineStepper } from "./pipeline-stepper";
 
 export const metadata = {
@@ -379,30 +378,7 @@ export default function Chapter1Page() {
         <TopologyDiagram />
       </section>
 
-      {/* SECTION 5: Key Questions & Plain-English Answers */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-3.5">
-          <div className="w-9 h-9 rounded-[10px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_2px_6px_rgba(37,99,235,0.3)] flex-shrink-0">
-            05
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/80">
-                FORENSIC CHEAT SHEET
-              </span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-950 mt-1">
-              Frequently Asked Questions (Teammate Cheat Sheet)
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 font-mono mt-0.5">
-              Quick, clear answers to the most common questions you will be asked during reviews or presentations
-            </p>
-          </div>
-        </div>
 
-        {/* Embedded FAQ Accordion */}
-        <FaqAccordion />
-      </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}
       <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">

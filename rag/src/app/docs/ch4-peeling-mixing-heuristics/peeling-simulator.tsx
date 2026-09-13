@@ -14,11 +14,15 @@ import {
   ChevronLeft,
   DollarSign,
   Percent,
-  Terminal,
   Sparkles,
   Info,
   ShieldCheck,
   ShieldAlert,
+  ShoppingBag,
+  Clock,
+  Coins,
+  Radio,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface HopData {
@@ -43,7 +47,7 @@ export function PeelingSimulator() {
   const [chainLength, setChainLength] = useState<number>(6); // 5 to 10 hops
   const [currentHopIndex, setCurrentHopIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"topology" | "analogy" | "cypher" | "metrics">("topology");
+  const [activeTab, setActiveTab] = useState<"topology" | "analogy" | "rules" | "metrics">("topology");
 
   // Fixed network fee per hop in BTC
   const feePerHop = 0.0002;
@@ -66,15 +70,15 @@ export function PeelingSimulator() {
 
       list.push({
         hopNumber: i,
-        inputWallet: `1Peel${i}In_${(1000 + i * 73).toString(16)}...`,
-        txid: `tx_peel_${i.toString().padStart(2, "0")}_${(8921 + i * 137).toString(16)}...`,
+        inputWallet: `1Burner_Node_${i.toString().padStart(2, "0")}`,
+        txid: `tx_${i.toString().padStart(2, "0")}_split_${Math.round(currentBalance)}`,
         totalIn: parseFloat(currentBalance.toFixed(4)),
         peeledAmount: peeled,
-        peeledWallet: `1ExchDep_${(5000 + i * 29).toString(16)}...`,
-        peeledPercent: parseFloat(pPercent.toFixed(2)),
+        peeledWallet: `1Accomplice_Payout_${i}`,
+        peeledPercent: parseFloat(pPercent.toFixed(1)),
         forwardAmount: forward,
-        forwardWallet: `1Peel${i + 1}Chg_${(1000 + (i + 1) * 73).toString(16)}...`,
-        forwardPercent: parseFloat(fPercent.toFixed(2)),
+        forwardWallet: `1Burner_Node_${(i + 1).toString().padStart(2, "0")}`,
+        forwardPercent: parseFloat(fPercent.toFixed(1)),
         fee: feePerHop,
         isPeelingQualifying: isQualifying,
       });
@@ -110,10 +114,6 @@ export function PeelingSimulator() {
 
   const activeHop = hops[currentHopIndex] || hops[0];
 
-  const totalPeeledSum = useMemo(() => {
-    return hops.slice(0, currentHopIndex + 1).reduce((acc, h) => acc + h.peeledAmount, 0);
-  }, [hops, currentHopIndex]);
-
   // Presets
   const applyPreset = (preset: "classic" | "stealth" | "shopper") => {
     setIsPlaying(false);
@@ -133,45 +133,64 @@ export function PeelingSimulator() {
     }
   };
 
+  const totalPeeledSum = useMemo(() => {
+    return hops
+      .slice(0, currentHopIndex + 1)
+      .reduce((sum, h) => sum + h.peeledAmount, 0);
+  }, [hops, currentHopIndex]);
+
   return (
-    <div className="card-tactical rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white overflow-hidden shadow-[0_2px_6px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.9)]">
-      {/* Component Header with Relatable Analogy */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_8px_rgba(15,23,42,0.06)]">
+      {/* Top Banner & Tactical Status HUD */}
+      <div className="p-4 sm:p-5 border-b border-slate-200/90 bg-gradient-to-b from-slate-50/90 to-slate-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-gradient-to-b from-slate-800 to-slate-950 text-white border-t border-t-slate-700 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.2)]">
-              <GitFork className="w-4 h-4" />
-            </span>
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">
-              Interactive Peeling-Chain Hop Simulator
-            </h3>
-            <span className="px-2.5 py-0.5 rounded font-mono text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs">
-              THE &quot;PACK OF GUM&quot; ANALOGY
-            </span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-b from-slate-900 to-slate-950 text-white flex items-center justify-center font-bold text-xs border-t border-t-slate-700 border-b border-b-black shadow-xs flex-shrink-0">
+              <GitFork className="w-3.5 h-3.5 text-sky-400" />
+            </div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-slate-950 tracking-tight">
+                Peeling Chain Radar Simulator
+              </h3>
+              <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200/90 shadow-2xs">
+                PACK OF GUM TRICK
+              </span>
+            </div>
           </div>
           <p className="text-xs text-slate-600">
-            Simulate how a criminal repeatedly peels off small payments (&le; 20%) while passing the bulk change (&ge; 80%) forward across multiple hops.
+            Simulate how ransomware bots peel small cuts (&le;20%) while sweeping the remaining change (&ge;80%) forward across burner wallets.
           </p>
         </div>
 
         {/* Live Detection Status Badge */}
-        <div>
+        <div className="flex-shrink-0">
           {isChainDetected ? (
-            <div className="px-3.5 py-1.5 rounded-lg bg-gradient-to-b from-rose-50 to-rose-100/80 border-t border-t-rose-100 border-x border-x-rose-200 border-b border-b-rose-300 text-rose-900 flex items-center gap-2 shadow-2xs">
+            <div className="px-3.5 py-2 rounded-xl bg-gradient-to-b from-rose-50 to-rose-100/70 border-t border-t-rose-100 border-x border-x-rose-200 border-b border-b-rose-300 text-rose-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(225,29,72,0.1)] flex items-center gap-2.5">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
               </span>
-              <div className="font-mono text-xs font-bold flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                FLAGGED: PEELING LAUNDERING DETECTED
+              <div>
+                <div className="font-mono text-xs font-bold flex items-center gap-1.5 text-rose-900">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                  ALERT: PEELING CHAIN FLAGGED
+                </div>
+                <div className="text-[10px] font-mono text-rose-700 font-medium">
+                  {chainLength} consecutive hops &bull; &le;{peelPercent}% peel ratio
+                </div>
               </div>
             </div>
           ) : (
-            <div className="px-3.5 py-1.5 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100/80 border-t border-t-emerald-100 border-x border-x-emerald-200 border-b border-b-emerald-300 text-emerald-900 flex items-center gap-2 shadow-2xs">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <div className="font-mono text-xs font-bold">
-                CLEARED: NORMAL TRANSACTION PATTERN
+            <div className="px-3.5 py-2 rounded-xl bg-gradient-to-b from-emerald-50 to-emerald-100/70 border-t border-t-emerald-100 border-x border-x-emerald-200 border-b border-b-emerald-300 text-emerald-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(5,150,105,0.1)] flex items-center gap-2.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 flex-shrink-0" />
+              <div>
+                <div className="font-mono text-xs font-bold flex items-center gap-1.5 text-emerald-900">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  CLEARED: ORDINARY SPENDING
+                </div>
+                <div className="text-[10px] font-mono text-emerald-700 font-medium">
+                  {chainLength < 5 ? "Fails ≥5 hop depth gate" : "Fails ≤20% peel threshold"}
+                </div>
               </div>
             </div>
           )}
@@ -179,41 +198,56 @@ export function PeelingSimulator() {
       </div>
 
       {/* Preset Scenario Buttons */}
-      <div className="p-3 bg-gradient-to-b from-slate-50 to-slate-100/80 border-b border-slate-200 flex flex-wrap items-center gap-2 text-xs">
-        <span className="font-mono text-[11px] font-bold text-slate-600 uppercase flex items-center gap-1 mr-1">
+      <div className="p-3 bg-gradient-to-b from-white to-slate-50/70 border-b border-slate-200 flex flex-wrap items-center gap-2 text-xs">
+        <span className="font-mono text-[10.5px] font-bold text-slate-500 uppercase flex items-center gap-1 mr-1">
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           Test Presets:
         </span>
         <button
           onClick={() => applyPreset("classic")}
-          className="px-3 py-1.5 rounded-lg bg-gradient-to-b from-white to-slate-100 text-slate-900 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 font-semibold text-xs cursor-pointer active:translate-y-[0.5px] transition-all shadow-2xs"
+          className={`px-3 py-1.5 rounded-lg font-medium text-xs cursor-pointer active:translate-y-[0.5px] transition-all flex items-center gap-1.5 ${
+            initialBtc === 100 && peelPercent === 5 && chainLength === 6
+              ? "bg-slate-900 text-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-xs font-bold"
+              : "bg-gradient-to-b from-white to-slate-50 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs hover:bg-slate-100"
+          }`}
         >
-          🚨 Ransomware Peel (100 BTC • 5% • 6 Hops)
+          <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+          <span>Ransomware Bot (100 BTC &bull; 5% Peel &bull; 6 Hops)</span>
         </button>
         <button
           onClick={() => applyPreset("stealth")}
-          className="px-3 py-1.5 rounded-lg bg-gradient-to-b from-white to-slate-100 text-slate-900 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 font-semibold text-xs cursor-pointer active:translate-y-[0.5px] transition-all shadow-2xs"
+          className={`px-3 py-1.5 rounded-lg font-medium text-xs cursor-pointer active:translate-y-[0.5px] transition-all flex items-center gap-1.5 ${
+            initialBtc === 50 && peelPercent === 2 && chainLength === 8
+              ? "bg-slate-900 text-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-xs font-bold"
+              : "bg-gradient-to-b from-white to-slate-50 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs hover:bg-slate-100"
+          }`}
         >
-          🕵️ Stealth Micro-Peel (50 BTC • 2% • 8 Hops)
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <span>Stealth Micro-Peel (50 BTC &bull; 2% Peel &bull; 8 Hops)</span>
         </button>
         <button
           onClick={() => applyPreset("shopper")}
-          className="px-3 py-1.5 rounded-lg bg-gradient-to-b from-white to-slate-100 text-slate-900 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 font-semibold text-xs cursor-pointer active:translate-y-[0.5px] transition-all shadow-2xs"
+          className={`px-3 py-1.5 rounded-lg font-medium text-xs cursor-pointer active:translate-y-[0.5px] transition-all flex items-center gap-1.5 ${
+            initialBtc === 5 && peelPercent === 40 && chainLength === 3
+              ? "bg-slate-900 text-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-xs font-bold"
+              : "bg-gradient-to-b from-white to-slate-50 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs hover:bg-slate-100"
+          }`}
         >
-          🛒 Normal Shopper (5 BTC • 40% • 3 Hops — Cleared!)
+          <ShoppingBag className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Normal Shopper (5 BTC &bull; 40% Spend &bull; 3 Hops &bull; Safe)</span>
         </button>
       </div>
 
       {/* Simulator Control Sliders */}
       <div className="p-4 sm:p-5 border-b border-slate-200 bg-white grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Slider 1: Starting Stash */}
-        <div className="space-y-2">
+        <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/70 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between text-xs">
             <label htmlFor="starting-balance" className="font-semibold text-slate-800 flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-slate-500" />
-              Starting Stash (Dirty BTC)
+              <DollarSign className="w-3.5 h-3.5 text-blue-600" />
+              Initial Stash (Dirty BTC)
             </label>
-            <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-[11px] shadow-2xs">
+            <span className="font-mono font-bold text-slate-950 bg-white border border-slate-300 px-2.5 py-0.5 rounded-md text-[11px] shadow-2xs">
               {initialBtc.toFixed(1)} BTC
             </span>
           </div>
@@ -229,7 +263,7 @@ export function PeelingSimulator() {
               setInitialBtc(parseFloat(e.target.value));
               setCurrentHopIndex(0);
             }}
-            className="w-full accent-slate-900 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+            className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
           />
           <div className="flex justify-between text-[10px] font-mono text-slate-500 font-medium">
             <span>2 BTC</span>
@@ -239,20 +273,20 @@ export function PeelingSimulator() {
         </div>
 
         {/* Slider 2: Peel Fraction (Gum) */}
-        <div className="space-y-2">
+        <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/70 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between text-xs">
             <label htmlFor="peel-ratio" className="font-semibold text-slate-800 flex items-center gap-1.5">
-              <Percent className="w-3.5 h-3.5 text-slate-500" />
-              Peel Fraction per Hop (&quot;Gum&quot;)
+              <Percent className="w-3.5 h-3.5 text-amber-600" />
+              Peel Cut per Step (&quot;Gum&quot;)
             </label>
             <span
-              className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] shadow-2xs ${
+              className={`font-mono font-bold px-2 py-0.5 rounded-md text-[11px] shadow-2xs ${
                 peelPercent <= 20
                   ? "bg-amber-50 text-amber-900 border border-amber-300"
-                  : "bg-rose-50 text-rose-900 border border-rose-300"
+                  : "bg-emerald-50 text-emerald-900 border border-emerald-300"
               }`}
             >
-              {peelPercent.toFixed(1)}% (Threshold: &le; 20%)
+              {peelPercent.toFixed(1)}% {peelPercent <= 20 ? "(Suspicious: &le;20%)" : "(Normal: &gt;20%)"}
             </span>
           </div>
           <input
@@ -267,30 +301,30 @@ export function PeelingSimulator() {
               setPeelPercent(parseFloat(e.target.value));
               setCurrentHopIndex(0);
             }}
-            className="w-full accent-slate-900 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+            className="w-full accent-amber-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
           />
           <div className="flex justify-between text-[10px] font-mono text-slate-500 font-medium">
-            <span>1% (Stealth)</span>
-            <span className="font-semibold text-amber-700">20% (Cutoff Rule)</span>
-            <span>50% (Normal Spend)</span>
+            <span>1% (Micro)</span>
+            <span className="font-semibold text-amber-700">20% (Cutoff Gate)</span>
+            <span>50% (Shopping)</span>
           </div>
         </div>
 
         {/* Slider 3: Chain Depth (Hops) */}
-        <div className="space-y-2">
+        <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/70 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between text-xs">
             <label htmlFor="chain-depth" className="font-semibold text-slate-800 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-slate-500" />
+              <Layers className="w-3.5 h-3.5 text-rose-600" />
               Chain Depth (Consecutive Hops)
             </label>
             <span
-              className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] shadow-2xs ${
+              className={`font-mono font-bold px-2 py-0.5 rounded-md text-[11px] shadow-2xs ${
                 chainLength >= 5
-                  ? "bg-emerald-50 text-emerald-900 border border-emerald-300"
-                  : "bg-slate-100 text-slate-800 border border-slate-200"
+                  ? "bg-rose-50 text-rose-900 border border-rose-300"
+                  : "bg-emerald-50 text-emerald-900 border border-emerald-300"
               }`}
             >
-              {chainLength} Hops (Rule: &ge; 5)
+              {chainLength} Hops {chainLength >= 5 ? "(Flagged: ≥5)" : "(Safe: <5)"}
             </span>
           </div>
           <input
@@ -302,29 +336,30 @@ export function PeelingSimulator() {
             value={chainLength}
             aria-label="Chain Depth in Hops"
             onChange={(e) => {
-              const val = parseInt(e.target.value);
+              const val = parseInt(e.target.value, 10);
               setChainLength(val);
-              if (currentHopIndex >= val) setCurrentHopIndex(val - 1);
+              setCurrentHopIndex(0);
             }}
-            className="w-full accent-slate-900 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+            className="w-full accent-rose-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
           />
           <div className="flex justify-between text-[10px] font-mono text-slate-500 font-medium">
-            <span>2 (Shopper)</span>
-            <span className="font-semibold text-emerald-700">5 (Alarm Gate)</span>
-            <span>12 (Deep Laundering)</span>
+            <span>2 Hops (Normal)</span>
+            <span className="font-semibold text-rose-700">5 Hops (Gate)</span>
+            <span>12 Hops (Deep Tunnel)</span>
           </div>
         </div>
       </div>
 
-      {/* Playback & Step Bar */}
-      <div className="px-4 py-3 bg-gradient-to-b from-slate-50 to-slate-100/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+      {/* Simulator Playback & Sub-Navigation */}
+      <div className="p-3 bg-slate-100/90 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        {/* Playback Controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 border-t border-t-blue-300/70 border-x border-x-blue-600 border-b border-b-blue-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_5px_rgba(0,0,0,0.2)] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)] text-white text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer font-semibold"
+            className="btn-tactical-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer active:translate-y-[0.5px]"
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{isPlaying ? "Pause" : "Auto-Run Chain"}</span>
+            <span>{isPlaying ? "Pause" : "Play Sequence"}</span>
           </button>
 
           <button
@@ -332,10 +367,10 @@ export function PeelingSimulator() {
               setIsPlaying(false);
               setCurrentHopIndex(0);
             }}
-            className="bg-gradient-to-b from-white to-slate-100 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 text-slate-800 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer active:translate-y-[0.5px] shadow-2xs font-semibold"
+            className="btn-tactical-secondary text-slate-700 p-1.5 rounded-lg cursor-pointer shadow-2xs active:translate-y-[0.5px]"
+            title="Reset to Hop 1"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-            <span>Reset</span>
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
 
           <div className="h-4 w-px bg-slate-300 mx-1" />
@@ -343,20 +378,20 @@ export function PeelingSimulator() {
           <button
             onClick={() => setCurrentHopIndex((prev) => Math.max(0, prev - 1))}
             disabled={currentHopIndex === 0}
-            className="p-1.5 rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-slate-800 shadow-2xs active:translate-y-[0.5px] transition-all"
+            className="btn-tactical-secondary text-slate-800 p-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs active:translate-y-[0.5px]"
             title="Previous Hop"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
 
           <span className="font-mono text-xs font-bold text-slate-900 px-1">
-            Hop {currentHopIndex + 1} of {chainLength}
+            Viewing Hop #{currentHopIndex + 1} of {chainLength}
           </span>
 
           <button
             onClick={() => setCurrentHopIndex((prev) => Math.min(hops.length - 1, prev + 1))}
             disabled={currentHopIndex === hops.length - 1}
-            className="p-1.5 rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-slate-800 shadow-2xs active:translate-y-[0.5px] transition-all"
+            className="btn-tactical-secondary text-slate-800 p-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs active:translate-y-[0.5px]"
             title="Next Hop"
           >
             <ChevronRight className="w-4 h-4" />
@@ -370,40 +405,40 @@ export function PeelingSimulator() {
             className={`px-3 py-1.5 rounded-md cursor-pointer active:translate-y-[0.5px] transition-colors ${
               activeTab === "topology"
                 ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
-                : "text-slate-700 font-semibold"
+                : "text-slate-700 font-semibold hover:text-slate-900"
             }`}
           >
-            Hop Topology
+            Visual Money Trail
           </button>
           <button
             onClick={() => setActiveTab("analogy")}
             className={`px-3 py-1.5 rounded-md cursor-pointer active:translate-y-[0.5px] transition-colors ${
               activeTab === "analogy"
                 ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
-                : "text-slate-700 font-semibold"
+                : "text-slate-700 font-semibold hover:text-slate-900"
             }`}
           >
-            Analogy Breakdown
+            The $100 Bill Story
           </button>
           <button
-            onClick={() => setActiveTab("cypher")}
+            onClick={() => setActiveTab("rules")}
             className={`px-3 py-1.5 rounded-md cursor-pointer active:translate-y-[0.5px] transition-colors ${
-              activeTab === "cypher"
+              activeTab === "rules"
                 ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
-                : "text-slate-700 font-semibold"
+                : "text-slate-700 font-semibold hover:text-slate-900"
             }`}
           >
-            Cypher Query
+            Detection Rules
           </button>
           <button
             onClick={() => setActiveTab("metrics")}
             className={`px-3 py-1.5 rounded-md cursor-pointer active:translate-y-[0.5px] transition-colors ${
               activeTab === "metrics"
                 ? "bg-white text-slate-950 font-bold border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
-                : "text-slate-700 font-semibold"
+                : "text-slate-700 font-semibold hover:text-slate-900"
             }`}
           >
-            Liquidation Stats
+            Hop Ledger
           </button>
         </div>
       </div>
@@ -412,9 +447,13 @@ export function PeelingSimulator() {
       <div className="p-4 sm:p-6 space-y-6">
         {activeTab === "topology" && (
           <div className="space-y-6">
-            {/* Hop Progress Bar */}
-            <div className="relative">
-              <div className="flex items-center justify-between gap-1.5 overflow-x-auto pb-2">
+            {/* Hop Progress Stepper */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-slate-500">
+                <span>CHAIN HOPS (CLICK TO JUMP)</span>
+                <span>STEP {currentHopIndex + 1} / {hops.length}</span>
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
                 {hops.map((h, idx) => {
                   const isSelected = idx === currentHopIndex;
                   const isPast = idx < currentHopIndex;
@@ -425,22 +464,23 @@ export function PeelingSimulator() {
                         setIsPlaying(false);
                         setCurrentHopIndex(idx);
                       }}
-                      className={`flex-1 min-w-[75px] p-2.5 rounded-xl border text-center transition-all cursor-pointer active:translate-y-[0.5px] ${
+                      className={`flex-1 min-w-[90px] p-2.5 rounded-xl text-center cursor-pointer transition-all active:translate-y-[0.5px] ${
                         isSelected
-                          ? "bg-gradient-to-b from-slate-900 to-slate-950 text-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_3px_rgba(0,0,0,0.25)] ring-2 ring-slate-900/20"
+                          ? "bg-gradient-to-b from-slate-900 to-slate-950 text-white border-t border-t-sky-400 border-x border-x-slate-800 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_8px_rgba(0,0,0,0.3)] ring-1 ring-sky-500/40"
                           : isPast
-                          ? "bg-gradient-to-b from-slate-100 to-slate-200/80 text-slate-900 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs"
-                          : "bg-gradient-to-b from-white to-slate-50 text-slate-600 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300/80 shadow-2xs"
+                          ? "bg-gradient-to-b from-slate-50 to-slate-100/90 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs hover:bg-slate-100"
+                          : "bg-gradient-to-b from-white to-slate-50 text-slate-500 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300/80 shadow-2xs hover:bg-slate-50"
                       }`}
                     >
-                      <div className="text-[10px] font-mono uppercase font-bold">
+                      <div className="flex items-center justify-center gap-1 text-[10px] font-mono font-bold uppercase">
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
                         Hop #{h.hopNumber}
                       </div>
-                      <div className="text-xs font-mono font-bold mt-0.5">
-                        {h.forwardAmount.toFixed(1)} <span className="text-[9px]">BTC</span>
+                      <div className="text-xs font-mono font-extrabold mt-0.5">
+                        {h.forwardAmount.toFixed(1)} <span className="text-[9px] font-normal">BTC</span>
                       </div>
-                      <div className="text-[9px] font-mono mt-0.5 text-amber-600 font-semibold">
-                        -{h.peeledAmount.toFixed(1)}
+                      <div className={`text-[9.5px] font-mono mt-0.5 font-semibold ${isSelected ? "text-amber-300" : "text-amber-700"}`}>
+                        -{h.peeledAmount.toFixed(1)} peel
                       </div>
                     </button>
                   );
@@ -449,40 +489,40 @@ export function PeelingSimulator() {
             </div>
 
             {/* Visual Schematic: The 1-In-2-Out Anatomy */}
-            <div className="p-4 sm:p-5 rounded-xl bg-gradient-to-b from-white to-slate-50/70 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-4">
+            <div className="p-4 sm:p-5 rounded-xl bg-gradient-to-b from-white via-slate-50/40 to-slate-100/60 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_6px_rgba(15,23,42,0.05)] space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                 <div className="flex items-center gap-2 font-mono text-xs">
-                  <span className="font-bold text-slate-900">HOP #{activeHop.hopNumber} VISUAL SCHEMATIC</span>
+                  <span className="font-bold text-slate-900">HOP #{activeHop.hopNumber} MONEY FLOW BREAKDOWN</span>
                   <span className="text-slate-300">|</span>
-                  <span className="text-slate-500 truncate max-w-[200px] sm:max-w-none">
-                    TXID: {activeHop.txid}
+                  <span className="text-slate-500 truncate max-w-[200px] sm:max-w-none font-sans">
+                    {activeHop.hopNumber === 1 ? "Initial Extortion Stash Split" : `Step ${activeHop.hopNumber} Automated Split`}
                   </span>
                 </div>
-                <div className="text-xs font-mono text-slate-500">
-                  Network Fee: {activeHop.fee} BTC
+                <div className="text-xs font-mono text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded shadow-2xs">
+                  Network Fee: ~{activeHop.fee} BTC
                 </div>
               </div>
 
               {/* Node Graph Schematic */}
               <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 py-2">
                 {/* 1. Input Node */}
-                <div className="md:col-span-3 p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-1.5">
+                <div className="md:col-span-3 p-4 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200">
-                      1 INPUT WALLET
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+                      1 WALLET IN
                     </span>
-                    <span className="text-[10px] font-mono text-slate-500 font-bold">100% IN</span>
+                    <span className="text-[10px] font-mono text-slate-500 font-bold">100% BALANCE</span>
                   </div>
                   <div className="font-mono text-xs font-bold text-slate-900 truncate">
                     {activeHop.inputWallet}
                   </div>
-                  <div className="text-sm font-mono font-extrabold text-slate-900">
-                    {activeHop.totalIn.toFixed(4)} BTC
+                  <div className="text-base font-mono font-extrabold text-slate-950">
+                    {activeHop.totalIn.toFixed(2)} BTC
                   </div>
-                  <div className="text-[10px] text-slate-500">
+                  <div className="text-[10.5px] text-slate-600 leading-tight">
                     {activeHop.hopNumber === 1
-                      ? "Dirty Extortion Stash (Seed)"
-                      : `Cleaned Change from Hop #${activeHop.hopNumber - 1}`}
+                      ? "Stolen extortion funds ready to be laundered"
+                      : `Swept remainder from Hop #${activeHop.hopNumber - 1}`}
                   </div>
                 </div>
 
@@ -492,23 +532,23 @@ export function PeelingSimulator() {
                   <div className="w-px h-6 bg-slate-200 md:hidden" />
                 </div>
 
-                {/* 2. Transaction Node */}
-                <div className="md:col-span-4 p-4 rounded-xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.3)] space-y-2 text-center">
-                  <div className="flex items-center justify-center gap-1.5 text-[10px] font-mono tracking-wider uppercase text-slate-400 font-semibold">
+                {/* 2. Central Transaction Node */}
+                <div className="md:col-span-4 p-4 rounded-xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white border-t border-t-slate-700 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.25)] space-y-2.5 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-[10.5px] font-mono tracking-wider uppercase text-slate-300 font-bold">
                     <GitFork className="w-3.5 h-3.5 text-sky-400" />
-                    Transaction (1-in-2-out)
+                    Transaction Split (1-in, 2-out)
                   </div>
-                  <div className="font-mono text-xs font-bold text-slate-100 truncate">
+                  <div className="font-mono text-xs font-semibold text-slate-200 truncate bg-slate-800/80 p-1.5 rounded border border-slate-700">
                     {activeHop.txid}
                   </div>
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-[11px] font-mono">
-                    <div className="text-left">
-                      <span className="text-slate-400 text-[9px] block">Peel Cut (&le;20%):</span>
-                      <span className="text-amber-400 font-bold">{activeHop.peeledPercent}%</span>
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800 text-[11px] font-mono">
+                    <div className="text-left bg-amber-950/40 border border-amber-800/50 p-2 rounded-lg">
+                      <span className="text-amber-300/80 text-[9.5px] block font-sans font-medium">Tiny Cut (&le;20%):</span>
+                      <span className="text-amber-300 font-extrabold text-xs">{activeHop.peeledPercent}%</span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-slate-400 text-[9px] block">Forward (&ge;80%):</span>
-                      <span className="text-emerald-400 font-bold">{activeHop.forwardPercent}%</span>
+                    <div className="text-right bg-emerald-950/40 border border-emerald-800/50 p-2 rounded-lg">
+                      <span className="text-emerald-300/80 text-[9.5px] block font-sans font-medium">Big Change (&ge;80%):</span>
+                      <span className="text-emerald-300 font-extrabold text-xs">{activeHop.forwardPercent}%</span>
                     </div>
                   </div>
                 </div>
@@ -520,100 +560,100 @@ export function PeelingSimulator() {
                 </div>
 
                 {/* 3. Two Outputs */}
-                <div className="md:col-span-3 space-y-3">
+                <div className="md:col-span-3 space-y-2.5">
                   {/* Output A: Peeled Amount */}
-                  <div className="p-3.5 rounded-xl bg-gradient-to-b from-amber-50 to-amber-100/70 border-t border-t-amber-100 border-x border-x-amber-200 border-b border-b-amber-300 shadow-2xs space-y-1">
+                  <div className="p-3 rounded-xl bg-gradient-to-b from-amber-50 to-amber-100/70 border-t border-t-amber-100 border-x border-x-amber-200 border-b border-b-amber-300 shadow-2xs space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono font-bold text-amber-900 uppercase">
-                        🍬 Output #0: Peeled Cut
+                        Output 1: Tiny Peel
                       </span>
-                      <span className="text-[10px] font-mono font-extrabold text-amber-800">
+                      <span className="text-[10px] font-mono font-extrabold text-amber-900 bg-amber-200/70 px-1.5 py-0.5 rounded border border-amber-300">
                         {activeHop.peeledPercent}%
                       </span>
                     </div>
-                    <div className="text-xs font-mono font-bold text-amber-950">
-                      {activeHop.peeledAmount.toFixed(4)} BTC
+                    <div className="text-sm font-mono font-bold text-amber-950">
+                      {activeHop.peeledAmount.toFixed(2)} BTC
                     </div>
-                    <div className="text-[10px] text-amber-800">
-                      Destination: Cashout / Accomplice
+                    <div className="text-[10px] text-amber-800 leading-tight">
+                      Siphoned off to gift card or accomplice
                     </div>
                   </div>
 
                   {/* Output B: Forward Change */}
-                  <div className="p-3.5 rounded-xl bg-gradient-to-b from-emerald-50 to-emerald-100/70 border-t border-t-emerald-100 border-x border-x-emerald-200 border-b border-b-emerald-300 shadow-2xs space-y-1">
+                  <div className="p-3 rounded-xl bg-gradient-to-b from-emerald-50 to-emerald-100/70 border-t border-t-emerald-100 border-x border-x-emerald-200 border-b border-b-emerald-300 shadow-2xs space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono font-bold text-emerald-900 uppercase">
-                        💵 Output #1: Big Change
+                        Output 2: Forward Change
                       </span>
-                      <span className="text-[10px] font-mono font-extrabold text-emerald-800">
+                      <span className="text-[10px] font-mono font-extrabold text-emerald-900 bg-emerald-200/70 px-1.5 py-0.5 rounded border border-emerald-300">
                         {activeHop.forwardPercent}%
                       </span>
                     </div>
-                    <div className="text-xs font-mono font-bold text-emerald-950">
-                      {activeHop.forwardAmount.toFixed(4)} BTC
+                    <div className="text-sm font-mono font-bold text-emerald-950">
+                      {activeHop.forwardAmount.toFixed(2)} BTC
                     </div>
-                    <div className="text-[10px] text-emerald-800">
-                      Feeds directly into Hop #{activeHop.hopNumber + 1}
+                    <div className="text-[10px] text-emerald-800 leading-tight">
+                      Swept forward into Hop #{activeHop.hopNumber + 1}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Heuristic Gating Checklist */}
+            {/* Live Gating Checklist Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="p-3.5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-2xs space-y-1">
-                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">1. Single Flow Line</div>
+                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">1. Flow Shape Gate</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   1 In / 2 Out
                 </div>
-                <p className="text-[10px] text-slate-500">1 wallet enters, exactly 2 addresses emerge.</p>
+                <p className="text-[10.5px] text-slate-600">1 wallet funds exactly 2 output addresses.</p>
               </div>
 
               <div className="p-3.5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-2xs space-y-1">
-                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">2. Chain Depth ($H$)</div>
+                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">2. Chain Depth Gate</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold">
                   {chainLength >= 5 ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
                   ) : (
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   )}
-                  <span className={chainLength >= 5 ? "text-slate-900" : "text-amber-700"}>
-                    {chainLength} Hops (Min: 5)
+                  <span className={chainLength >= 5 ? "text-rose-700" : "text-slate-900"}>
+                    {chainLength} Hops {chainLength >= 5 ? "(Flagged: ≥5)" : "(Safe: <5)"}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500">Ordinary shoppers drop off after 1–2 hops.</p>
+                <p className="text-[10.5px] text-slate-600">Shoppers almost never exceed 1&ndash;2 hops.</p>
               </div>
 
               <div className="p-3.5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-2xs space-y-1">
                 <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">3. Tiny Peel Ratio</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold">
                   {activeHop.peeledPercent <= 20.0 ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
                   ) : (
-                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   )}
-                  <span className={activeHop.peeledPercent <= 20.0 ? "text-slate-900" : "text-rose-700"}>
-                    {activeHop.peeledPercent}% (&le; 20%)
+                  <span className={activeHop.peeledPercent <= 20.0 ? "text-amber-800" : "text-slate-900"}>
+                    {activeHop.peeledPercent}% {activeHop.peeledPercent <= 20.0 ? "(≤20% suspicious)" : "(>20% safe)"}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500">Tiny bite taken out to avoid KYC thresholds.</p>
+                <p className="text-[10.5px] text-slate-600">Tiny spend to bypass bank reporting thresholds.</p>
               </div>
 
               <div className="p-3.5 rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-gradient-to-b from-white to-slate-50/80 shadow-2xs space-y-1">
-                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">4. Big Change Preserved</div>
+                <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">4. Big Change Gate</div>
                 <div className="flex items-center gap-1.5 text-xs font-bold">
                   {activeHop.forwardPercent >= 79.5 ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   ) : (
-                    <AlertTriangle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                   )}
-                  <span className={activeHop.forwardPercent >= 79.5 ? "text-slate-900" : "text-rose-700"}>
-                    {activeHop.forwardPercent}% (&ge; 80%)
+                  <span className={activeHop.forwardPercent >= 79.5 ? "text-slate-900" : "text-slate-700"}>
+                    {activeHop.forwardPercent}% (&ge;80%)
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500">Bulk principal rolls into next wallet.</p>
+                <p className="text-[10.5px] text-slate-600">Bulk balance pushed forward into next hop.</p>
               </div>
             </div>
           </div>
@@ -624,124 +664,168 @@ export function PeelingSimulator() {
             <div className="p-5 rounded-xl bg-gradient-to-b from-amber-50/90 to-amber-50/40 border-t border-t-amber-100 border-x border-x-amber-200 border-b border-b-amber-300/80 text-xs text-amber-950 space-y-3 shadow-2xs">
               <div className="font-bold flex items-center gap-2 font-mono text-sm text-amber-900">
                 <Info className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                The $100 Bill &amp; The Pack of Gum: Explained Simply
+                The $100 Bill &amp; The Pack of Gum: Explained in Plain English
               </div>
-              <p className="leading-relaxed">
-                Imagine a thief robs a bank and gets a crisp, serial-tracked <strong>$100 bill</strong>. If they try to deposit that $100 bill into a bank, the teller checks the serial number and calls the police.
+              <p className="leading-relaxed text-slate-700">
+                Imagine a thief robs a bank and steals a crisp <strong>$100 bill</strong>. Because the bank recorded the serial number, the thief cannot deposit it into their personal bank account without getting caught. So what do they do?
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-                <div className="p-3.5 bg-white rounded-xl border-t border-t-white border-x border-x-amber-200 border-b border-b-amber-300/70 shadow-2xs space-y-1">
-                  <div className="font-bold text-slate-900">Step 1: Convenience Store</div>
-                  <p className="text-slate-600">The thief buys a $1 pack of gum with the $100 bill. The cashier gives back <strong>$99 in clean change</strong>.</p>
+                <div className="p-3.5 bg-white rounded-xl border-t border-t-white border-x border-x-amber-200 border-b border-b-amber-300/70 shadow-2xs space-y-1.5">
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <ShoppingBag className="w-3.5 h-3.5 text-amber-600" />
+                    Step 1: Convenience Store
+                  </div>
+                  <p className="text-slate-600 leading-relaxed text-[11.5px]">
+                    The thief buys a $1 pack of gum with the $100 bill. The cashier gives back <strong>$99 in clean change</strong>.
+                  </p>
                 </div>
-                <div className="p-3.5 bg-white rounded-xl border-t border-t-white border-x border-x-amber-200 border-b border-b-amber-300/70 shadow-2xs space-y-1">
-                  <div className="font-bold text-slate-900">Step 2: Coffee Shop</div>
-                  <p className="text-slate-600">They take the $99 bill to a café next door, buy another $1 item, and walk away with <strong>$98 in clean change</strong>.</p>
+                <div className="p-3.5 bg-white rounded-xl border-t border-t-white border-x border-x-amber-200 border-b border-b-amber-300/70 shadow-2xs space-y-1.5">
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 text-amber-600" />
+                    Step 2: Coffee Shop
+                  </div>
+                  <p className="text-slate-600 leading-relaxed text-[11.5px]">
+                    They take the $99 bill to a café next door, buy another $1 coffee, and walk out with <strong>$98 in clean change</strong>.
+                  </p>
                 </div>
-                <div className="p-3.5 bg-white rounded-xl border-t border-t-white border-x border-x-amber-200 border-b border-b-amber-300/70 shadow-2xs space-y-1">
-                  <div className="font-bold text-slate-900">Step 3: Repeat 50 Times</div>
-                  <p className="text-slate-600">By doing this 50 times in an hour, they convert 1 dirty bill into dozens of small untraceable coins. <strong>That is a Peeling Chain.</strong></p>
+                <div className="p-3.5 bg-white rounded-xl border-t border-t-white border-x border-x-amber-200 border-b border-b-amber-300/70 shadow-2xs space-y-1.5">
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    Step 3: Repeat 20 Times
+                  </div>
+                  <p className="text-slate-600 leading-relaxed text-[11.5px]">
+                    By doing this 20 times in a row, they convert 1 dirty bill into dozens of untraceable clean coins. <strong>That is a Peeling Chain.</strong>
+                  </p>
                 </div>
               </div>
-              <p className="text-slate-700 font-medium">
-                <strong>Why normal people never do this:</strong> Nobody walks into 20 stores in a row buying 1 stick of gum just to get change. That is why our detector looks for <strong>5+ contiguous hops</strong> of tiny payments (&le;20%) and huge change (&ge;80%).
-              </p>
+              <div className="p-3 bg-white/90 rounded-lg border border-amber-200/90 text-slate-800 leading-relaxed text-[11.5px]">
+                <strong>Why innocent people never get caught:</strong> No normal human being walks into 15 stores in a row buying 1 stick of gum just to collect change. Everyday citizens spend 30% to 100% of their balance and stop after 1 or 2 purchases. That is why our sovereign radar requires <strong>5 or more rapid hops</strong> of tiny spends (&le; 20%) and massive change (&ge; 80%).
+              </div>
             </div>
           </div>
         )}
 
-        {activeTab === "cypher" && (
+        {activeTab === "rules" && (
           <div className="space-y-4">
-            <div className="bg-slate-950 text-slate-100 p-4 rounded-xl font-mono text-xs leading-relaxed overflow-x-auto border-t border-t-slate-800 border-x border-x-slate-900 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_2px_6px_rgba(0,0,0,0.3)]">
-              <div className="text-slate-400">// Neo4j Pure-Cypher Hop Traversal (APOC-Free)</div>
-              <div className="text-emerald-400 mt-2">MATCH (w:Wallet &#123;address: &apos;{activeHop.inputWallet}&apos;&#125;)-[:SENDS]-&gt;(tx:Transaction)</div>
-              <div className="text-sky-300">WITH tx, count&#123; (tx)&lt;-[:SENDS]-(:Wallet) &#125; AS n_in</div>
-              <div className="text-sky-300">WHERE n_in = 1</div>
-              <div className="text-amber-300">MATCH (tx)-[r:RECEIVES]-&gt;(out_w:Wallet)</div>
-              <div className="text-amber-300">WITH tx, n_in, collect(&#123;addr: out_w.address, amount: r.amount&#125;) AS out_list</div>
-              <div className="text-amber-300">WHERE size(out_list) = 2</div>
-              <div className="text-slate-300">WITH tx, tx.total_in AS total_in, out_list[0] AS out0, out_list[1] AS out1</div>
-              <div className="text-slate-300">WITH tx, total_in,</div>
-              <div className="text-slate-300 pl-4">CASE WHEN out0.amount &lt;= out1.amount THEN out0 ELSE out1 END AS small_out,</div>
-              <div className="text-slate-300 pl-4">CASE WHEN out0.amount &lt;= out1.amount THEN out1 ELSE out0 END AS large_out</div>
-              <div className="text-rose-300">WHERE small_out.amount &lt;= total_in * { (peelPercent / 100).toFixed(2) }</div>
-              <div className="text-rose-300">  AND large_out.amount &gt;= total_in * 0.80</div>
-              <div className="text-emerald-400 mt-2">RETURN tx.txid AS txid, large_out.addr AS next_change_wallet LIMIT 1;</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-gradient-to-b from-white to-slate-50 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs font-mono">1</span>
+                  <h4 className="text-sm font-bold text-slate-900">Rule 1: Strict 1-In-2-Out Shape</h4>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Every step must have exactly 1 input wallet funding 2 output addresses. One address receives a tiny payment (the peel), and the other address receives the big remainder (the change).
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-gradient-to-b from-white to-slate-50 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs font-mono">2</span>
+                  <h4 className="text-sm font-bold text-slate-900">Rule 2: Asymmetric Split (&le; 20% / &ge; 80%)</h4>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  The small spend must be 20% or less of the total balance, and the forwarded change must be 80% or more. Criminals make small spends to stay under anti-money-laundering reporting limits.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-gradient-to-b from-white to-slate-50 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs font-mono">3</span>
+                  <h4 className="text-sm font-bold text-slate-900">Rule 3: Minimum 5 Consecutive Hops</h4>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  The sequence must continue for at least 5 unbroken hops. This is the magic threshold that protects innocent shoppers (who almost never do more than 1 or 2 hops).
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-gradient-to-b from-white to-slate-50 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs font-mono">4</span>
+                  <h4 className="text-sm font-bold text-slate-900">Rule 4: Unbroken Chain of Custody</h4>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  The big change output from Hop 1 must become the direct input wallet for Hop 2, and so on. No outside deposits can interrupt the chain.
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 font-medium">
-              Executed hop-by-hop in <code className="font-mono text-slate-800 bg-slate-100 border border-slate-200 px-1 py-0.5 rounded shadow-2xs">backend/scripts/detect_peeling_chains.py</code>. Runs at <strong>1.42ms per hop</strong> on air-gapped sovereign hardware.
-            </p>
+
+            <div className="p-3.5 bg-gradient-to-b from-emerald-50 to-emerald-100/60 border border-emerald-200 rounded-xl text-xs text-emerald-950 flex items-center gap-3 shadow-2xs">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <div>
+                <strong>Teammate Tip for Judges:</strong> When evaluators ask <em>&quot;How do you avoid arresting people who buy electronics?&quot;</em>, you can say: <em>&quot;Because buyers spend 40% to 100% of their money in 1 or 2 hops, while our engine requires at least 5 rapid hops of under-20% peels.&quot;</em>
+              </div>
+            </div>
           </div>
         )}
 
         {activeTab === "metrics" && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs font-mono">
-                <div className="text-[10px] text-slate-500 uppercase font-bold">Total Liquidated so far</div>
-                <div className="text-lg font-bold text-amber-700 mt-0.5">
-                  {totalPeeledSum.toFixed(4)} BTC
+              <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs">
+                <div className="text-[10px] text-slate-500 uppercase font-bold font-mono">Total Peeled Off So Far</div>
+                <div className="text-lg font-bold text-amber-700 mt-0.5 font-mono">
+                  {totalPeeledSum.toFixed(2)} BTC
                 </div>
-                <div className="text-[10px] text-slate-500 font-sans">
+                <div className="text-[11px] text-slate-600 mt-0.5">
                   Siphoned across Hops 1 to {activeHop.hopNumber}
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs font-mono">
-                <div className="text-[10px] text-slate-500 uppercase font-bold">Remaining Principal</div>
-                <div className="text-lg font-bold text-emerald-700 mt-0.5">
-                  {activeHop.forwardAmount.toFixed(4)} BTC
+              <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs">
+                <div className="text-[10px] text-slate-500 uppercase font-bold font-mono">Remaining Stash</div>
+                <div className="text-lg font-bold text-emerald-700 mt-0.5 font-mono">
+                  {activeHop.forwardAmount.toFixed(2)} BTC
                 </div>
-                <div className="text-[10px] text-slate-500 font-sans">
-                  {((activeHop.forwardAmount / initialBtc) * 100).toFixed(1)}% of original stash remaining
+                <div className="text-[11px] text-slate-600 mt-0.5">
+                  {((activeHop.forwardAmount / initialBtc) * 100).toFixed(1)}% of original stash left
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs font-mono">
-                <div className="text-[10px] text-slate-500 uppercase font-bold">Accumulated Miner Fees</div>
-                <div className="text-lg font-bold text-slate-900 mt-0.5">
+              <div className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-2xs">
+                <div className="text-[10px] text-slate-500 uppercase font-bold font-mono">Mining Fees Paid</div>
+                <div className="text-lg font-bold text-slate-900 mt-0.5 font-mono">
                   {(feePerHop * activeHop.hopNumber).toFixed(4)} BTC
                 </div>
-                <div className="text-[10px] text-slate-500 font-sans">
-                  Cost paid to Bitcoin miners across {activeHop.hopNumber} hops
+                <div className="text-[11px] text-slate-600 mt-0.5">
+                  ~{feePerHop} BTC network fee per hop
                 </div>
               </div>
             </div>
 
             {/* Table of Hops */}
             <div className="border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 rounded-xl overflow-hidden shadow-2xs">
-              <table className="w-full text-left font-mono text-xs">
-                <thead className="bg-slate-100 text-slate-700 text-[10px] uppercase border-b border-slate-200">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-100/90 text-slate-700 text-[10px] uppercase font-mono border-b border-slate-200">
                   <tr>
-                    <th className="py-2.5 px-3">Hop #</th>
-                    <th className="py-2.5 px-3">Input BTC</th>
-                    <th className="py-2.5 px-3">Peeled Out (&quot;Gum&quot;)</th>
-                    <th className="py-2.5 px-3">Forward Change (&quot;$99&quot;)</th>
-                    <th className="py-2.5 px-3">Radar Verdict</th>
+                    <th className="py-2.5 px-3">Hop Step</th>
+                    <th className="py-2.5 px-3">Wallet In</th>
+                    <th className="py-2.5 px-3">Peeled Off (&quot;Gum&quot;)</th>
+                    <th className="py-2.5 px-3">Forwarded Change</th>
+                    <th className="py-2.5 px-3">System Verdict</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-200 font-mono">
                   {hops.map((h) => (
                     <tr
                       key={h.hopNumber}
-                      className={h.hopNumber === activeHop.hopNumber ? "bg-sky-100/70 font-bold border-l-2 border-l-sky-600" : "even:bg-slate-50/60 odd:bg-white"}
+                      className={h.hopNumber === activeHop.hopNumber ? "bg-sky-50/80 font-bold border-l-2 border-l-blue-600" : "even:bg-slate-50/50 odd:bg-white"}
                     >
-                      <td className="py-2.5 px-3 text-slate-900">Hop #{h.hopNumber}</td>
+                      <td className="py-2.5 px-3 text-slate-900 font-bold">Hop #{h.hopNumber}</td>
                       <td className="py-2.5 px-3 text-slate-700">{h.totalIn.toFixed(2)} BTC</td>
                       <td className="py-2.5 px-3 text-amber-700">
-                        {h.peeledAmount.toFixed(2)} ({h.peeledPercent}%)
+                        {h.peeledAmount.toFixed(2)} BTC ({h.peeledPercent}%)
                       </td>
                       <td className="py-2.5 px-3 text-emerald-700">
-                        {h.forwardAmount.toFixed(2)} ({h.forwardPercent}%)
+                        {h.forwardAmount.toFixed(2)} BTC ({h.forwardPercent}%)
                       </td>
                       <td className="py-2.5 px-3">
                         {h.isPeelingQualifying ? (
-                          <span className="text-[10px] text-rose-800 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 font-bold shadow-2xs">
-                            SUSPICIOUS PEEL
+                          <span className="text-[10px] text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 font-bold">
+                            PEELING PATTERN
                           </span>
                         ) : (
-                          <span className="text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-bold shadow-2xs">
-                            NORMAL SPEND
+                          <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">
+                            CLEARED (NORMAL)
                           </span>
                         )}
                       </td>
