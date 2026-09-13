@@ -127,8 +127,8 @@ export function DocsSidebar() {
       <div className="p-3.5 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shrink-0">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center space-x-2.5">
-            <div className="w-[34px] h-[34px] rounded-[10px] bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 border-t border-t-blue-300/80 border-x border-x-blue-600/80 border-b border-b-blue-900 flex items-center justify-center text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_8px_rgba(29,78,216,0.25)] flex-shrink-0">
-              <Database className="w-[18px] h-[18px] text-white" />
+            <div className="w-[34px] h-[34px] rounded-[9px] bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 border-t border-t-blue-300/80 border-x border-x-blue-600/80 border-b border-b-blue-900 flex items-center justify-center text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_8px_rgba(29,78,216,0.25)] flex-shrink-0">
+              <Database className="w-[17px] h-[17px] text-white" />
             </div>
             <div>
               <div className="text-[11.5px] font-bold font-mono tracking-tight text-slate-900 uppercase flex items-center gap-1.5">
@@ -145,7 +145,7 @@ export function DocsSidebar() {
           </span>
         </div>
 
-        {/* Tactical Search / Query Trigger */}
+        {/* Tactical Search / Query Trigger - Fixed in active tactile state with zero hover twitch */}
         <button
           onClick={() => {
             window.dispatchEvent(
@@ -157,13 +157,15 @@ export function DocsSidebar() {
             );
           }}
           type="button"
-          className="w-full flex items-center justify-between px-2.5 py-[7px] text-[11px] text-slate-900 bg-white border border-blue-400 ring-2 ring-blue-500/20 rounded-[10px] shadow-2xs cursor-pointer"
+          className="w-full flex items-center justify-between px-2.5 py-[7px] text-[11px] text-slate-700 bg-white border border-slate-300 rounded-[9px] shadow-2xs cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
         >
           <div className="flex items-center gap-2 font-mono text-[11px]">
-            <Search className="w-3.5 h-3.5 text-blue-700 flex-shrink-0" />
-            <span className="text-slate-900 font-sans text-[11px]">Search technical specs...</span>
+            <Search className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+            <span className="text-slate-700 font-sans text-[11px]">
+              Search technical specs...
+            </span>
           </div>
-          <kbd className="text-[9px] font-mono font-bold text-blue-800 bg-blue-100/70 px-1.5 py-[1.5px] rounded-[3.5px] border border-blue-200">
+          <kbd className="text-[9px] font-mono font-bold text-blue-700 bg-blue-50/60 px-1.5 py-[1.5px] rounded-[3.5px] border border-blue-200/80 shadow-2xs">
             Ctrl+K
           </kbd>
         </button>
@@ -173,8 +175,10 @@ export function DocsSidebar() {
       <div className="flex-1 flex flex-col justify-between px-3 py-3 overflow-y-auto no-scrollbar">
         {CHAPTER_GROUPS.map((group) => (
           <div key={group.group} className="space-y-[5px]">
-            <div className="px-[7px] py-[2px] text-[9px] font-mono font-bold tracking-wider text-slate-400 uppercase flex items-center justify-between">
-              <span>{group.prefix} · {group.group}</span>
+            <div className="px-[7px] py-[2px] text-[9.5px] font-mono font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
+              <span className="text-blue-600/75 font-bold">{group.prefix}</span>
+              <span className="text-slate-300">·</span>
+              <span className="text-slate-500">{group.group}</span>
             </div>
             <div className="space-y-[5px]">
               {group.items.map((item) => {
@@ -184,27 +188,44 @@ export function DocsSidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`relative flex items-center justify-between px-2.5 py-[9px] rounded-[10px] text-[11px] ${
+                    className={`relative flex items-center justify-between px-2.5 py-[8.5px] rounded-[10px] text-[11px] outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
                       isActive
-                        ? "sidebar-item-active text-slate-950 font-semibold border-l-[3px] border-l-blue-600 shadow-xs bg-white"
-                        : "text-slate-950 bg-white/95 border border-slate-200/90 shadow-2xs"
+                        ? "bg-white border border-blue-200/90 shadow-[0_2px_8px_rgba(37,99,235,0.08),0_1px_2px_rgba(15,23,42,0.04)]"
+                        : "bg-white border border-slate-200/90 shadow-2xs"
                     }`}
                   >
-                    <div className="flex items-center space-x-2.5 min-w-0">
+                    {/* High-Precision Tactile Left Indicator for Active Chapter */}
+                    {isActive && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-[3.5px] rounded-r-full bg-blue-600 shadow-[0_0_6px_rgba(37,99,235,0.45)]" />
+                    )}
+
+                    <div className="flex items-center space-x-2.5 min-w-0 flex-1 pr-1">
                       <div
-                        className={`w-[30px] h-[30px] rounded-[7px] flex items-center justify-center flex-shrink-0 shadow-2xs ${
+                        className={`w-[30px] h-[30px] rounded-[8px] flex items-center justify-center flex-shrink-0 ${
                           isActive
-                            ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white border-t border-t-blue-400/80 border-b border-b-blue-800"
-                            : "bg-blue-50 text-blue-600 border border-blue-200/80"
+                            ? "bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 text-white border-t border-t-blue-300/70 border-b border-b-blue-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_6px_rgba(29,78,216,0.25)]"
+                            : "bg-blue-50 text-blue-600 border border-blue-200/80 shadow-2xs"
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" />
                       </div>
-                      <div className="truncate">
-                        <div className="truncate font-bold leading-snug tracking-tight text-slate-950 text-[13.5px]">
+                      <div className="truncate min-w-0">
+                        <div
+                          className={`truncate leading-snug tracking-tight text-[13px] ${
+                            isActive
+                              ? "font-bold text-slate-950"
+                              : "font-semibold text-slate-950"
+                          }`}
+                        >
                           {item.number}. {item.title}
                         </div>
-                        <div className="truncate text-[10.5px] text-slate-500 font-normal leading-relaxed mt-[1px]">
+                        <div
+                          className={`truncate text-[10.5px] leading-relaxed mt-[1px] ${
+                            isActive
+                              ? "text-blue-700/85 font-medium"
+                              : "text-slate-500 font-normal"
+                          }`}
+                        >
                           {item.subtitle}
                         </div>
                       </div>
@@ -212,11 +233,11 @@ export function DocsSidebar() {
 
                     {/* Right indicator */}
                     {isActive ? (
-                      <span className="px-1.5 py-[1.5px] text-[8.5px] font-mono font-bold rounded-[5px] bg-blue-600 text-white shrink-0 ml-1.5 shadow-2xs">
+                      <span className="px-1.5 py-[2px] text-[8.5px] font-mono font-bold rounded-[5px] bg-blue-600 text-white shrink-0 ml-1.5 shadow-[0_1px_3px_rgba(37,99,235,0.3)]">
                         {item.badge}
                       </span>
                     ) : (
-                      <ChevronRight className="w-3.5 h-3.5 text-blue-500 opacity-100 flex-shrink-0" />
+                      <ChevronRight className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
                     )}
                   </Link>
                 );
@@ -224,6 +245,15 @@ export function DocsSidebar() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Air-Gapped Sovereign Security Status Footer */}
+      <div className="p-3 border-t border-slate-200/80 bg-white/70 backdrop-blur-xs flex items-center justify-between text-[10px] font-mono text-slate-500 shrink-0">
+        <div className="flex items-center space-x-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-semibold text-slate-700">AIR-GAP ENCLAVE</span>
+        </div>
+        <span className="text-[9px] text-slate-400 font-mono tracking-tight">FIPS-140-3</span>
       </div>
     </aside>
   );

@@ -27,7 +27,7 @@
     "question": "How does the ingestion pipeline achieve 10,000+ rows/second throughput?",
     "title": "PostgreSQL Bulk COPY Stream Engine",
     "tldr": "The pipeline uses PostgreSQL's native binary COPY protocol rather than row-by-row ORM INSERT statements, streaming validated Pydantic in-memory CSV buffers directly into the transactions table. This achieves verified ingestion speeds of 8.38s–12.04s for 100,000 transactions (8,300–11,900 rows/sec).",
-    "body": "During the initial architecture audit (Phase 0/2), traditional SQLAlchemy ORM inserts bottlenecked at ~250 rows/sec due to round-trip query serialization and transaction boundaries. In Phase 2, backend/app/tasks/ingest.py was re-engineered to employ psycopg2/psycopg3's copy_expert / copy_records_to_table. Transactions are parsed from CSV, JSON, or XML, validated through Pydantic models, enriched with MaxMind GeoIP metadata, and formatted into an in-memory io.StringIO TSV buffer. This buffer is pushed to PostgreSQL via COPY transactions FROM STDIN WITH (FORMAT csv, DELIMITER E'\\t', NULL ''), achieving 100,000 rows in 8.38s–12.04s with verified zero data loss.",
+    "body": "During the initial architecture audit (Phase 0/2), traditional SQLAlchemy ORM inserts bottlenecked at ~250 rows/sec due to round-trip query serialization and transaction boundaries. In Phase 2, backend/app/tasks/ingest.py was re-engineered to employ psycopg2/psycopg3's copy_expert / copy_records_to_table. Transactions are parsed from CSV, JSON, or XML, validated through Pydantic models, enriched with MaxMind GeoIP metadata, and formatted into an in-memory io.StringIO TSV buffer. This buffer is pushed to PostgreSQL via COPY transactions FROM STDIN WITH (FORMAT csv, NULL '\\N', QUOTE '\"', ESCAPE '\"'), achieving 100,000 rows in 8.38s–12.04s with verified zero data loss.",
     "tags": ["COPY", "throughput", "PostgreSQL", "bulk insert", "Pydantic", "ingest", "streaming", "performance"],
     "chapterUrl": "/docs/ch2-ingest-geoip-security",
     "chapterTitle": "Chapter 2: Multi-Format Ingest, MaxMind GeoIP & Ingestion Hardening",
@@ -55,7 +55,7 @@
     "chapterUrl": "/docs/ch2-ingest-geoip-security",
     "chapterTitle": "Chapter 2: Multi-Format Ingest, MaxMind GeoIP & Ingestion Hardening",
     "fileCitations": [
-      "backend/app/services/geoip.py",
+      "backend/app/services/enrichment.py",
       "backend/app/tasks/ingest.py",
       "WORK-1.md"
     ],
@@ -72,13 +72,13 @@
     "question": "How does the ingest system handle disparate CSV, JSON, and XML formats?",
     "title": "Multi-Format Sniffer & Pydantic Normalization Schema",
     "tldr": "A content-sniffing dispatch layer identifies file MIME types and structure from file magic headers, passing raw streams to specialized parser adapters that output unified Pydantic models. Malformed rows are isolated into rejected_rows with line numbers while valid transactions proceed to bulk insertion.",
-    "body": "The forensic engine ingests bulk transaction logs exported from diverse blockchain nodes and network taps. The ingestion router uses backend/app/services/file_parser.py to inspect the initial 2KB byte stream for XML declaration, JSON array brackets, or CSV delimiter headers. Each format adapter normalizes timestamps into ISO 8601 UTC, parses nested input/output address arrays, validates Satoshi amount boundaries, and verifies Base58 (P2PKH, P2SH) and Bech32 (P2WPKH, P2TR) address syntax. Invalid records trigger detailed validation error captures stored in rejected_rows with column index and reason, ensuring single bad rows never abort multi-thousand transaction batches.",
+    "body": "The forensic engine ingests bulk transaction logs exported from diverse blockchain nodes and network taps. The ingestion router uses backend/app/services/parser.py to inspect the initial 512 bytes (_SNIFF_BYTES = 512) for XML declaration, JSON array brackets, or CSV delimiter headers. Each format adapter normalizes timestamps into ISO 8601 UTC, parses nested input/output address arrays, validates Satoshi amount boundaries, and verifies Base58 (P2PKH, P2SH) and Bech32 (P2WPKH, P2TR) address syntax. Invalid records trigger detailed validation error captures stored in rejected_rows with column index and reason, ensuring single bad rows never abort multi-thousand transaction batches.",
     "tags": ["Pydantic", "CSV", "JSON", "XML", "normalization", "validation", "rejected_rows", "Base58", "Bech32"],
     "chapterUrl": "/docs/ch2-ingest-geoip-security",
     "chapterTitle": "Chapter 2: Multi-Format Ingest, MaxMind GeoIP & Ingestion Hardening",
     "fileCitations": [
-      "backend/app/services/file_parser.py",
-      "backend/app/schemas/transaction.py",
+      "backend/app/services/parser.py",
+      "backend/app/schemas/ingest.py",
       "WORK-1.md"
     ],
     "keyMetrics": {
@@ -120,7 +120,7 @@
     "chapterUrl": "/docs/ch3-graph-entity-clustering",
     "chapterTitle": "Chapter 3: Graph Topology, Relationship Mapping & Entity Clustering",
     "fileCitations": [
-      "backend/app/services/graph.py",
+      "backend/app/services/graph_service.py",
       "backend/scripts/build_graph.py",
       "WORK-1.md"
     ],
@@ -143,8 +143,8 @@
     "chapterUrl": "/docs/ch3-graph-entity-clustering",
     "chapterTitle": "Chapter 3: Graph Topology, Relationship Mapping & Entity Clustering",
     "fileCitations": [
-      "backend/scripts/run_clustering.py",
-      "backend/app/services/graph.py",
+      "backend/scripts/cluster_wallets.py",
+      "backend/app/services/graph_service.py",
       "flow.md",
       "WORK-1.md"
     ],
@@ -187,8 +187,9 @@
     "chapterUrl": "/docs/ch3-graph-entity-clustering",
     "chapterTitle": "Chapter 3: Graph Topology, Relationship Mapping & Entity Clustering",
     "fileCitations": [
-      "backend/scripts/run_pagerank.py",
-      "backend/app/services/graph.py",
+      "backend/scripts/cluster_wallets.py",
+      "backend/scripts/build_evidence_trails.py",
+      "backend/app/services/graph_service.py",
       "WORK-1.md",
       "WORK-2.md"
     ],
@@ -205,13 +206,13 @@
     "question": "How does peeling chain traversal work in Cypher?",
     "title": "Peeling-Chain Cypher Traversal (>=5 Hops & 97.2% Recall)",
     "tldr": "Peeling chains are detected via parameterized Cypher traversals identifying consecutive linear 1-input 2-output transactions where one output peels off a small payment (<=5%) while the remainder (>=80%) forwards as change for at least 5 consecutive hops. The engine achieved 97.2% recall on injected chains.",
-    "body": "A peeling chain is a money-laundering technique where a large balance is incrementally peeled into small payments across dozens of intermediate addresses. backend/scripts/detect_peeling.py executes a multi-hop Cypher traversal: MATCH path = (t1:Transaction)-[:RECEIVES]->(w:Wallet)-[:SENDS]->(t2:Transaction)... The query filters for input_count == 1 AND output_count == 2, verifies the change output carries >= 80% of input value while the peel output is <= 5%, and enforces chain length >= 5 hops. Across 100,000 synthetic transactions, it scanned 3,207 candidates, qualified 133 distinct chains, and flagged 616 transactions with is_mixing=true and chain_hops >= 5, attaining 97.2% recall (451/464 injected peeling transactions) in 87.1s.",
+    "body": "A peeling chain is a money-laundering technique where a large balance is incrementally peeled into small payments across dozens of intermediate addresses. backend/scripts/detect_peeling_chains.py executes a multi-hop Cypher traversal: MATCH path = (t1:Transaction)-[:RECEIVES]->(w:Wallet)-[:SENDS]->(t2:Transaction)... The query filters for input_count == 1 AND output_count == 2, verifies the change output carries >= 80% of input value while the peel output is <= 5%, and enforces chain length >= 5 hops. Across 100,000 synthetic transactions, it scanned 3,207 candidates, qualified 133 distinct chains, and flagged 616 transactions with is_mixing=true and chain_hops >= 5, attaining 97.2% recall (451/464 injected peeling transactions) in 87.1s.",
     "tags": ["Peeling", "peeling-chain", "Cypher", "heuristics", "is_mixing", "chain_hops", "hops", "laundering"],
     "chapterUrl": "/docs/ch4-peeling-mixing-heuristics",
     "chapterTitle": "Chapter 4: Laundering Heuristics, Peeling Chains & Mixer Detection",
     "fileCitations": [
-      "backend/scripts/detect_peeling.py",
-      "backend/app/services/heuristics.py",
+      "backend/scripts/detect_peeling_chains.py",
+      "backend/app/services/feature_extractor.py",
       "flow.md",
       "WORK-1.md"
     ],
@@ -234,7 +235,7 @@
     "chapterTitle": "Chapter 4: Laundering Heuristics, Peeling Chains & Mixer Detection",
     "fileCitations": [
       "backend/scripts/detect_coinjoin.py",
-      "backend/app/services/heuristics.py",
+      "backend/app/services/feature_extractor.py",
       "flow.md",
       "WORK-1.md"
     ],
@@ -258,7 +259,7 @@
     "fileCitations": [
       "flow.md",
       "WORK-1.md",
-      "BENCHMARK_TRUTH.md"
+      "data/models/BENCHMARK_TRUTH.md"
     ],
     "keyMetrics": {
       "Kappos RF Baseline": "89.2%",
@@ -411,8 +412,8 @@
     "category": "Explainability & Law",
     "question": "What is the Composite Risk Formula and how are risk tiers determined?",
     "title": "Multi-Factor Composite Risk Scoring Formula & Verdict Tiers",
-    "tldr": "The composite risk score combines four orthogonal forensic dimensions: score = clip(0.35 * anomaly + 0.45 * risk + 0.15 * rule_bonus + 0.05 * mixing, 0, 1). Scores map to four verdict tiers: CRITICAL (>=0.75), HIGH (0.55-0.75), MEDIUM (0.30-0.55), and LOW (<0.30).",
-    "body": "In Phase 8, backend/scripts/compute_composite_risk.py fused tabular anomaly detection, graph neural network risk propagation, and deterministic heuristic detections into a calibrated score: Score = min(1.0, max(0.0, 0.35 * anomaly + 0.45 * risk + 0.15 * rule_bonus + 0.05 * mixing)). Here, rule_bonus adds up to 1.0 based on rule severity (e.g. RANSOMWHERE_SEED_INPUT = +0.8, PEELING_CHAIN_ORIGIN = +0.6), and mixing is a binary 1.0/0.0 flag. Across 17,020 indexed wallets, distribution resulted in: CRITICAL = 103 (0.6%, all with non-empty triggered rules), HIGH = 78 (0.5%), MEDIUM = 3,377 (19.8%), and LOW = 13,462 (79.1%).",
+    "tldr": "The composite risk score combines four orthogonal forensic dimensions: score = clip(0.35 * anomaly + 0.45 * risk + 0.15 * rule_bonus + 0.05 * mixing, 0, 1). Scores map to four verdict tiers: CRITICAL (>=0.80), HIGH (0.60–0.80), MEDIUM (0.40–0.60), and LOW (<0.40).",
+    "body": "In Phase 8, backend/scripts/compute_composite_risk.py fused tabular anomaly detection, graph neural network risk propagation, and deterministic heuristic detections into a calibrated score: Score = min(1.0, max(0.0, 0.35 * anomaly + 0.45 * risk + 0.15 * rule_bonus + 0.05 * mixing)). Here, rule_bonus = min(len(triggered_rules), 5) / 5.0 (each AML rule hit contributes 0.20 up to 5 rules, capped at 1.0), and mixing is a binary 1.0/0.0 flag. Verdict tiers are categorized as CRITICAL (>=0.80), HIGH (0.60–0.80), MEDIUM (0.40–0.60), and LOW (<0.40). Across 17,020 indexed wallets, distribution resulted in: CRITICAL = 103 (0.6%, all with non-empty triggered rules), HIGH = 78 (0.5%), MEDIUM = 3,377 (19.8%), and LOW = 13,462 (79.1%).",
     "tags": ["composite risk", "formula", "weights", "CRITICAL", "HIGH", "MEDIUM", "LOW", "verdict", "scoring"],
     "chapterUrl": "/docs/ch6-risk-engine-xai-legal",
     "chapterTitle": "Chapter 6: Multi-Factor Risk Engine, Explainability (XAI) & Legal Compliance",
@@ -424,6 +425,7 @@
     ],
     "keyMetrics": {
       "Weights": "Anomaly: 0.35, Risk: 0.45, Rules: 0.15, Mixing: 0.05",
+      "Risk Tiers": "CRITICAL (>=0.80), HIGH (>=0.60), MEDIUM (>=0.40), LOW (<0.40)",
       "CRITICAL Count": 103,
       "HIGH Count": 78,
       "MEDIUM Count": 3377,
@@ -651,18 +653,17 @@
     "question": "What is AddressHashMiddleware and why are Bitcoin addresses masked in logs?",
     "title": "AddressHashMiddleware Log Anonymization & Privacy Guard",
     "tldr": "AddressHashMiddleware intercepts incoming HTTP requests and outgoing responses, replacing all Base58 and Bech32 Bitcoin wallet strings with SHA-256 token digests in console and disk logs to prevent plaintext wallet intelligence leaks.",
-    "body": "In compliance with intelligence operational security protocols, surveillance analysts must not expose sensitive wallet addresses in application log aggregators (e.g. Datadog, CloudWatch, or local stdout). backend/app/middleware/address_hash.py implements an ASGI middleware that scans query parameters, URL path segments (e.g. /entity/{address}/explain), and JSON request bodies using regex patterns for Bitcoin P2PKH (starts with 1), P2SH (starts with 3), and SegWit/Taproot (starts with bc1). Matched addresses are replaced with SHA256(addr)[:16] digests before passing logs to the Python standard logging facility, ensuring zero plaintext wallet addresses leak in telemetry logs.",
+    "body": "In compliance with intelligence operational security protocols, surveillance analysts must not expose sensitive wallet addresses in application log aggregators (e.g. Datadog, CloudWatch, or local stdout). Address pseudonymization is implemented as a root Python logging filter (_AddressPseudonymFilter) in backend/app/main.py that intercepts all log messages using regex patterns for Bitcoin P2PKH (starts with 1), P2SH (starts with 3), and SegWit/Taproot (starts with bc1). Matched addresses are converted into 8-character SHA256 hex digests ([:8]) formatted as [addr:<hash8>] before passing to the Python standard logging facility, ensuring zero plaintext wallet addresses leak in telemetry logs.",
     "tags": ["AddressHashMiddleware", "masking", "SHA-256", "privacy", "security", "logging", "Base58", "Bech32"],
     "chapterUrl": "/docs/ch8-command-center-dev-ops",
     "chapterTitle": "Chapter 8: Command Center, Local Runbook & Production Operations",
     "fileCitations": [
-      "backend/app/middleware/address_hash.py",
       "backend/app/main.py",
       "WORK-2.md"
     ],
     "keyMetrics": {
       "Target Encodings": "Base58, Bech32",
-      "Digest Format": "SHA256(addr)[:16]",
+      "Digest Format": "SHA256(addr)[:8] (Format: [addr:<hash8>])",
       "Leakage Rate": "0 Plaintext Addresses in Logs"
     }
   },
@@ -672,7 +673,7 @@
     "question": "How is the entire backend and ML pipeline verified with Pytest?",
     "title": "Comprehensive 196-Test Pytest Verification Suite",
     "tldr": "The entire backend, ML inference engines, graph heuristics, and Phase 11 sync services are covered by a suite of 196 automated pytest tests (pytest backend/tests/ -v), verifying zero regressions across all system components.",
-    "body": "The backend test harness in backend/tests/ provides deterministic unit and integration test coverage across all completed phases: Phase 2 ingest parsing (test_ingest.py), Phase 3/4 Neo4j graph & Louvain clustering (test_graph.py), Phase 5/7 Dual Transformer & GraphSAGE inference (test_ml.py, test_ft_transformer.py), Phase 6 peeling and CoinJoin heuristic traversals (test_heuristics.py), Phase 8 XAI stores (test_xai_store.py), Phase 9/9.5 API endpoints (test_api.py), Phase 11 inline scoring (test_inline_scorer.py), and AddressHashMiddleware (test_middleware.py). All 196 tests execute in under 45 seconds on CPU with 100% pass rate and zero regressions.",
+    "body": "The backend test harness in backend/tests/ provides deterministic unit and integration test coverage across all completed phases: Phase 2 ingest parsing & deduplication (test_ingest.py, test_dup_ingest.py), Phase 3/4 Neo4j graph & Louvain clustering (test_graph_build.py, test_phase4_clustering.py), Phase 5/7 Dual Transformer & GraphSAGE inference (test_ft_transformer.py, test_graph_transformer.py, test_phase5_autoencoder.py, test_phase7_graphsage.py), Phase 6 peeling and CoinJoin heuristic detectors (test_phase6_detectors.py, test_feature_extractor.py), Phase 8 XAI stores (test_phase8_xai.py), Phase 9/9.5 API endpoints (test_alerts_endpoint.py, test_graph_router.py, test_entity_subgraph.py), and Phase 11 live sync (test_ingest_sync.py, test_inline_scorer.py). All 196 tests execute in under 45 seconds on CPU with 100% pass rate and zero regressions.",
     "tags": ["pytest", "test suite", "runbook", "verification", "unit tests", "integration tests", "196 tests"],
     "chapterUrl": "/docs/ch8-command-center-dev-ops",
     "chapterTitle": "Chapter 8: Command Center, Local Runbook & Production Operations",
