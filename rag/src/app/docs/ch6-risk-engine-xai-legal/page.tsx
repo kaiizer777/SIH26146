@@ -40,64 +40,6 @@ export const metadata = {
 export default function Chapter6Page() {
   return (
     <article className="space-y-12 pb-16">
-      {/* Tactical Document Header */}
-      <div className="border-b border-slate-200 pb-8 space-y-4">
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
-            CHAPTER 06
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500 uppercase tracking-wider font-semibold">
-            PIPELINE TIER 5
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200/80 font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            SECTION 65B EVIDENCE ACT • BSA 2023
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
-            SHAP + GNNEXPLAINER + SHA-256 SEAL
-          </span>
-        </div>
-
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          Chapter 6: Multi-Factor Risk Scoring, XAI &amp; Section 65B Legal Dossier
-        </h1>
-
-        <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
-          Production engineering specification for Pipeline Tier 5: the decision and judicial evidentiary core.
-          Fuses continuous tabular anomaly reconstruction, multi-head relational graph transformer attention, and graph-traversal
-          heuristics into a single calibrated <strong>Composite Risk Score</strong>. Couples the mathematical output with a
-          <strong> Tri-Partite Explainable AI (XAI) Arsenal</strong> and an automated <strong>Court-Admissible Section 65B / Section 63 BSA Dossier Engine</strong> sealed
-          via immutable SHA-256 manifests for zero-tamper prosecution admissibility.
-        </p>
-
-        {/* Quick Metric Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Composite Scoring Formula</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">4-Factor Weighted Matrix</div>
-            <div className="text-[10px] text-indigo-600 font-semibold">0.45 GNN + 0.35 Anom + 0.15 R + 0.05 M</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Verdict Classification Bands</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">CRITICAL &ge; 0.85</div>
-            <div className="text-[10px] text-rose-600 font-semibold">Immediate Section 91/102 Freeze</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Legal Admissibility Standard</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">Sec 65B IEA / Sec 63 BSA</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">Supreme Court Arjun Panditrao Benchmark</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Evidence Integrity Seal</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">SHA-256 Digest</div>
-            <div className="text-[10px] text-sky-600 font-semibold">Zero Probabilistic LLM Drift</div>
-          </div>
-        </div>
-      </div>
-
       {/* SECTION 1: The Composite Risk Engine */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">

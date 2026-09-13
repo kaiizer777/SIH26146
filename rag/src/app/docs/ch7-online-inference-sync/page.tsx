@@ -35,63 +35,6 @@ export const metadata = {
 export default function Chapter7Page() {
   return (
     <article className="space-y-12 pb-16">
-      {/* Tactical Document Header */}
-      <div className="border-b border-slate-200 pb-8 space-y-4">
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
-            CHAPTER 07
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500 uppercase tracking-wider font-semibold">
-            PIPELINE ARCHITECTURE
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200/80 font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            FASTAPI &harr; CELERY IPC BOUNDARY
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
-            POST /ingest/sync • ZERO 404s
-          </span>
-        </div>
-
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          Chapter 7: Live Post-Ingest Online Inference (Phase 11)
-        </h1>
-
-        <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
-          Production engineering specification for the real-time online inference pipeline. Overcomes operating system
-          virtual memory isolation between Celery worker processes and the FastAPI Uvicorn server via a coordinated
-          <strong> 2-Step Polling Handshake</strong>. Employs PyTorch CPU tabular reconstruction and <strong>threading.RLock</strong> atomic
-          in-memory store mutations to deliver sub-15ms <strong>Provisional Forensic Dossiers</strong> with zero operator-facing 404 errors.
-        </p>
-
-        {/* Quick Metric Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Architecture Problem</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">Isolated OS Memory</div>
-            <div className="text-[10px] text-rose-600 font-semibold">Celery Worker &ne; FastAPI RAM</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Sync Handshake</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">2-Step Polling + IPC</div>
-            <div className="text-[10px] text-indigo-600 font-semibold">POST /ingest/sync/{'{task_id}'}</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">In-Memory Store</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">17,020+ Wallets in RAM</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">threading.RLock Protection</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Provisional Dossier</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">&lt;15ms Batch Scoring</div>
-            <div className="text-[10px] text-sky-600 font-semibold">FT-Transformer + Heuristics</div>
-          </div>
-        </div>
-      </div>
-
       {/* SECTION 1: The Ingest Memory-Space Problem */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">

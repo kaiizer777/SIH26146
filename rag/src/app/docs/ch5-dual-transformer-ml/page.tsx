@@ -38,65 +38,6 @@ export const metadata = {
 export default function Chapter5Page() {
   return (
     <article className="space-y-12 pb-16">
-      {/* Tactical Document Header */}
-      <div className="border-b border-slate-200 pb-8 space-y-4">
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
-            CHAPTER 05
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500 uppercase tracking-wider font-semibold">
-            PIPELINE TIER 4
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200/80 font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            SOTA DUAL TRANSFORMERS
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
-            F1 = 0.9209 • CPU INFERENCE &lt; 5ms
-          </span>
-        </div>
-
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          Chapter 5: Dual Transformer ML Engine (FT-Transformer &amp; Graph Transformer)
-        </h1>
-
-        <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
-          Complete engineering specification for Pipeline Tier 4: the state-of-the-art deep learning surveillance core 
-          replacing baseline autoencoders and homogeneous GNNs. Implements a <strong>Tabular Feature Tokenizer Transformer (FT-Transformer)</strong> for 
-          18-feature continuous reconstruction anomaly detection with native $18 \times 18$ self-attention extraction, alongside a 
-          <strong> Multi-Head Relational Graph Transformer (<code className="font-mono text-slate-800 text-sm">TransformerConv</code>)</strong> modeling 
-          three discrete transaction flow relations with Lin et al. Focal Loss. Operates at <strong>$F_1 = 0.9209$</strong> on held-out test data with 
-          sub-5ms CPU latency on consumer hardware.
-        </p>
-
-        {/* Quick Metric Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Graph Transformer Test F1</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">0.9209</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">vs GraphSAGE baseline 0.8312</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">FT-Transformer Anomaly Latency</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">3.2 ms on CPU</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">&lt; 5ms Post-Ingest SLA</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Model Weight Footprint</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">~350 KB (FT) / ~1.2 MB (Graph)</div>
-            <div className="text-[10px] text-sky-600 font-semibold">Fits in CPU L3 Cache</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Edge Relations Modeled</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">3 Discrete Types</div>
-            <div className="text-[10px] text-indigo-600 font-semibold">CO_SPEND &bull; TX_FLOW &bull; PEEL</div>
-          </div>
-        </div>
-      </div>
-
       {/* SECTION 1: The Architectural Leap: Baseline to SOTA Transformers */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">

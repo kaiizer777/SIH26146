@@ -34,64 +34,6 @@ export const metadata = {
 export default function Chapter2Page() {
   return (
     <article className="space-y-12 pb-16">
-      {/* Tactical Document Header */}
-      <div className="border-b border-slate-200 pb-8 space-y-4">
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
-            CHAPTER 02
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500 uppercase tracking-wider font-semibold">
-            PIPELINE TIER 1
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            100K TXS IN 8.38s
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200/80 font-bold font-mono">
-            REDIS SHA-256 IDEMPOTENCY
-          </span>
-        </div>
-
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          Chapter 2: High-Throughput Ingestion, GeoIP & Anti-Duplicate Armor
-        </h1>
-
-        <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
-          Deep technical breakdown of the Tier 1 ingestion pipeline engineered for NTRO cyber-surveillance:
-          streaming multi-format normalization (CSV, JSON, XML), wire-protocol PostgreSQL bulk{" "}
-          <code className="bg-slate-100 text-slate-900 px-1 py-0.5 rounded font-mono text-sm font-semibold">COPY</code> exceeding{" "}
-          <strong className="text-slate-900">11,938 rows/sec</strong>, sovereign offline MaxMind GeoIP/ASN resolution with zero external DNS,
-          ingestion of 11,186 Ransomwhere intelligence seeds ($1.018B), and two-tier duplicate upload hardening (DUP-1 &amp; DUP-2).
-        </p>
-
-        {/* Quick Benchmark & Metric Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Throughput Verified</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">11,938 rows/s</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">100k rows in 8.38s</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">GeoIP Air-Gap</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">0 External DNS</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">Local .mmdb &lt;0.05ms</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Ransomwhere Seeds</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">11,186 Addresses</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">136 Families ($1.018B)</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Idempotency Guard</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">Redis SHA-256</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">HTTP 409 • 24h TTL</div>
-          </div>
-        </div>
-      </div>
-
       {/* SECTION 1: Multi-Format Streaming & Normalization */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">

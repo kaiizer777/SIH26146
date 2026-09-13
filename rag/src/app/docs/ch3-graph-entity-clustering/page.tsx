@@ -34,67 +34,6 @@ export const metadata = {
 export default function Chapter3Page() {
   return (
     <article className="space-y-12 pb-16">
-      {/* Tactical Document Header */}
-      <div className="border-b border-slate-200 pb-8 space-y-4">
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
-            CHAPTER 03
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500 uppercase tracking-wider font-semibold">
-            PIPELINE TIER 2
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80 font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            24,673 WALLETS
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
-            9,794 LOUVAIN CLUSTERS
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200/80 font-bold font-mono">
-            Q = 0.4613
-          </span>
-        </div>
-
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          Chapter 3: Graph Topology &amp; Entity Clustering (Neo4j GDS)
-        </h1>
-
-        <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
-          Complete engineering specification for Tier 2 graph data science: projection of 100,000 multi-input transactions from PostgreSQL to Neo4j 5.26, 
-          mathematical formulation of the <strong>Common-Input Ownership Heuristic (CIOH)</strong> with anti-explosion constraints, 
-          in-memory <strong>Neo4j GDS Louvain modularity optimization</strong> yielding 9,794 distinct entity clusters (Q = 0.4613), 
-          PostgreSQL relational sync in 3.43s, and critical <strong>Graph Router hardening</strong> against neighborhood explosion vulnerabilities.
-        </p>
-
-        {/* Quick Benchmark & Metric Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Total Wallets Clustered</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">24,673 Wallets</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">100% Coverage (GDS 2.13)</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Distinct Entities</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">9,794 Clusters</div>
-            <div className="text-[10px] text-sky-600 font-semibold">Collapsed via CIOH Co-Spend</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Louvain Modularity</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">Q = 0.4613</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">5 Hierarchy Levels // 6.95s</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Postgres Sync Latency</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">3.43 Seconds</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">Temp Table Unnest JOIN</div>
-          </div>
-        </div>
-      </div>
-
       {/* SECTION 1: Neo4j Graph Topology & Relational Schema */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">

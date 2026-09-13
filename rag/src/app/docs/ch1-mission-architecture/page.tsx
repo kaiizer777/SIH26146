@@ -31,58 +31,6 @@ export const metadata = {
 export default function Chapter1Page() {
   return (
     <article className="space-y-12 pb-16">
-      {/* Chapter Tactical Header */}
-      <div className="border-b border-slate-200 pb-8 space-y-4">
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
-            CHAPTER 01
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500 uppercase tracking-wider font-semibold">
-            SOVEREIGN INTELLIGENCE PLATFORM
-          </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            AIR-GAP CLASSIFIED
-          </span>
-        </div>
-
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
-          Chapter 1: The NTRO Mission, Tech Stack & System Topology
-        </h1>
-
-        <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
-          Complete architectural briefing for the sovereign offline intelligence system deployed to monitor
-          Bitcoin transaction traffic, de-anonymize peeling chains and mixers, ingest ransomware seeds,
-          and score multi-factor risk with Section 65B forensic admissibility.
-        </p>
-
-        {/* Quick Spec Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Ransomwhere Seeds</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">11,186 Addrs</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">$1.018B Tracked</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Ingest Throughput</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">11,938 rows/s</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">100k in 8.38s</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Inference Engine</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">25.4ms CPU</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">24,673 Nodes GNN</div>
-          </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Air-Gap Integrity</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">0 External Calls</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">Local .woff2 / MMDB</div>
-          </div>
-        </div>
-      </div>
-
       {/* SECTION 1: NTRO Mandate & Sovereign Air-Gap Compliance */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">
