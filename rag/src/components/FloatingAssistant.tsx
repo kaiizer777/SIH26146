@@ -64,12 +64,62 @@ const SUGGESTED_QUERIES = [
 export function FloatingAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<DrawerChatMessage[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Load chat history from localStorage on initial mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ntro_rag_chat_history");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setMessages(parsed);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load chat history from localStorage:", err);
+    } finally {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  // Save chat history to localStorage whenever messages update
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      if (messages.length > 0) {
+        localStorage.setItem("ntro_rag_chat_history", JSON.stringify(messages));
+      } else {
+        localStorage.removeItem("ntro_rag_chat_history");
+      }
+    } catch (err) {
+      console.error("Failed to save chat history to localStorage:", err);
+    }
+  }, [messages, isLoaded]);
+
+  // Sync state if chat history changes in another tab or in the full assistant page
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "ntro_rag_chat_history") {
+        if (e.newValue) {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            if (Array.isArray(parsed)) setMessages(parsed);
+          } catch {}
+        } else {
+          setMessages([]);
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   // Keyboard shortcut: Ctrl+K or Cmd+K to toggle drawer
   useEffect(() => {
@@ -122,6 +172,9 @@ export function FloatingAssistant() {
   const handleClearChat = () => {
     setMessages([]);
     setQuery("");
+    try {
+      localStorage.removeItem("ntro_rag_chat_history");
+    } catch {}
     textareaRef.current?.focus();
   };
 
@@ -374,10 +427,10 @@ export function FloatingAssistant() {
                     if (message.role === "user") {
                       return (
                         <div key={message.id} className="flex justify-end">
-                          <div className="bg-gradient-to-b from-slate-800 to-slate-950 text-white rounded-2xl px-4 py-3 max-w-[85%] text-xs sm:text-sm leading-relaxed border-t border-t-slate-700/80 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_4px_rgba(15,23,42,0.14)]">
-                            <p className="whitespace-pre-wrap font-sans">{message.content}</p>
-                            <div className="text-[10px] font-mono text-slate-400 mt-1.5 text-right">
-                              {message.timestamp}
+                          <div className="relative bg-gradient-to-b from-blue-600 via-blue-600 to-blue-700 text-white rounded-2xl rounded-tr-xs px-4 py-2.5 max-w-[85%] text-xs sm:text-[13px] leading-relaxed border-t border-t-blue-400/50 border-b border-b-blue-800 shadow-[0_3px_10px_-2px_rgba(37,99,235,0.35),inset_0_1px_0_rgba(255,255,255,0.22)]">
+                            <p className="whitespace-pre-wrap font-sans text-white antialiased font-normal">{message.content}</p>
+                            <div className="flex items-center justify-end gap-1 text-[10px] font-mono text-blue-100/80 mt-1 select-none">
+                              <span>{message.timestamp}</span>
                             </div>
                           </div>
                         </div>

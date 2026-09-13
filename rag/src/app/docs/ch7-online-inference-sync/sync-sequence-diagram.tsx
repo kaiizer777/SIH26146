@@ -63,7 +63,7 @@ const STEPS: StepDetail[] = [
     source: "Celery Ingest Worker",
     target: "PostgreSQL & Redis",
     action: "PostgreSQL COPY & Redis Task SUCCESS",
-    protocol: "OS Process Boundary // psycopg2 COPY",
+    protocol: "OS Process Boundary • psycopg2 COPY",
     description:
       "Celery worker runs in an isolated OS process (pool=solo on Windows / multiprocessing on Linux). It streams rows into PostgreSQL via bulk COPY. Once inserted, it writes task state SUCCESS into Redis with metadata (txids, total_inserted=1000). Crucially, Celery cannot modify FastAPI's in-memory xai_store.",
     frontendState: "POLLING: GET /ingest/status/8f4e2b9c... (interval: 1000ms)",
@@ -412,7 +412,7 @@ export function SyncSequenceDiagram() {
         <div className="bg-slate-950 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-slate-400 text-[11px]">
           <div className="flex items-center gap-2">
             <Terminal className="w-3.5 h-3.5 text-sky-400" />
-            <span className="font-bold text-slate-200">ORCHESTRATION TERMINAL STREAM // STAGE 0{current.step}</span>
+            <span className="font-bold text-slate-200">ORCHESTRATION TERMINAL STREAM • STAGE 0{current.step}</span>
           </div>
           <div className="flex items-center gap-2 text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

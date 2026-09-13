@@ -1,10 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchKnowledge, SearchResult } from "@/lib/ragEngine";
 
+interface GroqChatCompletionResponse {
+  id?: string;
+  choices?: Array<{
+    index?: number;
+    message?: {
+      role?: string;
+      content?: string;
+      reasoning?: string;
+    };
+    finish_reason?: string;
+  }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+    queue_time?: number;
+    prompt_time?: number;
+    completion_time?: number;
+    total_time?: number;
+  };
+}
+
+interface GroqSuccessResult {
+  success: true;
+  answer: string;
+  usage?: GroqChatCompletionResponse["usage"];
+}
+
+interface GroqErrorResult {
+  success: false;
+  status?: number;
+  error: string;
+}
+
+type GroqResult = GroqSuccessResult | GroqErrorResult;
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   try {
-    const body = await request.json();
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Malformed or empty JSON request body." },
+        { status: 400 }
+      );
+    }
     const { question, mode = "synthesis" } = body;
 
     if (!question || typeof question !== "string" || question.trim() === "") {
@@ -30,23 +74,7 @@ export async function POST(request: NextRequest) {
         retrieved,
         latencyMs: Date.now() - startTime,
         model: "airgap-inverted-index",
-      });
-    }
-
-    // Mode 2: Groq LLaMA-3.3-70B AI Forensic Synthesis
-    const groqApiKey = process.env.GROQ_API_KEY;
-
-    if (!groqApiKey) {
-      // Graceful offline fallback
-      const topMatch = retrieved[0];
-      return NextResponse.json({
-        mode: "instant_fallback",
-        answer: topMatch
-          ? `[OFFLINE AIR-GAP FALLBACK - NO GROQ API KEY DETECTED]\n\n${topMatch.item.tldr}\n\n${topMatch.item.body}`
-          : "No matching knowledge entries found.",
-        retrieved,
-        latencyMs: Date.now() - startTime,
-        model: "airgap-offline-fallback",
+        tier: "offline",
       });
     }
 
@@ -85,65 +113,151 @@ Teammate Forensic Doubt:
 
 Provide a comprehensive, authoritative forensic answer directly resolving this doubt with exact metrics and citations.`;
 
-    const targetModel = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+    // Multi-Tier Groq Configuration
+    const primaryKey = (process.env.GROQ_API_KEY_PRIMARY || process.env.GROQ_API_KEY || "").trim() || undefined;
+    const primaryModel = (process.env.GROQ_MODEL_PRIMARY || process.env.GROQ_MODEL || "openai/gpt-oss-120b").trim();
+    const fallbackKey = (process.env.GROQ_API_KEY_FALLBACK || process.env.GROQ_API_KEY || "").trim() || undefined;
+    const fallbackModel = (process.env.GROQ_MODEL_FALLBACK || "openai/gpt-oss-20b").trim();
 
-    // Call Groq API with configured model
-    const groqResponse = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${groqApiKey}`,
-        },
-        body: JSON.stringify({
-          model: targetModel,
-          temperature: 0.2,
-          max_tokens: 1024,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-        }),
+    // Helper to call Groq API with 15s timeout
+    const callGroq = async (apiKey: string, model: string): Promise<GroqResult> => {
+      try {
+        const response = await fetch(
+          "https://api.groq.com/openai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model,
+              temperature: 0.2,
+              max_tokens: 1024,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt },
+              ],
+            }),
+            signal: AbortSignal.timeout(15000),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => "Unknown error");
+          return {
+            success: false,
+            status: response.status,
+            error: `HTTP ${response.status}: ${errorText}`,
+          };
+        }
+
+        const data = (await response.json()) as GroqChatCompletionResponse;
+        const choiceMessage = data.choices?.[0]?.message;
+        const rawContent = choiceMessage?.content?.trim();
+        const rawReasoning = choiceMessage?.reasoning?.trim();
+        const answer = rawContent || rawReasoning;
+
+        if (!answer) {
+          return {
+            success: false,
+            status: response.status,
+            error: "Empty content returned in Groq completion.",
+          };
+        }
+
+        return {
+          success: true,
+          answer,
+          usage: data.usage,
+        };
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        return {
+          success: false,
+          error: errorMsg,
+        };
       }
-    );
+    };
 
-    if (!groqResponse.ok) {
-      const errorText = await groqResponse.text();
-      console.error("[Groq API Error]:", groqResponse.status, errorText);
+    // Step 1: Tier 1 (Primary Model & Key)
+    if (primaryKey) {
+      const primaryResult = await callGroq(primaryKey, primaryModel);
+      if (primaryResult.success) {
+        return NextResponse.json({
+          mode: "synthesis",
+          answer: primaryResult.answer,
+          retrieved,
+          latencyMs: Date.now() - startTime,
+          model: primaryModel,
+          tier: "primary",
+          usage: primaryResult.usage,
+        });
+      }
 
-      // Fallback to top retrieved answer
-      const topMatch = retrieved[0];
-      return NextResponse.json({
-        mode: "instant_fallback",
-        answer: topMatch
-          ? `[GROQ API RATE LIMIT / OFFLINE FALLBACK]\n\n${topMatch.item.tldr}\n\n${topMatch.item.body}`
-          : "Failed to connect to Groq synthesis engine and no local matches found.",
-        retrieved,
-        latencyMs: Date.now() - startTime,
-        model: "airgap-offline-fallback",
-      });
+      console.warn(
+        `[Groq Primary Failed] -> Attempting Fallback... (Status: ${primaryResult.status ?? "ERR"}, Reason: ${primaryResult.error.slice(0, 200)})`
+      );
+    } else {
+      console.warn("[Groq Primary Failed] -> Attempting Fallback... (Primary key not configured)");
     }
 
-    const groqData = await groqResponse.json();
-    const generatedAnswer =
-      groqData.choices?.[0]?.message?.content ||
-      "No synthesized response generated.";
+    // Step 2: Tier 2 (Fallback Model & Key)
+    if (fallbackKey) {
+      const fallbackResult = await callGroq(fallbackKey, fallbackModel);
+      if (fallbackResult.success) {
+        return NextResponse.json({
+          mode: "synthesis_fallback",
+          answer: fallbackResult.answer,
+          retrieved,
+          latencyMs: Date.now() - startTime,
+          model: fallbackModel,
+          tier: "fallback",
+          usage: fallbackResult.usage,
+        });
+      }
+
+      console.error(
+        `[Groq Fallback Failed] -> Resorting to local air-gap offline fallback. (Status: ${fallbackResult.status ?? "ERR"}, Reason: ${fallbackResult.error.slice(0, 200)})`
+      );
+    } else {
+      console.warn("[Groq Fallback Unset] -> No fallback API key configured.");
+    }
+
+    // Step 3: Tier 3 (Air-Gap Local Inverted-Index Search Fallback)
+    const topMatch = retrieved[0];
+    const offlinePrefix = !primaryKey && !fallbackKey
+      ? "[OFFLINE AIR-GAP FALLBACK - NO GROQ API KEY DETECTED]"
+      : "[OFFLINE AIR-GAP FALLBACK - ALL EXTERNAL AI TIERS EXHAUSTED]";
+
+    const offlineAnswer = topMatch
+      ? `${offlinePrefix}\n\n${topMatch.item.tldr}\n\n${topMatch.item.body}`
+      : "No matching forensic knowledge entries found in local air-gap index.";
 
     return NextResponse.json({
-      mode: "synthesis",
-      answer: generatedAnswer,
+      mode: "instant_fallback",
+      answer: offlineAnswer,
       retrieved,
       latencyMs: Date.now() - startTime,
-      model: targetModel,
-      usage: groqData.usage,
+      model: "airgap-offline-fallback",
+      tier: "offline",
     });
   } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "digest" in error &&
+      typeof (error as { digest?: unknown }).digest === "string" &&
+      ((error as { digest: string }).digest.startsWith("NEXT_REDIRECT") ||
+        (error as { digest: string }).digest.startsWith("NEXT_NOT_FOUND"))
+    ) {
+      throw error;
+    }
+
     console.error("[API /api/ask Error]:", error);
     return NextResponse.json(
       {
         error: "Internal server error occurred while processing doubt query.",
-        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

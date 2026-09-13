@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sih26146-rag-intel",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2024-12-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "vars": {
+    "GROQ_MODEL_PRIMARY": "openai/gpt-oss-120b",
+    "GROQ_MODEL_FALLBACK": "openai/gpt-oss-20b"
+  }
+}

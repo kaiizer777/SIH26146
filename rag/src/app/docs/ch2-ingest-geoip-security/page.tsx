@@ -40,16 +40,16 @@ export default function Chapter2Page() {
           <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
             CHAPTER 02
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-slate-500 uppercase tracking-wider font-semibold">
             PIPELINE TIER 1
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             100K TXS IN 8.38s
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200/80 font-bold font-mono">
             REDIS SHA-256 IDEMPOTENCY
           </span>
@@ -87,7 +87,7 @@ export default function Chapter2Page() {
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Idempotency Guard</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5">Redis SHA-256</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">HTTP 409 // 24h TTL</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">HTTP 409 • 24h TTL</div>
           </div>
         </div>
       </div>
@@ -553,7 +553,7 @@ export default function Chapter2Page() {
         </Link>
 
         <div className="text-xs font-mono text-slate-400 text-center">
-          DOCUMENT SPECIFICATION // SEC-DOC-26146-CH02
+          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH02
         </div>
 
         <Link

@@ -138,7 +138,7 @@ export function ForensicCockpitPreview() {
         <div className="flex items-center space-x-2.5">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="font-mono text-xs font-bold tracking-wider uppercase">
-            FORENSIC COCKPIT HUD // 38PX DENSITY
+            FORENSIC COCKPIT HUD • 38PX DENSITY
           </span>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
             D3 RELATIONAL GRAPH

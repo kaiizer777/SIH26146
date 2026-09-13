@@ -37,11 +37,11 @@ export default function Chapter1Page() {
           <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
             CHAPTER 01
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-slate-500 uppercase tracking-wider font-semibold">
             SOVEREIGN INTELLIGENCE PLATFORM
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             AIR-GAP CLASSIFIED
@@ -230,7 +230,7 @@ export default function Chapter1Page() {
                 </span>
               </div>
               <span className="text-[10px] font-mono text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-semibold">
-                97.2% PEELING // 100% COINJOIN
+                97.2% PEELING • 100% COINJOIN
               </span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
@@ -253,7 +253,7 @@ export default function Chapter1Page() {
                 </span>
               </div>
               <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 font-semibold">
-                211.7s AUTOENCODER // 12.2s SAGE
+                211.7s AUTOENCODER • 12.2s SAGE
               </span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
@@ -519,7 +519,7 @@ export default function Chapter1Page() {
       {/* CHAPTER FOOTER NAVIGATION */}
       <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-xs font-mono text-slate-500">
-          DOCUMENT SPECIFICATION // SEC-DOC-26146-CH01
+          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH01
         </div>
 
         <Link

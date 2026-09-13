@@ -44,18 +44,18 @@ export default function Chapter5Page() {
           <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
             CHAPTER 05
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-slate-500 uppercase tracking-wider font-semibold">
             PIPELINE TIER 4
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200/80 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
             SOTA DUAL TRANSFORMERS
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
-            F1 = 0.9209 // CPU INFERENCE &lt; 5ms
+            F1 = 0.9209 • CPU INFERENCE &lt; 5ms
           </span>
         </div>
 
@@ -490,7 +490,7 @@ export default function Chapter5Page() {
         </Link>
 
         <div className="text-xs font-mono text-slate-400 text-center">
-          DOCUMENT SPECIFICATION // SEC-DOC-26146-CH05
+          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH05
         </div>
 
         <Link

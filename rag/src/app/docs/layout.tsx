@@ -14,17 +14,17 @@ export default function DocsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-slate-900 selection:text-white relative">
-      {/* Sovereign Header */}
-      <DocsHeader />
+    <div className="min-h-screen flex bg-white text-slate-900 selection:bg-slate-900 selection:text-white relative">
+      {/* 100vh Tactical Sidebar */}
+      <DocsSidebar />
 
       {/* Main Documentation Shell */}
-      <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
-        {/* Sticky Tactical Sidebar */}
-        <DocsSidebar />
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Sovereign Header */}
+        <DocsHeader />
 
         {/* Content Viewport */}
-        <main className="flex-1 min-w-0 bg-white px-6 sm:px-10 lg:px-12 py-10 overflow-y-auto">
+        <main className="flex-1 min-w-0 bg-white px-6 sm:px-10 lg:px-12 py-10">
           <div className="max-w-4xl mx-auto">{children}</div>
         </main>
       </div>
@@ -34,3 +34,4 @@ export default function DocsLayout({
     </div>
   );
 }
+

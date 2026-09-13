@@ -43,16 +43,16 @@ export default function Chapter4Page() {
           <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
             CHAPTER 04
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-slate-500 uppercase tracking-wider font-semibold">
             PIPELINE TIER 3
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/80 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
             PEELING RECALL: 97.2% (451/464)
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
             COINJOIN RECALL: 100.0% (50/50)
           </span>
@@ -75,7 +75,7 @@ export default function Chapter4Page() {
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Peeling-Chain Recall</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5">97.2% (451/464)</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">&ge;5 Hops // &le;20% Peel Cut</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">&ge;5 Hops • &le;20% Peel Cut</div>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">CoinJoin / Mixer Recall</div>
@@ -90,7 +90,7 @@ export default function Chapter4Page() {
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Sync Status</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5">Dual-DB Flagged</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">is_mixing=true // PG + Neo4j</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">is_mixing=true • PG + Neo4j</div>
           </div>
         </div>
       </div>
@@ -588,7 +588,7 @@ export default function Chapter4Page() {
         </Link>
 
         <div className="text-xs font-mono text-slate-400 text-center">
-          DOCUMENT SPECIFICATION // SEC-DOC-26146-CH04
+          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH04
         </div>
 
         <Link

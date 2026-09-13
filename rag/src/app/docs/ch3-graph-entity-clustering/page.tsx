@@ -40,20 +40,20 @@ export default function Chapter3Page() {
           <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
             CHAPTER 03
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-slate-500 uppercase tracking-wider font-semibold">
             PIPELINE TIER 2
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
             24,673 WALLETS
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
             9,794 LOUVAIN CLUSTERS
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200/80 font-bold font-mono">
             Q = 0.4613
           </span>
@@ -531,7 +531,7 @@ LIMIT 50;`}
         </Link>
 
         <div className="text-xs font-mono text-slate-400 text-center">
-          DOCUMENT SPECIFICATION // SEC-DOC-26146-CH03
+          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH03
         </div>
 
         <Link

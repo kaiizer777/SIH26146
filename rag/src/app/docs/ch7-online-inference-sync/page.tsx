@@ -41,18 +41,18 @@ export default function Chapter7Page() {
           <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
             CHAPTER 07
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-slate-500 uppercase tracking-wider font-semibold">
             PIPELINE ARCHITECTURE
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200/80 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
             FASTAPI &harr; CELERY IPC BOUNDARY
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
-            POST /ingest/sync // ZERO 404s
+            POST /ingest/sync • ZERO 404s
           </span>
         </div>
 
@@ -550,7 +550,7 @@ def upsert_batch(scored_items: list[dict[str, Any]]) -> tuple[int, int]:
         </Link>
 
         <div className="text-xs font-mono text-slate-400 text-center">
-          DOCUMENT SPECIFICATION // SEC-DOC-26146-CH07
+          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH07
         </div>
 
         <Link

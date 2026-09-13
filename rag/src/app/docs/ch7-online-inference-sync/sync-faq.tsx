@@ -60,7 +60,7 @@ const FAQS: FAQItem[] = [
     question: "Why does the frontend trigger the sync instead of Celery calling FastAPI directly?",
     category: "ARCHITECTURE_IPC",
     badgeText: "AIR-GAPPED NETWORK TOPOLOGY",
-    technicalNote: "Decoupled Unidirectional Ingress // Zero Circular HTTP Dependencies",
+    technicalNote: "Decoupled Unidirectional Ingress • Zero Circular HTTP Dependencies",
     answer: (
       <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
         <p>
@@ -85,7 +85,7 @@ const FAQS: FAQItem[] = [
     question: "What happens if an operator closes the browser tab before the sync request completes?",
     category: "HANDSHAKE_SAFETY",
     badgeText: "FAULT RECOVERY & IDEMPOTENCY",
-    technicalNote: "Zero Data Loss // PostgreSQL Committed // Lazy Reconciliation",
+    technicalNote: "Zero Data Loss • PostgreSQL Committed • Lazy Reconciliation",
     answer: (
       <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
         <p>
@@ -142,7 +142,7 @@ const FAQS: FAQItem[] = [
     question: "How does threading.RLock prevent race conditions during high-volume analyst queries?",
     category: "CONCURRENCY_LOCKS",
     badgeText: "THREAD-SAFE RE-ENTRANT MUTEX",
-    technicalNote: "Non-blocking Re-entrancy // Atomic Batch Dictionary Writes",
+    technicalNote: "Non-blocking Re-entrancy • Atomic Batch Dictionary Writes",
     answer: (
       <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
         <p>

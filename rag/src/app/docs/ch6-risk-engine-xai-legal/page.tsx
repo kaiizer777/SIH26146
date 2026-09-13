@@ -46,16 +46,16 @@ export default function Chapter6Page() {
           <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
             CHAPTER 06
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-slate-500 uppercase tracking-wider font-semibold">
             PIPELINE TIER 5
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200/80 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            SECTION 65B EVIDENCE ACT // BSA 2023
+            SECTION 65B EVIDENCE ACT • BSA 2023
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
             SHAP + GNNEXPLAINER + SHA-256 SEAL
           </span>
@@ -430,7 +430,7 @@ export default function Chapter6Page() {
               </div>
               <h4 className="text-xs font-bold text-slate-900">Print-Ready Forensic Dossier PDF</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Formatted for A4 portrait printing with official Government of India headers, official watermarks (&ldquo;COURT ADMISSIBLE // SEC 65B BSA 2023&rdquo;), dynamic composite risk dials, transaction flow diagrams, and statutory signature lines for immediate submission to the bench.
+                Formatted for A4 portrait printing with official Government of India headers, official watermarks (&ldquo;COURT ADMISSIBLE • SEC 65B BSA 2023&rdquo;), dynamic composite risk dials, transaction flow diagrams, and statutory signature lines for immediate submission to the bench.
               </p>
             </div>
           </div>
@@ -515,7 +515,7 @@ export default function Chapter6Page() {
         </Link>
 
         <div className="text-xs font-mono text-slate-400 text-center">
-          DOCUMENT SPECIFICATION // SEC-DOC-26146-CH06
+          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH06
         </div>
 
         <Link

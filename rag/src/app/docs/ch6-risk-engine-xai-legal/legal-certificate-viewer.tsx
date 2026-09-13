@@ -134,7 +134,7 @@ export function LegalCertificateViewer() {
         network_isolation_status: "FULL_AIR_GAP_ZERO_EGRESS",
         runtime_node: "NTRO-NODE-IND-DEL-9842-SOV-01",
         operating_authority: "National Technical Research Organisation (NTRO)",
-        security_clearance: "SECRET // LAW ENFORCEMENT SENSITIVE",
+        security_clearance: "SECRET • LAW ENFORCEMENT SENSITIVE",
       },
       target_entity: {
         wallet_address: entity.address,
@@ -425,14 +425,14 @@ export function LegalCertificateViewer() {
             {/* Watermark */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-4">
               <div className="transform -rotate-25 text-5xl sm:text-6xl font-black text-slate-900 tracking-widest uppercase">
-                COURT ADMISSIBLE // SEC 65B
+                COURT ADMISSIBLE • SEC 65B
               </div>
             </div>
 
             {/* Official Header */}
             <div className="text-center border-b-2 border-slate-900 pb-5 space-y-1 relative z-10">
               <div className="text-xs font-mono font-bold uppercase tracking-widest text-slate-500">
-                GOVERNMENT OF INDIA // NATIONAL TECHNICAL RESEARCH ORGANISATION (NTRO)
+                GOVERNMENT OF INDIA • NATIONAL TECHNICAL RESEARCH ORGANISATION (NTRO)
               </div>
               <h2 className="text-lg sm:text-xl font-extrabold text-slate-950 uppercase tracking-tight">
                 Certificate of Admissibility of Electronic Records
@@ -458,7 +458,7 @@ export function LegalCertificateViewer() {
               </div>
               <div>
                 <span className="text-slate-400 uppercase">Classification</span>
-                <div className="font-bold text-rose-700">SECRET // LEO SENSITIVE</div>
+                <div className="font-bold text-rose-700">SECRET • LEO SENSITIVE</div>
               </div>
             </div>
 

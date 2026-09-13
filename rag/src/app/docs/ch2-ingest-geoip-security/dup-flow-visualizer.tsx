@@ -60,7 +60,7 @@ export function DupFlowVisualizer() {
         type: "green",
         title: "Ingestion Succeeded",
         message: "Successfully ingested 10,000 rows into PostgreSQL ledger. Auto-sync trigger dispatched.",
-        statusText: "SUCCESS // 10,000 inserted · 0 rejected",
+        statusText: "SUCCESS • 10,000 inserted · 0 rejected",
       },
       steps: [
         {
@@ -116,7 +116,7 @@ export function DupFlowVisualizer() {
         title: "Duplicate File Upload Rejected (DUP-2a)",
         message:
           "This file has already been uploaded. Use a different file or wait 24 hours to re-upload.",
-        statusText: "HTTP 409 CONFLICT // original_task_id: task-a912-7bf",
+        statusText: "HTTP 409 CONFLICT • original_task_id: task-a912-7bf",
       },
       steps: [
         {
@@ -174,7 +174,7 @@ export function DupFlowVisualizer() {
         title: "All Rows Duplicate In PostgreSql (DUP-2b)",
         message:
           "No new transactions inserted — all 10,000 rows were rejected as duplicates (txid already exists). The alert table reflects existing data.",
-        statusText: "CELERY FINISHED // 0 inserted · 10,000 rejected",
+        statusText: "CELERY FINISHED • 0 inserted · 10,000 rejected",
       },
       steps: [
         {
@@ -236,7 +236,7 @@ export function DupFlowVisualizer() {
         <div>
           <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
             <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-            <span>IDEMPOTENCY ENGINE // STAGE 1: DUP-1 & DUP-2 HARDENING</span>
+            <span>IDEMPOTENCY ENGINE • STAGE 1: DUP-1 & DUP-2 HARDENING</span>
           </div>
           <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
             Anti-Duplicate Upload Armor & Conflict Flow Simulator
@@ -400,7 +400,7 @@ export function DupFlowVisualizer() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <span className="text-emerald-400 font-bold flex items-center gap-1.5">
                 <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                EXECUTION TELEMETRY // STEP {currentStep + 1}
+                EXECUTION TELEMETRY • STEP {currentStep + 1}
               </span>
               <span className="text-[10px] text-slate-400 uppercase">
                 {activeScenario.steps[currentStep].title}

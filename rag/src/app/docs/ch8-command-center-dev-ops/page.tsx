@@ -49,16 +49,16 @@ export default function Chapter8Page() {
           <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-bold tracking-wider uppercase">
             CHAPTER 08
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-slate-500 uppercase tracking-wider font-semibold">
             SURVEILLANCE RUNBOOK &amp; UI COCKPIT
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200/80 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
             38PX FORENSIC DENSITY
           </span>
-          <span className="text-slate-300">/</span>
+          <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
             196/196 PASSING TESTS
           </span>
@@ -69,7 +69,7 @@ export default function Chapter8Page() {
         </h1>
 
         <div className="font-mono text-xs text-slate-500 font-semibold tracking-wide uppercase">
-          OPERATOR RUNBOOK // 38PX FORENSIC DENSITY // DEV-SERVER.MD // 196/196 TESTS
+          OPERATOR RUNBOOK • 38PX FORENSIC DENSITY • DEV-SERVER.MD • 196/196 TESTS
         </div>
 
         <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
@@ -98,7 +98,7 @@ export default function Chapter8Page() {
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Test Suite Health</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5">196/196 Verified</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">0 Failures // 0 Warnings</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">0 Failures • 0 Warnings</div>
           </div>
         </div>
       </div>
@@ -527,7 +527,7 @@ _root_logger.addFilter(_AddressPseudonymFilter())`}
         </Link>
 
         <div className="text-xs font-mono text-slate-400 text-center">
-          DOCUMENT SPECIFICATION // SEC-DOC-26146-CH08
+          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH08
         </div>
 
         <Link

@@ -124,7 +124,7 @@ export function PeelingSimulator() {
               Interactive Peeling-Chain Hop Simulator
             </h3>
             <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-              HEURISTIC F3 // 1-IN-2-OUT
+              HEURISTIC F3 • 1-IN-2-OUT
             </span>
           </div>
           <p className="text-xs text-slate-500">

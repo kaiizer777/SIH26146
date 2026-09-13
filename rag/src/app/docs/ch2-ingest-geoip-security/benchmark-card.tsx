@@ -38,7 +38,7 @@ export function BenchmarkCard() {
         <div>
           <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
             <Gauge className="w-3.5 h-3.5 text-sky-600" />
-            <span>MEASURED FORENSIC INGEST BENCHMARK // POSTGRESQL 16-ALPINE</span>
+            <span>MEASURED FORENSIC INGEST BENCHMARK • POSTGRESQL 16-ALPINE</span>
           </div>
           <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
             Bulk <code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-sm font-mono">COPY FROM STDIN</code> vs Standard ORM <code className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-sm font-mono">INSERT</code>

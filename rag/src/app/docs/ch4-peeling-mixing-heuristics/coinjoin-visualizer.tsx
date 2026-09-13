@@ -43,7 +43,7 @@ interface PresetConfig {
 const PRESETS: Record<string, PresetConfig> = {
   wasabi: {
     name: "Wasabi Wallet 2.0 (WabiSabi)",
-    tag: "WASABI // 0.10 BTC POOL",
+    tag: "WASABI • 0.10 BTC POOL",
     denomination: 0.1,
     inputAmounts: [0.154, 0.221, 0.118, 0.31, 0.105],
     equalOutputsCount: 5,
@@ -53,7 +53,7 @@ const PRESETS: Record<string, PresetConfig> = {
   },
   samourai: {
     name: "Samourai Whirlpool",
-    tag: "SAMOURAI // 0.05 BTC POOL",
+    tag: "SAMOURAI • 0.05 BTC POOL",
     denomination: 0.05,
     inputAmounts: [0.082, 0.061, 0.095, 0.054, 0.071],
     equalOutputsCount: 5,
@@ -63,7 +63,7 @@ const PRESETS: Record<string, PresetConfig> = {
   },
   joinmarket: {
     name: "JoinMarket (Maker-Taker)",
-    tag: "JOINMARKET // 0.25 BTC TAKER",
+    tag: "JOINMARKET • 0.25 BTC TAKER",
     denomination: 0.25,
     inputAmounts: [0.42, 0.35, 0.28, 0.61],
     equalOutputsCount: 4,
@@ -183,7 +183,7 @@ export function CoinjoinVisualizer() {
               CoinJoin Equal-Output Matrix Visualizer
             </h3>
             <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              HEURISTIC F3 // DUAL-STAGE
+              HEURISTIC F3 • DUAL-STAGE
             </span>
           </div>
           <p className="text-xs text-slate-500">
