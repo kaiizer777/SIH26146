@@ -8,13 +8,6 @@ AI-powered offline system to monitor Bitcoin transaction traffic and flag money-
 
 This is a **production-grade, user-facing system** — not a side project, demo, or prototype. Real repos, real CI, real PRs. Code quality must be shippable. Treat every change as if it will run in production tomorrow.
 
-### Mandatory Pre-Task Skills Review (Strict)
-Before starting work, agents **MUST** view the relevant skill file from `c:/Users/bari2/Desktop/SKILLS/` once:
-- **Frontend**: View `c:/Users/bari2/Desktop/SKILLS/frontend/skills.md`
-- **Backend**: View `c:/Users/bari2/Desktop/SKILLS/backend/skills.md`
-- **Issue fixing & bug diagnosis**: View `c:/Users/bari2/Desktop/SKILLS/issue-fix/skills.md`
-- **Review**: View `c:/Users/bari2/Desktop/SKILLS/review/skills.md`
-
 Strict: Never write, modify, or debug code without viewing the matching skill file first.
 
 

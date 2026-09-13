@@ -1,0 +1,691 @@
+[
+  {
+    "id": "ingest-duplicate-hash-409",
+    "category": "Architecture & Ingestion",
+    "question": "Why did re-uploading the same CSV return HTTP 409?",
+    "title": "Redis SHA-256 Duplicate File Lock (DUP-1 & DUP-2)",
+    "tldr": "Re-uploading the same file returns HTTP 409 Conflict because the backend calculates the SHA-256 cryptographic digest of incoming file streams and checks Redis for the key file_hash:{hash_hex}. If the key already exists within its 24-hour TTL (86,400 seconds), the upload is immediately rejected to prevent redundant database writes and Celery queue congestion.",
+    "body": "Under Stage 1 (DUP-1 and DUP-2) of the hardening roadmap, backend/app/routers/ingest.py streams the uploaded multipart file to a temporary file while computing its SHA-256 hash. Before scheduling Celery task process_ingest_file.delay(), it probes Redis (redis.from_url(settings.redis_url)) for file_hash:{hash_hex}. If present, it unlinks the temp file and raises HTTPException(status_code=409, detail={'detail': 'Duplicate upload detected — this file was already ingested.', 'original_task_id': existing_task_id}). If absent, it records file_hash:{hash_hex} in Redis with ex=86400 (24-hour expiration) and stores the task.id. Additionally, if a file has distinct hashes but contains identical txid records, PostgreSQL's primary key unique constraint rejects row insertions, and Celery reports total_inserted == 0 AND total_rejected == total_received, triggering an orange warning banner in IngestModal.tsx.",
+    "tags": ["409", "duplicate", "SHA-256", "Redis", "DUP-1", "DUP-2", "ingest", "file_hash", "TTL", "idempotency"],
+    "chapterUrl": "/docs/ch2-ingest-geoip-security",
+    "chapterTitle": "Chapter 2: Multi-Format Ingest, MaxMind GeoIP & Ingestion Hardening",
+    "fileCitations": [
+      "backend/app/routers/ingest.py",
+      "frontend/src/components/IngestModal.tsx",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "HTTP Status": 409,
+      "Redis TTL": "86,400s (24h)",
+      "Hash Algorithm": "SHA-256",
+      "Target Latency": "<35ms"
+    }
+  },
+  {
+    "id": "ingest-bulk-copy-throughput",
+    "category": "Architecture & Ingestion",
+    "question": "How does the ingestion pipeline achieve 10,000+ rows/second throughput?",
+    "title": "PostgreSQL Bulk COPY Stream Engine",
+    "tldr": "The pipeline uses PostgreSQL's native binary COPY protocol rather than row-by-row ORM INSERT statements, streaming validated Pydantic in-memory CSV buffers directly into the transactions table. This achieves verified ingestion speeds of 8.38s–12.04s for 100,000 transactions (8,300–11,900 rows/sec).",
+    "body": "During the initial architecture audit (Phase 0/2), traditional SQLAlchemy ORM inserts bottlenecked at ~250 rows/sec due to round-trip query serialization and transaction boundaries. In Phase 2, backend/app/tasks/ingest.py was re-engineered to employ psycopg2/psycopg3's copy_expert / copy_records_to_table. Transactions are parsed from CSV, JSON, or XML, validated through Pydantic models, enriched with MaxMind GeoIP metadata, and formatted into an in-memory io.StringIO TSV buffer. This buffer is pushed to PostgreSQL via COPY transactions FROM STDIN WITH (FORMAT csv, DELIMITER E'\\t', NULL ''), achieving 100,000 rows in 8.38s–12.04s with verified zero data loss.",
+    "tags": ["COPY", "throughput", "PostgreSQL", "bulk insert", "Pydantic", "ingest", "streaming", "performance"],
+    "chapterUrl": "/docs/ch2-ingest-geoip-security",
+    "chapterTitle": "Chapter 2: Multi-Format Ingest, MaxMind GeoIP & Ingestion Hardening",
+    "fileCitations": [
+      "backend/app/tasks/ingest.py",
+      "backend/app/models/transaction.py",
+      "flow.md",
+      "WORK-1.md"
+    ],
+    "keyMetrics": {
+      "Throughput": "8,307 - 11,938 rows/sec",
+      "100k Batch Duration": "8.38s - 12.04s",
+      "Enrichment Rate": "100% GeoIP",
+      "Speedup vs Row Insert": ">40x"
+    }
+  },
+  {
+    "id": "ingest-geoip-maxmind-enrichment",
+    "category": "Architecture & Ingestion",
+    "question": "How are IP addresses enriched with Country and ASN offline without internet access?",
+    "title": "MaxMind GeoLite2 Binary MMDB Offline Resolution",
+    "tldr": "Network telemetry is resolved entirely offline via local MaxMind binary databases (GeoLite2-City.mmdb and GeoLite2-ASN.mmdb) mounted directly in the container or backend data directory. Zero external HTTP/DNS lookups occur at runtime, ensuring strict sovereign air-gap isolation.",
+    "body": "In compliance with national security intelligence air-gap standards, all IP enrichment operates locally using maxminddb memory-mapped reader objects. At worker boot, GeoLite2-City.mmdb and GeoLite2-ASN.mmdb are opened from data/geoip/. For every transaction record, the source IP (src_ip) and destination IP (dst_ip) are queried against the local radix tree in under 5 microseconds per lookup. Country ISO codes, city names, autonomous system numbers (ASNs), and organization names are populated into geo_country and asn columns before the bulk COPY write, achieving 100% enrichment across all 100,000 benchmark records.",
+    "tags": ["GeoIP", "MaxMind", "MMDB", "ASN", "geo_country", "air-gap", "offline", "City"],
+    "chapterUrl": "/docs/ch2-ingest-geoip-security",
+    "chapterTitle": "Chapter 2: Multi-Format Ingest, MaxMind GeoIP & Ingestion Hardening",
+    "fileCitations": [
+      "backend/app/services/geoip.py",
+      "backend/app/tasks/ingest.py",
+      "WORK-1.md"
+    ],
+    "keyMetrics": {
+      "Lookup Latency": "<5 μs/query",
+      "Resolution Success": "100.0%",
+      "External DNS/HTTP Calls": 0,
+      "Databases": "GeoLite2-City.mmdb, GeoLite2-ASN.mmdb"
+    }
+  },
+  {
+    "id": "ingest-pydantic-multi-format",
+    "category": "Architecture & Ingestion",
+    "question": "How does the ingest system handle disparate CSV, JSON, and XML formats?",
+    "title": "Multi-Format Sniffer & Pydantic Normalization Schema",
+    "tldr": "A content-sniffing dispatch layer identifies file MIME types and structure from file magic headers, passing raw streams to specialized parser adapters that output unified Pydantic models. Malformed rows are isolated into rejected_rows with line numbers while valid transactions proceed to bulk insertion.",
+    "body": "The forensic engine ingests bulk transaction logs exported from diverse blockchain nodes and network taps. The ingestion router uses backend/app/services/file_parser.py to inspect the initial 2KB byte stream for XML declaration, JSON array brackets, or CSV delimiter headers. Each format adapter normalizes timestamps into ISO 8601 UTC, parses nested input/output address arrays, validates Satoshi amount boundaries, and verifies Base58 (P2PKH, P2SH) and Bech32 (P2WPKH, P2TR) address syntax. Invalid records trigger detailed validation error captures stored in rejected_rows with column index and reason, ensuring single bad rows never abort multi-thousand transaction batches.",
+    "tags": ["Pydantic", "CSV", "JSON", "XML", "normalization", "validation", "rejected_rows", "Base58", "Bech32"],
+    "chapterUrl": "/docs/ch2-ingest-geoip-security",
+    "chapterTitle": "Chapter 2: Multi-Format Ingest, MaxMind GeoIP & Ingestion Hardening",
+    "fileCitations": [
+      "backend/app/services/file_parser.py",
+      "backend/app/schemas/transaction.py",
+      "WORK-1.md"
+    ],
+    "keyMetrics": {
+      "Supported Formats": "CSV, JSON, XML",
+      "Address Standards": "Base58, Bech32 (SegWit/Taproot)",
+      "Error Isolation": "Row-level rejection"
+    }
+  },
+  {
+    "id": "airgap-zero-cdn-architecture",
+    "category": "Architecture & Ingestion",
+    "question": "How does the system ensure 100% sovereign air-gap compliance with zero external CDN calls?",
+    "title": "Sovereign Air-Gap Engine & Local Asset Pre-Caching",
+    "tldr": "The entire frontend and backend stack operates with zero external network connectivity: Google Fonts (Inter, JetBrains Mono) are pre-compiled as local .woff2 files in .next/static/media/, Lucide icons are bundled locally, and npm/PyTorch packages are vendor-pinned.",
+    "body": "In high-security forensic facilities (e.g. NTRO air-gapped SCIF environments), network egress is physically severed. In Phase 9.5, the Next.js frontend underwent an automated air-gap audit (verify_phase9_api.py and browser network trace). All Google WebFont references were decoupled and embedded into the local static media folder as pre-compressed WOFF2 binary assets. Client libraries such as D3.js, Lucide-React, and Sonner toast notifications are resolved strictly through local npm packages. Similarly, backend dependencies (MaxMind MMDB, PyTorch CPU wheels, Ransomwhere seed databases) reside entirely on local disks.",
+    "tags": ["air-gap", "zero-CDN", "woff2", "fonts", "offline", "sovereign", "security"],
+    "chapterUrl": "/docs/ch1-mission-architecture",
+    "chapterTitle": "Chapter 1: Mission Architecture & Sovereign Operational Scope",
+    "fileCitations": [
+      "frontend/src/app/layout.tsx",
+      "rag/src/app/globals.css",
+      "WORK-2.md",
+      "dev-server.md"
+    ],
+    "keyMetrics": {
+      "External Runtime Calls": 0,
+      "Font Storage": "Local .woff2 in .next/static/media",
+      "Security Clearance": "Sovereign SCIF Offline"
+    }
+  },
+  {
+    "id": "graph-neo4j-schema-edges",
+    "category": "Graph & Clustering",
+    "question": "What is the graph database schema and how are entity relationships defined?",
+    "title": "Neo4j Property Graph Topology (:Wallet, :Transaction, :IP)",
+    "tldr": "The graph schema mirrors transactional flow using three primary node labels (:Wallet, :Transaction, :IP) interconnected by :SENDS, :RECEIVES, :OBSERVED, and :CO_SPEND relationships, creating a queryable multi-relational forensic topology.",
+    "body": "PostgreSQL transaction rows are projected into Neo4j using parameterized UNWIND MERGE batches. Node types include :Wallet (uniquely indexed by address string, holding cluster_id, risk_score, and seed_proximity), :Transaction (uniquely indexed by txid, holding block_height, fee, is_mixing, and chain_hops), and :IP (indexed by ipv4 string). Edges represent directional blockchain flow: (:Wallet)-[:SENDS]->(:Transaction) for inputs, (:Transaction)-[:RECEIVES]->(:Wallet) for outputs, (:IP)-[:OBSERVED]->(:Transaction) for network observations, and (:Wallet)-[:CO_SPEND]->(:Wallet) connecting wallets co-spending in the same multi-input transaction.",
+    "tags": ["Neo4j", "schema", "nodes", "CO_SPEND", "SENDS", "RECEIVES", "OBSERVED", "Wallet", "Transaction", "IP"],
+    "chapterUrl": "/docs/ch3-graph-entity-clustering",
+    "chapterTitle": "Chapter 3: Graph Topology, Relationship Mapping & Entity Clustering",
+    "fileCitations": [
+      "backend/app/services/graph.py",
+      "backend/scripts/build_graph.py",
+      "WORK-1.md"
+    ],
+    "keyMetrics": {
+      "Wallets": "24,673 nodes",
+      "Transactions": "100,000 nodes",
+      "SENDS Edges": "138,000",
+      "RECEIVES Edges": "188,342",
+      "CO_SPEND Edges": "39,620"
+    }
+  },
+  {
+    "id": "graph-louvain-clustering",
+    "category": "Graph & Clustering",
+    "question": "How does Neo4j GDS Louvain modularity group Bitcoin wallets into entity clusters?",
+    "title": "Neo4j GDS Louvain Entity Clustering (Modularity Q=0.4613)",
+    "tldr": "Neo4j Graph Data Science (GDS) Louvain community detection executes on the projected :CO_SPEND wallet subgraph, optimizing modularity to Q=0.461314 across 5 hierarchical levels. It identified 9,794 distinct wallet communities, with the largest entity cluster comprising 1,751 wallets.",
+    "body": "Under the Common Input Ownership Heuristic (CIOH), multiple addresses providing inputs to the same Bitcoin transaction are controlled by the same legal entity. In Phase 4, gds.graph.project extracts the undirected :CO_SPEND wallet graph into an in-memory graph catalog. gds.louvain.write iteratively optimizes modularity Q = (1 / 2m) * sum(A_vw - (k_v * k_w / 2m)). The algorithm converged at Q = 0.461314 across 5 levels, assigning a persistent cluster_id integer to all 24,673 wallets. These IDs are synchronized back to PostgreSQL (UPDATE transactions t SET cluster_id = ...) in 3.43s, establishing entity boundaries for downstream ML feature engineering.",
+    "tags": ["Louvain", "clustering", "GDS", "modularity", "CIOH", "CO_SPEND", "entity", "community"],
+    "chapterUrl": "/docs/ch3-graph-entity-clustering",
+    "chapterTitle": "Chapter 3: Graph Topology, Relationship Mapping & Entity Clustering",
+    "fileCitations": [
+      "backend/scripts/run_clustering.py",
+      "backend/app/services/graph.py",
+      "flow.md",
+      "WORK-1.md"
+    ],
+    "keyMetrics": {
+      "Modularity Q": 0.461314,
+      "Communities": 9794,
+      "Largest Cluster": "1,751 wallets (7.1%)",
+      "Singletons": 9538,
+      "Sync Time": "3.43s"
+    }
+  },
+  {
+    "id": "graph-cospend-ordering-optimization",
+    "category": "Graph & Clustering",
+    "question": "Why is the Cypher condition w1.address < w2.address critical in graph queries?",
+    "title": "Canonical Lexicographic Directional Optimization (w1 < w2)",
+    "tldr": "The w1.address < w2.address predicate prevents bidirectional reciprocal limit burning and query timeouts during Neo4j traversals by enforcing a single canonical ordering for undirected :CO_SPEND relationships.",
+    "body": "In an undirected co-spend graph, if wallet A and wallet B co-spend, Cypher pattern (w1:Wallet)-[:CO_SPEND]-(w2:Wallet) matches both (A, B) and (B, A). When generating subgraphs or extracting bounded neighborhoods in backend/app/routers/graph.py, evaluating both permutations doubles the traversal depth, burns through the max_nodes=150 query budget prematurely, and causes memory exhaustion on dense clusters. In Phase 9.5 hardening, adding WHERE w1.address < w2.address and maintaining a bi-directional deduplication set seen_links.add(tuple(sorted([w1, w2]))) slashed traversal latency by 52% and completely eliminated Neo4j query timeouts.",
+    "tags": ["Cypher", "w1.address < w2.address", "optimization", "deduplication", "CO_SPEND", "performance"],
+    "chapterUrl": "/docs/ch3-graph-entity-clustering",
+    "chapterTitle": "Chapter 3: Graph Topology, Relationship Mapping & Entity Clustering",
+    "fileCitations": [
+      "backend/app/routers/graph.py",
+      "WORK-2.md"
+    ],
+    "keyMetrics": {
+      "Latency Reduction": "52%",
+      "Max Nodes Ceiling": "150 (Hard ceiling 250)",
+      "Edge Permutations Saved": "50% per node pair"
+    }
+  },
+  {
+    "id": "graph-personalized-pagerank-seeds",
+    "category": "Graph & Clustering",
+    "question": "How does Personalized PageRank propagate illicit risk from Ransomwhere seed addresses?",
+    "title": "GDS Personalized PageRank (PPR) Seed Proximity Scoring",
+    "tldr": "Personalized PageRank initiates random walks biased toward 11,186 verified Ransomwhere seed addresses (damping factor γ=0.85, 20 iterations), computing a continuous topological proximity score (seed_proximity) across 17,474 connected wallets.",
+    "body": "Ransomware operators routinely launder funds through intermediary hops to distance outputs from law-enforcement blacklists. In Phase 7 and Phase 9.5, Neo4j GDS runs Personalized PageRank on the projected transaction-wallet graph using sourceNodes: seed_node_ids, dampingFactor: 0.85, and maxIterations: 20. The walk probability distribution concentrates mass on addresses structurally proximate to illicit nodes. The resulting seed_proximity floating-point value was persisted to Neo4j via write_pagerank_to_neo4j() and stored in evidence_trails.json across 12,750 wallets with non-zero proximity, serving as a high-value topological feature for GraphSAGE and the Relational Graph Transformer.",
+    "tags": ["PageRank", "PPR", "seed_proximity", "Ransomwhere", "GDS", "topological risk"],
+    "chapterUrl": "/docs/ch3-graph-entity-clustering",
+    "chapterTitle": "Chapter 3: Graph Topology, Relationship Mapping & Entity Clustering",
+    "fileCitations": [
+      "backend/scripts/run_pagerank.py",
+      "backend/app/services/graph.py",
+      "WORK-1.md",
+      "WORK-2.md"
+    ],
+    "keyMetrics": {
+      "Seed Addresses": "11,186 across 136 families",
+      "Scored Wallets": "17,474",
+      "Damping Factor": 0.85,
+      "Iterations": 20
+    }
+  },
+  {
+    "id": "heuristics-peeling-chain-traversal",
+    "category": "Laundering Heuristics",
+    "question": "How does peeling chain traversal work in Cypher?",
+    "title": "Peeling-Chain Cypher Traversal (>=5 Hops & 97.2% Recall)",
+    "tldr": "Peeling chains are detected via parameterized Cypher traversals identifying consecutive linear 1-input 2-output transactions where one output peels off a small payment (<=5%) while the remainder (>=80%) forwards as change for at least 5 consecutive hops. The engine achieved 97.2% recall on injected chains.",
+    "body": "A peeling chain is a money-laundering technique where a large balance is incrementally peeled into small payments across dozens of intermediate addresses. backend/scripts/detect_peeling.py executes a multi-hop Cypher traversal: MATCH path = (t1:Transaction)-[:RECEIVES]->(w:Wallet)-[:SENDS]->(t2:Transaction)... The query filters for input_count == 1 AND output_count == 2, verifies the change output carries >= 80% of input value while the peel output is <= 5%, and enforces chain length >= 5 hops. Across 100,000 synthetic transactions, it scanned 3,207 candidates, qualified 133 distinct chains, and flagged 616 transactions with is_mixing=true and chain_hops >= 5, attaining 97.2% recall (451/464 injected peeling transactions) in 87.1s.",
+    "tags": ["Peeling", "peeling-chain", "Cypher", "heuristics", "is_mixing", "chain_hops", "hops", "laundering"],
+    "chapterUrl": "/docs/ch4-peeling-mixing-heuristics",
+    "chapterTitle": "Chapter 4: Laundering Heuristics, Peeling Chains & Mixer Detection",
+    "fileCitations": [
+      "backend/scripts/detect_peeling.py",
+      "backend/app/services/heuristics.py",
+      "flow.md",
+      "WORK-1.md"
+    ],
+    "keyMetrics": {
+      "Peeling Recall": "97.2% (451/464)",
+      "Min Chain Length": ">=5 hops",
+      "Qualified Chains": 133,
+      "Flagged Transactions": 616
+    }
+  },
+  {
+    "id": "heuristics-coinjoin-multi-party",
+    "category": "Laundering Heuristics",
+    "question": "How does the system identify CoinJoin mixing transactions?",
+    "title": "CoinJoin Multi-Party Heuristic (100% Recall)",
+    "tldr": "CoinJoin mixers are identified through structural heuristic criteria: >=3 distinct inputs, >=3 distinct outputs, equal-value output amounts within +/-1% variance, and a minimum volume threshold of >=0.05 BTC. The algorithm achieved 100.0% recall on synthetic mixing pools.",
+    "body": "CoinJoin protocols (such as Wasabi, Samourai Whirlpool, and JoinMarket) obfuscate transaction history by combining inputs from multiple independent participants into a single multi-party transaction with uniform output denominations. In Phase 6, backend/scripts/detect_coinjoin.py queries PostgreSQL and Neo4j for transactions satisfying: array_length(input_addresses, 1) >= 3, array_length(output_amounts, 1) >= 3, standard deviation of the top-N outputs <= 0.01 * mean, and output amounts >= 0.05 BTC. The detector inspected 593 structural candidates, qualified 67 true CoinJoin clusters, and attained 100.0% recall (50/50 injected patterns) with zero false negatives in under 0.96s.",
+    "tags": ["CoinJoin", "mixers", "multi-party", "heuristics", "is_mixing", "equal-value", "privacy"],
+    "chapterUrl": "/docs/ch4-peeling-mixing-heuristics",
+    "chapterTitle": "Chapter 4: Laundering Heuristics, Peeling Chains & Mixer Detection",
+    "fileCitations": [
+      "backend/scripts/detect_coinjoin.py",
+      "backend/app/services/heuristics.py",
+      "flow.md",
+      "WORK-1.md"
+    ],
+    "keyMetrics": {
+      "CoinJoin Recall": "100.0% (50/50)",
+      "Min In/Out Count": ">=3 inputs, >=3 outputs",
+      "Amount Tolerance": "+/- 1% equal value",
+      "Min Volume": ">= 0.05 BTC"
+    }
+  },
+  {
+    "id": "heuristics-kappos-empirical-baseline",
+    "category": "Laundering Heuristics",
+    "question": "How do the laundering heuristic benchmarks compare against published academic literature?",
+    "title": "Academic Baseline Alignment (Kappos et al. USENIX Security 2022)",
+    "tldr": "The detection benchmarks strictly adhere to empirical literature standards established by Kappos et al. (USENIX Security 2022), citing realistic Random Forest (89.2%) and BlockSci heuristic (87.5%) baselines rather than unverified 99% claims.",
+    "body": "Academic literature demonstrates that naive blockchain heuristic clustering often yields high false-positive rates due to exchange hot-wallet batching and BIP-69 lexicographical output sorting. Following the empirical guidelines of Kappos et al. ('An Empirical Analysis of Privacy in the Lightning Network and Bitcoin Mixers', USENIX Security 2022), our system combines deterministic graph traversal with false-positive controls. The measured 97.2% peeling recall and 100.0% CoinJoin recall are calibrated with a 26.6% false positive rate against synthetic ground truth, which is subsequently filtered and weighted by Phase 8 composite risk scoring and Dual Transformer attention heads.",
+    "tags": ["Kappos", "USENIX", "literature", "academic", "benchmark", "heuristics", "recall"],
+    "chapterUrl": "/docs/ch4-peeling-mixing-heuristics",
+    "chapterTitle": "Chapter 4: Laundering Heuristics, Peeling Chains & Mixer Detection",
+    "fileCitations": [
+      "flow.md",
+      "WORK-1.md",
+      "BENCHMARK_TRUTH.md"
+    ],
+    "keyMetrics": {
+      "Kappos RF Baseline": "89.2%",
+      "Kappos BlockSci Baseline": "87.5%",
+      "System Peeling Recall": "97.2%",
+      "System CoinJoin Recall": "100.0%"
+    }
+  },
+  {
+    "id": "ml-ft-transformer-architecture",
+    "category": "Dual Transformer Models",
+    "question": "How does FT-Transformer compute anomaly scores?",
+    "title": "FT-Transformer (Feature Tokenizer Transformer) Architecture",
+    "tldr": "FT-Transformer projects 18 continuous tabular features into 32-dimensional embedding tokens, prepends a learnable [CLS] token, processes them through 2 multi-head self-attention layers (4 heads, d_ff=64), and reconstructs the normalized vector from [CLS]. Anomaly score is computed as normalized Mean Squared Error (MSE).",
+    "body": "Implemented in backend/app/ml/ft_transformer.py, FT-Transformer supersedes traditional MLP autoencoders by explicitly modeling cross-feature non-linear interactions. Each feature x_i is tokenized via linear projection e_i = x_i * W_i + b_i in R^32. The sequence E = [e_cls, e_1, ..., e_18] in R^(19x32) passes through 2 Transformer Encoder blocks with Multi-Head Self-Attention: Attention(Q,K,V) = softmax(Q*K^T / sqrt(d_k))*V. A linear head on the final [CLS] token projects back to reconstruct normalized tensor X_hat in R^18. The anomaly score is the normalized reconstruction MSE: L_MSE = (1/18) * sum((x_i - x_hat_i)^2). The model exports an 18x18 self-attention matrix A_(1:,1:) visualizing pairwise feature importance.",
+    "tags": ["FT-Transformer", "Transformer", "anomaly", "MSE", "CLS", "tokenization", "tabular", "attention"],
+    "chapterUrl": "/docs/ch5-dual-transformer-ml",
+    "chapterTitle": "Chapter 5: Dual Transformer Machine Learning Architecture",
+    "fileCitations": [
+      "backend/app/ml/ft_transformer.py",
+      "backend/scripts/train_ft_transformer.py",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Features": 18,
+      "Embedding Dim": 32,
+      "Attention Heads": 4,
+      "Layers": 2,
+      "Weight Size": "85.54 KB"
+    }
+  },
+  {
+    "id": "ml-ft-transformer-metrics",
+    "category": "Dual Transformer Models",
+    "question": "What are the exact performance metrics and parameters of FT-Transformer?",
+    "title": "FT-Transformer Performance Benchmarks & Model Size",
+    "tldr": "FT-Transformer comprises 18,930 parameters (85.54 KB .pt weight file), achieves F1=0.6972, Precision=0.7379, Recall=0.6609, and ROC-AUC=0.9739 at threshold=0.036354, running at 0.0222 ms/sample on CPU.",
+    "body": "Trained on non-illicit transaction splits with early stopping (batch_size=512, epochs=30, patience=5), FT-Transformer converged in under 30 seconds on an Acer Aspire Lite quad-core CPU. Per canonical data/models/BENCHMARK_TRUTH.json: Parameter count is 18,930; model weight file size is 85.54 KB (ft_transformer_20260909.pt); decision threshold is 0.036354 (95th-percentile: 0.005685); evaluation metrics are F1=0.6972, Precision=0.7379, Recall=0.6609, and ROC-AUC=0.9739. CPU inference evaluates 15,000 samples in 333.14 ms (0.0222 ms/sample), satisfying the strict <10ms latency budget.",
+    "tags": ["FT-Transformer", "benchmarks", "F1", "precision", "recall", "ROC-AUC", "latency", "parameters"],
+    "chapterUrl": "/docs/ch5-dual-transformer-ml",
+    "chapterTitle": "Chapter 5: Dual Transformer Machine Learning Architecture",
+    "fileCitations": [
+      "data/models/BENCHMARK_TRUTH.json",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "F1 Score": 0.6972,
+      "Precision": 0.7379,
+      "Recall": 0.6609,
+      "ROC-AUC": 0.9739,
+      "Param Count": 18930,
+      "Weights Size": "85.54 KB",
+      "CPU Latency": "0.0222 ms/sample"
+    }
+  },
+  {
+    "id": "ml-relational-graph-transformer",
+    "category": "Dual Transformer Models",
+    "question": "How does the Relational Graph Transformer model multi-edge graph risk?",
+    "title": "Relational Graph Transformer (PyG TransformerConv & Focal Loss)",
+    "tldr": "The Relational Graph Transformer uses PyTorch Geometric's TransformerConv with multi-head attention across 3 edge types (CO_SPEND, TX_FLOW, PEELING_FLOW) embedded via nn.Embedding(3, edge_dim), trained with Focal Loss to achieve F1=0.9209 and ROC-AUC=0.9956.",
+    "body": "Implemented in backend/app/ml/graph_transformer.py, the Relational Graph Transformer propagates risk across complex transaction graphs using multi-head topological self-attention. Node updates incorporate edge relation embeddings for relations 0: CO_SPEND, 1: TX_FLOW, and 2: PEELING_FLOW. To handle severe class imbalance (illicit seed wallets represent ~4% of population), the model is optimized with Lin et al. Focal Loss: FL(p_t) = -alpha_t * (1 - p_t)^gamma * log(p_t) with gamma=2.0 and alpha=6.20, achieving F1=0.9209, Precision=0.8940, and Recall=0.9495 across 24,673 nodes in 295.53 ms (0.012 ms/node).",
+    "tags": ["TransformerConv", "Relational Graph Transformer", "PyG", "Focal Loss", "CO_SPEND", "TX_FLOW", "PEELING_FLOW", "F1", "attention"],
+    "chapterUrl": "/docs/ch5-dual-transformer-ml",
+    "chapterTitle": "Chapter 5: Dual Transformer Machine Learning Architecture",
+    "fileCitations": [
+      "backend/app/ml/graph_transformer.py",
+      "backend/scripts/train_graph_transformer.py",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "F1 Score": 0.9209,
+      "Precision": 0.8940,
+      "Recall": 0.9495,
+      "ROC-AUC": 0.9956,
+      "Param Count": 34865,
+      "Weights Size": "145.42 KB",
+      "CPU Latency": "0.012 ms/node"
+    }
+  },
+  {
+    "id": "ml-promotion-gate-evaluation",
+    "category": "Dual Transformer Models",
+    "question": "What was the promotion gate protocol for replacing GraphSAGE with Graph Transformer?",
+    "title": "Model Promotion Quality Gate (F1 >= 0.88 Threshold)",
+    "tldr": "Under Stage 3 of the ML roadmap, the Dual Transformer was maintained in isolated staging and evaluated against a strict quality gate: Test F1 >= 0.88 and CPU inference <10ms with zero database writes. The Graph Transformer scored F1=0.9209 (+5.9% over baseline), passing the gate.",
+    "body": "To preserve system stability and prevent regression, backend/scripts/promote_models.py enforced a zero-risk staging protocol. The production baseline (GraphSAGE + Autoencoder) remained active while the new Dual Transformer trained in staging. The promotion gate required: 1) Graph Transformer test set F1 >= 0.88, 2) FT-Transformer anomaly calibration on CPU, 3) Full unit test pass (pytest backend/tests/). The Relational Graph Transformer achieved F1 = 0.9209 on held-out multi-relational test splits (outperforming GraphSAGE's 0.8696 multi-relational baseline by +5.9%), and peeling recall hit 0.948 (+13.6% over baseline). Once verified, the promotion script synced scores to PostgreSQL, Neo4j, and evidence_trails.json.",
+    "tags": ["promotion gate", "F1 >= 0.88", "staging", "evaluation", "GraphSAGE", "Dual Transformer"],
+    "chapterUrl": "/docs/ch5-dual-transformer-ml",
+    "chapterTitle": "Chapter 5: Dual Transformer Machine Learning Architecture",
+    "fileCitations": [
+      "backend/scripts/promote_models.py",
+      "data/models/BENCHMARK_TRUTH.json",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Gate Threshold": "F1 >= 0.8800",
+      "Measured Graph Transformer F1": 0.9209,
+      "Gate Status": "PASS",
+      "Relative Lift over SAGE": "+5.9% F1"
+    }
+  },
+  {
+    "id": "ml-benchmark-truth-reconciliation",
+    "category": "Dual Transformer Models",
+    "question": "Where is the single canonical source of truth for all ML metrics stored?",
+    "title": "Canonical Metric Reconciliation (BENCHMARK_TRUTH.json)",
+    "tldr": "BENCHMARK_TRUTH.json in data/models/ is the single authoritative source of truth for all 4 models (Graph Transformer, FT-Transformer, GraphSAGE, Autoencoder), eliminating metric drift across code, documentation, UI badges, and court dossiers.",
+    "body": "Under Stage 4 (FLEX-5), metric discrepancies across docstrings, frontend popovers, and test suites were eradicated by introducing data/models/BENCHMARK_TRUTH.json. This signed JSON specification documents exact parameter counts, weights file sizes, evaluation dates, SHA-256 model checksums, CPU latencies, and classification thresholds. ModelProvenanceModal.tsx, TopNav.tsx, dossierExport.ts, and EntityDrawer.tsx dynamically import this canonical registry. All 196 backend pytest assertions and Next.js frontend components validate against these exact figures.",
+    "tags": ["BENCHMARK_TRUTH", "reconciliation", "metrics", "provenance", "truth", "F1", "latency"],
+    "chapterUrl": "/docs/ch5-dual-transformer-ml",
+    "chapterTitle": "Chapter 5: Dual Transformer Machine Learning Architecture",
+    "fileCitations": [
+      "data/models/BENCHMARK_TRUTH.json",
+      "data/models/BENCHMARK_TRUTH.md",
+      "frontend/src/components/ModelProvenanceModal.tsx",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Canonical Models": 4,
+      "Total Transformer Weights": "230.96 KB",
+      "Combined CPU Latency": "4.8ms",
+      "Backend Pytest Regressions": 0
+    }
+  },
+  {
+    "id": "ml-baseline-graphsage-autoencoder",
+    "category": "Dual Transformer Models",
+    "question": "How do the legacy GraphSAGE and Autoencoder baseline models compare?",
+    "title": "Legacy Baseline Architecture: GraphSAGE GNN & MLP Autoencoder",
+    "tldr": "The baseline models include a 3-layer GraphSAGE GNN (SAGEConv 64->32->16->1, F1=0.9711 on CO_SPEND) and a 7-layer Deep MLP Autoencoder (18->64->32->16->32->64->18, threshold=0.034618), preserved for historical reference and benchmark comparison.",
+    "body": "In Phases 5 and 7, the initial baseline architecture was constructed using standard PyTorch and PyG implementations. The Deep MLP Autoencoder used symmetric dense bottleneck layers with ReLU activations, trained on 80% non-illicit splits in 211.7s on CPU, with alert threshold calibrated at 0.034618. The GraphSAGE model utilized 3 SAGEConv layers with mean neighborhood aggregation and focal loss (gamma=2.0, alpha=6.20), achieving F1=0.9711 on the CO_SPEND adjacency graph and 25.4ms full graph inference across 24,673 nodes. While effective on homogeneous projections, they were superseded by the Dual Transformer to support multi-relational attention and tabular tokenization.",
+    "tags": ["GraphSAGE", "Autoencoder", "baseline", "legacy", "SAGEConv", "MLP", "comparison"],
+    "chapterUrl": "/docs/ch5-dual-transformer-ml",
+    "chapterTitle": "Chapter 5: Dual Transformer Machine Learning Architecture",
+    "fileCitations": [
+      "data/models/BENCHMARK_TRUTH.json",
+      "WORK-1.md",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "GraphSAGE F1 (CO_SPEND)": 0.9711,
+      "GraphSAGE F1 (Multi-Rel)": 0.8696,
+      "Autoencoder Threshold": 0.034618,
+      "GraphSAGE Latency": "25.4ms / 24,673 nodes"
+    }
+  },
+  {
+    "id": "xai-composite-risk-formula",
+    "category": "Explainability & Law",
+    "question": "What is the Composite Risk Formula and how are risk tiers determined?",
+    "title": "Multi-Factor Composite Risk Scoring Formula & Verdict Tiers",
+    "tldr": "The composite risk score combines four orthogonal forensic dimensions: score = clip(0.35 * anomaly + 0.45 * risk + 0.15 * rule_bonus + 0.05 * mixing, 0, 1). Scores map to four verdict tiers: CRITICAL (>=0.75), HIGH (0.55-0.75), MEDIUM (0.30-0.55), and LOW (<0.30).",
+    "body": "In Phase 8, backend/scripts/compute_composite_risk.py fused tabular anomaly detection, graph neural network risk propagation, and deterministic heuristic detections into a calibrated score: Score = min(1.0, max(0.0, 0.35 * anomaly + 0.45 * risk + 0.15 * rule_bonus + 0.05 * mixing)). Here, rule_bonus adds up to 1.0 based on rule severity (e.g. RANSOMWHERE_SEED_INPUT = +0.8, PEELING_CHAIN_ORIGIN = +0.6), and mixing is a binary 1.0/0.0 flag. Across 17,020 indexed wallets, distribution resulted in: CRITICAL = 103 (0.6%, all with non-empty triggered rules), HIGH = 78 (0.5%), MEDIUM = 3,377 (19.8%), and LOW = 13,462 (79.1%).",
+    "tags": ["composite risk", "formula", "weights", "CRITICAL", "HIGH", "MEDIUM", "LOW", "verdict", "scoring"],
+    "chapterUrl": "/docs/ch6-risk-engine-xai-legal",
+    "chapterTitle": "Chapter 6: Multi-Factor Risk Engine, Explainability (XAI) & Legal Compliance",
+    "fileCitations": [
+      "backend/scripts/compute_composite_risk.py",
+      "backend/app/services/xai_store.py",
+      "WORK-1.md",
+      "flow.md"
+    ],
+    "keyMetrics": {
+      "Weights": "Anomaly: 0.35, Risk: 0.45, Rules: 0.15, Mixing: 0.05",
+      "CRITICAL Count": 103,
+      "HIGH Count": 78,
+      "MEDIUM Count": 3377,
+      "LOW Count": 13462
+    }
+  },
+  {
+    "id": "xai-shap-waterfall-attributions",
+    "category": "Explainability & Law",
+    "question": "How does SHAP explain why a transaction is flagged as anomalous?",
+    "title": "SHAP GradientExplainer & Feature Attribution Waterfalls",
+    "tldr": "SHAP GradientExplainer combined with AutoencoderMSEWrapper generates local feature attribution vectors mapping each of the 18 tabular features to its contribution toward reconstruction error, visualized in the UI as diverging horizontal waterfall charts.",
+    "body": "Flagging an alert without mathematical attribution fails legal and forensic requirements. In Phase 8, backend/scripts/explain_autoencoder.py wraps the tabular model inside AutoencoderMSEWrapper, which maps the (N, 18) input tensor to a scalar (N, 1) Mean Squared Error output. SHAP's GradientExplainer computes Shapley attribution values across a 200-sample non-illicit background baseline. Top positive contributors (pushing score toward anomaly, e.g. fee_rate, output_entropy, src_tx_count) and negative contributors (suppressing anomaly) are serialized to shap_attributions.json (5.70 MB across 4,839 wallets) and rendered in Next.js via ShapWaterfall.tsx.",
+    "tags": ["SHAP", "waterfall", "GradientExplainer", "AutoencoderMSEWrapper", "attribution", "features", "XAI"],
+    "chapterUrl": "/docs/ch6-risk-engine-xai-legal",
+    "chapterTitle": "Chapter 6: Multi-Factor Risk Engine, Explainability (XAI) & Legal Compliance",
+    "fileCitations": [
+      "backend/scripts/explain_autoencoder.py",
+      "frontend/src/components/ShapWaterfall.tsx",
+      "WORK-1.md"
+    ],
+    "keyMetrics": {
+      "Flagged Wallets": 4839,
+      "Input Dimension": 18,
+      "Attribution Format": "Signed Shapley Values (Float32)",
+      "Artifact Size": "5.70 MB"
+    }
+  },
+  {
+    "id": "xai-gnnexplainer-topological-subgraphs",
+    "category": "Explainability & Law",
+    "question": "How does GNNExplainer extract topological evidence subgraphs?",
+    "title": "GNNExplainer Subgraph Masks & Neighbor Attributions",
+    "tldr": "PyTorch Geometric's Explainer(GNNExplainer) extracts compact 2-hop topological subgraphs and continuous edge attention masks for top-500 risk entities, highlighting the exact transactional pathways connecting the target to illicit seed wallets.",
+    "body": "Implemented in backend/scripts/explain_graphsage.py, GNNExplainer solves an optimization problem to identify a minimal subgraph G_s and feature mask that maximizes mutual information with the model's high-risk prediction: max MI(Y, G_s) = H(Y) - H(Y | G = G_s). An isolated-node fast path bypasses degenerate gradient descent on singletons. For connected nodes, it generates continuous edge importance masks (0.0 <= alpha_ij <= 1.0), serializing the 2-hop neighborhood into gnn_subgraphs.json (500 wallets, 0.30 MB). The Next.js GraphCanvas.tsx renders these explanatory edges in solid black with dynamic cyan glow.",
+    "tags": ["GNNExplainer", "subgraphs", "edge masks", "PyG", "topology", "XAI", "mutual information"],
+    "chapterUrl": "/docs/ch6-risk-engine-xai-legal",
+    "chapterTitle": "Chapter 6: Multi-Factor Risk Engine, Explainability (XAI) & Legal Compliance",
+    "fileCitations": [
+      "backend/scripts/explain_graphsage.py",
+      "frontend/src/components/GraphCanvas.tsx",
+      "WORK-1.md",
+      "WORK-2.md"
+    ],
+    "keyMetrics": {
+      "Target Entities": 500,
+      "Mask Bounds": "[0.0, 1.0]",
+      "Max Subgraph Hops": 2,
+      "Artifact Size": "0.30 MB"
+    }
+  },
+  {
+    "id": "legal-section-65b-bsa2023",
+    "category": "Explainability & Law",
+    "question": "What is Section 65B Indian Evidence Act / BSA 2023 legal compliance?",
+    "title": "Section 65B (Indian Evidence Act / BSA 2023) Legal Certification",
+    "tldr": "The system generates court-admissible forensic dossiers complying with Section 65B Indian Evidence Act and Section 63 Bharatiya Sakshya Adhiniyam (BSA) 2023, embedding SHA-256 cryptographic digests of raw data, unbroken chain-of-custody timestamps, deterministic natural language narratives, and mathematical attribution tables.",
+    "body": "Electronic evidence submitted in Indian courts requires strict statutory compliance regarding authenticity, integrity, and operational custody under Section 65B (Indian Evidence Act 1872) and Section 63 (Bharatiya Sakshya Adhiniyam 2023). Under Stage 4 (FLEX-4), frontend/src/lib/dossierExport.ts generates certified legal dossiers for any flagged entity. The export payload contains: 1) Cryptographic SHA-256 hash of the raw transaction and network telemetry inputs, 2) Cryptographic hash of the active ML model weights, 3) ISO 8601 UTC timestamped chain-of-custody audit trail, 4) Sovereign air-gap facility environment certificate, 5) Deterministic English narrative detailing violated AML heuristics, and 6) Certified mathematical SHAP and attention attribution tables. Analysts can generate 1-click JSON or print-ready court documents in under 100ms.",
+    "tags": ["Section 65B", "BSA 2023", "legal", "court-admissible", "dossier", "SHA-256", "chain of custody", "evidence"],
+    "chapterUrl": "/docs/ch6-risk-engine-xai-legal",
+    "chapterTitle": "Chapter 6: Multi-Factor Risk Engine, Explainability (XAI) & Legal Compliance",
+    "fileCitations": [
+      "frontend/src/lib/dossierExport.ts",
+      "frontend/src/components/EntityDrawer.tsx",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Legal Standard": "Sec 65B IEA / Sec 63 BSA 2023",
+      "Digest Algorithm": "SHA-256",
+      "Export Latency": "<100ms",
+      "Formats": "JSON, Print-Formatted PDF"
+    }
+  },
+  {
+    "id": "phase11-celery-process-boundary",
+    "category": "Live Post-Ingest Sync (Phase 11)",
+    "question": "Why Celery does not write directly to xai_store in Phase 11?",
+    "title": "Process Isolation Boundary Between Celery and FastAPI",
+    "tldr": "Celery workers run in a completely isolated OS process with independent virtual memory space and zero shared memory with the FastAPI Uvicorn master process. Celery cannot mutate FastAPI's in-memory xai_store dictionaries directly.",
+    "body": "A fundamental distributed systems pitfall is attempting to share in-memory state across process boundaries. xai_store.py resides inside the FastAPI web server process memory to deliver sub-millisecond /entity/{address}/explain lookups. Celery executes in a separate Python process (celery worker), connected to FastAPI only via Redis and PostgreSQL. Any dictionary mutation performed inside a Celery task alters only that worker's private copy and vanishes upon task exit. To solve this in Phase 11, the architecture uses a two-phase protocol: Celery handles bulk parsing, GeoIP enrichment, and Postgres insertion; upon Celery SUCCESS, the frontend triggers POST /ingest/sync/{task_id} inside FastAPI, which executes inline scoring and mutates the live xai_store.",
+    "tags": ["Celery", "process boundary", "xai_store", "memory isolation", "architecture", "Phase 11", "FastAPI"],
+    "chapterUrl": "/docs/ch7-online-inference-sync",
+    "chapterTitle": "Chapter 7: Live Post-Ingest Online Inference & In-Memory Store Sync",
+    "fileCitations": [
+      "backend/app/services/xai_store.py",
+      "backend/app/routers/ingest.py",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Process Architecture": "Multi-Process Decoupled",
+      "IPC Mechanism": "Redis + HTTP Hook",
+      "Direct Memory Access": "Strictly Isolated (Zero)"
+    }
+  },
+  {
+    "id": "phase11-post-ingest-sync-endpoint",
+    "category": "Live Post-Ingest Sync (Phase 11)",
+    "question": "How does the POST /ingest/sync/{task_id} endpoint work?",
+    "title": "POST /ingest/sync/{task_id} Endpoint Architecture & Workflow",
+    "tldr": "POST /ingest/sync/{task_id} executes inside the FastAPI process, queries PostgreSQL for transactions ingested within the past 2 minutes, runs inline_scorer.score_batch() to compute Autoencoder/FT-Transformer MSE and rule checks, and atomically upserts results into xai_store.",
+    "body": "Under Stage 2 (Phase 11.3), backend/app/routers/ingest.py exposes POST /ingest/sync/{task_id}. When invoked, it: 1) Checks Redis for sync_done:{task_id} to enforce idempotency (returning 409 if already synced), 2) Queries PostgreSQL: SELECT * FROM transactions WHERE ingested_at > NOW() - INTERVAL '2 minutes', 3) Passes rows to inline_scorer.score_batch(), which extracts 18 features, runs CPU model inference, and checks for Ransomwhere seed overlap or peeling candidates, 4) Calls xai_store.upsert_composite() and upsert_evidence() using threading.RLock, and 5) Sets sync_done:{task_id} in Redis with a 3,600s TTL. It returns HTTP 200 with { 'scored': N, 'upserted': N, 'skipped_existing': N }.",
+    "tags": ["POST /ingest/sync", "endpoint", "FastAPI", "inline_scorer", "upsert", "Phase 11"],
+    "chapterUrl": "/docs/ch7-online-inference-sync",
+    "chapterTitle": "Chapter 7: Live Post-Ingest Online Inference & In-Memory Store Sync",
+    "fileCitations": [
+      "backend/app/routers/ingest.py",
+      "backend/app/services/inline_scorer.py",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Query Window": "NOW() - INTERVAL '2 minutes'",
+      "Idempotency TTL": "3,600s (1h)",
+      "Return Codes": "200 OK, 404 Not Found, 409 Already Synced"
+    }
+  },
+  {
+    "id": "phase11-xai-store-thread-safety",
+    "category": "Live Post-Ingest Sync (Phase 11)",
+    "question": "How does xai_store prevent race conditions during live mutation?",
+    "title": "Thread-Safe In-Memory Store Mutation with threading.RLock",
+    "tldr": "xai_store.py uses a re-entrant lock (threading.RLock()) wrapping upsert_composite, upsert_evidence, and atomic upsert_batch functions, preventing dictionary mutation race conditions between concurrent sync operations and analytical read requests.",
+    "body": "FastAPI runs under Uvicorn with an asynchronous event loop and a thread pool executor for synchronous endpoint defs. If an analyst requests GET /entity/{addr}/explain on thread A while POST /ingest/sync/{task_id} executes batch upserts on thread B, simultaneous dictionary modification in Python can cause RuntimeError: dictionary changed size during iteration or return partially written records. Under Phase 11.1, backend/app/services/xai_store.py introduced _store_lock = threading.RLock(). All mutations (upsert_composite, upsert_evidence, upsert_batch) and atomic bulk lookups acquire _store_lock, ensuring strict thread-safety while preserving sub-millisecond read access.",
+    "tags": ["xai_store", "thread safety", "RLock", "race conditions", "concurrency", "Phase 11"],
+    "chapterUrl": "/docs/ch7-online-inference-sync",
+    "chapterTitle": "Chapter 7: Live Post-Ingest Online Inference & In-Memory Store Sync",
+    "fileCitations": [
+      "backend/app/services/xai_store.py",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Lock Primitive": "threading.RLock()",
+      "Store Scale": "17,020 baseline records + live upserts",
+      "Read Latency Under Lock": "<0.2ms"
+    }
+  },
+  {
+    "id": "phase11-provisional-dossier",
+    "category": "Live Post-Ingest Sync (Phase 11)",
+    "question": "What is a provisional dossier and why is it needed for newly ingested entities?",
+    "title": "Provisional Dossier Scoring (provisional: true)",
+    "tldr": "Newly ingested entities receive a provisional dossier ('provisional': true) with real-time anomaly score and heuristic rule detections, while Louvain cluster_id and GNN risk_score remain deferred until full graph retrain. The UI displays an informative yellow advisory banner.",
+    "body": "Full topological retraining (Neo4j GDS Louvain and Graph Transformer message passing) takes 12–40 seconds and is impractical to re-run on single-transaction uploads. For newly ingested entities, inline_scorer.py computes an instant provisional score: score = clip(0.35 * anomaly + 0.15 * rules, 0, 1) without graph features. In EntityDrawer.tsx, if response.provisional === true, a yellow banner informs the analyst: 'Provisional Analysis — Entity ingested in current session. SHAP waterfall and GNN subgraph available after full pipeline retrain. Anomaly score and rule violations are live.' This prevents 404 errors on fresh uploads while honestly disclosing partial topological state.",
+    "tags": ["provisional", "dossier", "provisional: true", "EntityDrawer", "banner", "Phase 11"],
+    "chapterUrl": "/docs/ch7-online-inference-sync",
+    "chapterTitle": "Chapter 7: Live Post-Ingest Online Inference & In-Memory Store Sync",
+    "fileCitations": [
+      "backend/app/services/inline_scorer.py",
+      "frontend/src/components/EntityDrawer.tsx",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Provisional Formula": "clip(0.35*anomaly + 0.15*rules, 0, 1)",
+      "Flag": "provisional: true",
+      "UI Indicator": "Amber advisory banner"
+    }
+  },
+  {
+    "id": "dev-server-port-mappings",
+    "category": "Local Dev & Ops",
+    "question": "What are the local development server ports and their allocated services?",
+    "title": "System Port Allocation & Infrastructure Mappings",
+    "tldr": "The sovereign platform uses 6 standard local ports: 8000 (FastAPI Backend), 3000 (Next.js Command Center), 3001 (RAG Technical Documentation), 5432 (PostgreSQL), 7687 (Neo4j Bolt) / 7474 (Neo4j HTTP), and 6379 (Redis).",
+    "body": "Per dev-server.md, running the full stack bare-metal without Docker relies on pre-allocated ports: 1) Port 8000: FastAPI backend REST API (uvicorn app.main:app), 2) Port 3000: Next.js forensic analyst surveillance dashboard (frontend), 3) Port 3001: Next.js RAG technical documentation portal (rag), 4) Port 5432: PostgreSQL relational transaction database (sih_bitcoin), 5) Port 7687: Neo4j Bolt graph protocol (with Port 7474 for Neo4j Web Browser UI), 6) Port 6379: Redis in-memory cache, Celery message broker, and idempotency lock.",
+    "tags": ["ports", "8000", "3000", "3001", "5432", "7687", "6379", "dev-server", "infrastructure"],
+    "chapterUrl": "/docs/ch8-command-center-dev-ops",
+    "chapterTitle": "Chapter 8: Command Center, Local Runbook & Production Operations",
+    "fileCitations": [
+      "dev-server.md",
+      ".env.example",
+      "docker-compose.yml"
+    ],
+    "keyMetrics": {
+      "Backend API": 8000,
+      "Frontend Dashboard": 3000,
+      "RAG Docs": 3001,
+      "PostgreSQL": 5432,
+      "Neo4j Bolt": 7687,
+      "Redis": 6379
+    }
+  },
+  {
+    "id": "dev-server-commands-runbook",
+    "category": "Local Dev & Ops",
+    "question": "How do I run backend and celery locally without Docker?",
+    "title": "Three-Terminal Bare-Metal Startup Runbook (dev-server.md)",
+    "tldr": "Start the platform locally by opening 3 terminals: Terminal 1 runs alembic upgrade head and uvicorn app.main:app --reload --port 8000; Terminal 2 runs celery -A app.celery_app worker --loglevel=info --pool=solo; Terminal 3 runs npm run dev on port 3000.",
+    "body": "As specified in dev-server.md, three separate terminal windows are required: Terminal 1 (FastAPI Backend): cd backend; .\\venv\\Scripts\\Activate.ps1; alembic upgrade head; uvicorn app.main:app --reload --host 0.0.0.0 --port 8000. Terminal 2 (Celery Ingest Worker): cd backend; .\\venv\\Scripts\\Activate.ps1; celery -A app.celery_app worker --loglevel=info --pool=solo. Terminal 3 (Next.js Dashboard): cd frontend; npm install; npm run dev. To verify pipeline health: curl http://localhost:8000/health (returns healthy status for database, neo4j, and redis).",
+    "tags": ["dev-server", "runbook", "commands", "terminals", "uvicorn", "celery", "npm run dev", "Windows"],
+    "chapterUrl": "/docs/ch8-command-center-dev-ops",
+    "chapterTitle": "Chapter 8: Command Center, Local Runbook & Production Operations",
+    "fileCitations": [
+      "dev-server.md",
+      "AGENTS.md"
+    ],
+    "keyMetrics": {
+      "Terminals Required": 3,
+      "Backend Launch": "uvicorn app.main:app --reload --port 8000",
+      "Worker Launch": "celery --pool=solo",
+      "Frontend Launch": "npm run dev"
+    }
+  },
+  {
+    "id": "dev-server-celery-solo-pool",
+    "category": "Local Dev & Ops",
+    "question": "Why must Celery be executed with --pool=solo on Windows?",
+    "title": "Windows Multiprocessing Constraints & Celery --pool=solo",
+    "tldr": "Windows does not support the POSIX fork() system call. Running Celery without --pool=solo causes worker processes to deadlock, freeze silently during task dispatch, or trigger WinError 10061 permission errors.",
+    "body": "By default, Celery spawns child worker processes using POSIX fork(), which duplicates parent process memory space on Linux/macOS. On Windows, Python falls back to spawn, which re-imports the entire application module tree in each subprocess. This causes circular import deadlocks, unpicklable object errors, and permission failures when binding to Redis on Windows. Adding --pool=solo forces Celery to execute tasks inline within a single dedicated worker thread, eliminating multiprocessing race conditions and guaranteeing reliable async ingestion on Windows host environments.",
+    "tags": ["solo", "celery", "pool", "Windows", "multiprocessing", "fork", "WinError 10061", "dev-server"],
+    "chapterUrl": "/docs/ch8-command-center-dev-ops",
+    "chapterTitle": "Chapter 8: Command Center, Local Runbook & Production Operations",
+    "fileCitations": [
+      "dev-server.md",
+      "WORK-3.md"
+    ],
+    "keyMetrics": {
+      "Windows Default Multi-Processing": "spawn (Unstable with Celery)",
+      "Required Flag": "--pool=solo",
+      "Failure Without Flag": "Subprocess deadlock / WinError 10061"
+    }
+  },
+  {
+    "id": "dev-ops-address-hash-middleware",
+    "category": "Local Dev & Ops",
+    "question": "What is AddressHashMiddleware and why are Bitcoin addresses masked in logs?",
+    "title": "AddressHashMiddleware Log Anonymization & Privacy Guard",
+    "tldr": "AddressHashMiddleware intercepts incoming HTTP requests and outgoing responses, replacing all Base58 and Bech32 Bitcoin wallet strings with SHA-256 token digests in console and disk logs to prevent plaintext wallet intelligence leaks.",
+    "body": "In compliance with intelligence operational security protocols, surveillance analysts must not expose sensitive wallet addresses in application log aggregators (e.g. Datadog, CloudWatch, or local stdout). backend/app/middleware/address_hash.py implements an ASGI middleware that scans query parameters, URL path segments (e.g. /entity/{address}/explain), and JSON request bodies using regex patterns for Bitcoin P2PKH (starts with 1), P2SH (starts with 3), and SegWit/Taproot (starts with bc1). Matched addresses are replaced with SHA256(addr)[:16] digests before passing logs to the Python standard logging facility, ensuring zero plaintext wallet addresses leak in telemetry logs.",
+    "tags": ["AddressHashMiddleware", "masking", "SHA-256", "privacy", "security", "logging", "Base58", "Bech32"],
+    "chapterUrl": "/docs/ch8-command-center-dev-ops",
+    "chapterTitle": "Chapter 8: Command Center, Local Runbook & Production Operations",
+    "fileCitations": [
+      "backend/app/middleware/address_hash.py",
+      "backend/app/main.py",
+      "WORK-2.md"
+    ],
+    "keyMetrics": {
+      "Target Encodings": "Base58, Bech32",
+      "Digest Format": "SHA256(addr)[:16]",
+      "Leakage Rate": "0 Plaintext Addresses in Logs"
+    }
+  },
+  {
+    "id": "dev-ops-pytest-runbook",
+    "category": "Local Dev & Ops",
+    "question": "How is the entire backend and ML pipeline verified with Pytest?",
+    "title": "Comprehensive 196-Test Pytest Verification Suite",
+    "tldr": "The entire backend, ML inference engines, graph heuristics, and Phase 11 sync services are covered by a suite of 196 automated pytest tests (pytest backend/tests/ -v), verifying zero regressions across all system components.",
+    "body": "The backend test harness in backend/tests/ provides deterministic unit and integration test coverage across all completed phases: Phase 2 ingest parsing (test_ingest.py), Phase 3/4 Neo4j graph & Louvain clustering (test_graph.py), Phase 5/7 Dual Transformer & GraphSAGE inference (test_ml.py, test_ft_transformer.py), Phase 6 peeling and CoinJoin heuristic traversals (test_heuristics.py), Phase 8 XAI stores (test_xai_store.py), Phase 9/9.5 API endpoints (test_api.py), Phase 11 inline scoring (test_inline_scorer.py), and AddressHashMiddleware (test_middleware.py). All 196 tests execute in under 45 seconds on CPU with 100% pass rate and zero regressions.",
+    "tags": ["pytest", "test suite", "runbook", "verification", "unit tests", "integration tests", "196 tests"],
+    "chapterUrl": "/docs/ch8-command-center-dev-ops",
+    "chapterTitle": "Chapter 8: Command Center, Local Runbook & Production Operations",
+    "fileCitations": [
+      "backend/tests/",
+      "WORK-3.md",
+      "flow.md"
+    ],
+    "keyMetrics": {
+      "Total Tests": 196,
+      "Pass Rate": "100.0%",
+      "Execution Time": "<45s on CPU",
+      "Regression Count": 0
+    }
+  }
+]

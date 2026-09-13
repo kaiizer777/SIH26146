@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --surface-subtle: #f8fafc;
+  --surface-card: #ffffff;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --accent-tactical: #0284c7;
+  --accent-military: #059669;
+}
+
+body {
+  background: #ffffff;
+  color: #0f172a;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================================================================
+   TACTICAL 3D DEPTH DESIGN SYSTEM (Studio-Grade Light-From-Above Model)
+   ========================================================================= */
+
+/* Tier 3: Primary Tactical Interactive Action (Tactical Blue) */
+.btn-tactical-primary {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  border-left: 1px solid rgba(37, 99, 235, 0.8);
+  border-right: 1px solid rgba(37, 99, 235, 0.8);
+  border-bottom: 1px solid #172554;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 6px rgba(30, 64, 175, 0.28);
+  transition: all 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-tactical-primary:hover {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 4px 12px rgba(30, 64, 175, 0.38);
+}
+
+.btn-tactical-primary:active {
+  background: #1e40af;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+  transform: translateY(0.5px);
+}
+
+/* Tier 1-2: Secondary Tactical Control */
+.btn-tactical-secondary {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.95);
+  border-left: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: all 140ms ease;
+}
+
+.btn-tactical-secondary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 2px 4px rgba(15, 23, 42, 0.08);
+}
+
+.btn-tactical-secondary:active {
+  background: #e2e8f0;
+  transform: translateY(0.5px);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+/* Active Sidebar Navigation Item */
+.sidebar-item-active {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.95);
+  border-left: 1px solid #cbd5e1;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+/* Suggested Query Chip */
+.chip-tactical-prompt {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-top: 1px solid rgba(255, 255, 255, 1);
+  border-left: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 1px solid #94a3b8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 2px 5px rgba(15, 23, 42, 0.06);
+  transition: all 140ms ease;
+}
+
+.chip-tactical-prompt:hover {
+  background: #ffffff;
+  border-color: #94a3b8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 3px 8px rgba(15, 23, 42, 0.09);
+}
+
+.chip-tactical-prompt:active {
+  transform: translateY(0.5px);
+  background: #f1f5f9;
+  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+/* Tactical Surface Cards */
+.card-tactical {
+  background: #ffffff;
+  border-top: 1px solid rgba(255, 255, 255, 0.9);
+  border-left: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.card-tactical:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+/* Custom Scrollbar for Sovereign Documentation */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
