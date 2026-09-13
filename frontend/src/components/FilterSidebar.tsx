@@ -155,13 +155,8 @@ export default function FilterSidebar({
 
         {/* Risk Verdict Filter Matrix */}
         <div>
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
             <span>Risk Verdict</span>
-            {filters.verdicts.size > 0 && (
-              <span className="badge-3d-active text-[10px] font-bold px-2 py-0.5 rounded-md crypto-mono">
-                {filters.verdicts.size} selected
-              </span>
-            )}
           </div>
           <div className="flex flex-col gap-2">
             {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as Verdict[]).map((v) => {
