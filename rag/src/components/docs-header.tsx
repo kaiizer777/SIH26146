@@ -1,105 +1,197 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ShieldCheck,
+  Server,
+  ShieldAlert,
+  Network,
+  GitFork,
+  Cpu,
+  FileCheck2,
+  RefreshCw,
+  Terminal,
   Sparkles,
-  Search,
-  Bot,
-  Layers,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
-const CHAPTER_MAP: Record<string, { num: string; name: string }> = {
-  "/docs/ch1-mission-architecture": {
+interface ChapterMeta {
+  href: string;
+  num: string;
+  title: string;
+  category: string;
+  badge: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const CHAPTER_ORDER: ChapterMeta[] = [
+  {
+    href: "/docs/ch1-mission-architecture",
     num: "01",
-    name: "Mission & System Topology",
+    title: "The NTRO Mission, Tech Stack & System Topology",
+    category: "Foundations & Ingest",
+    badge: "Core Spec",
+    icon: Server,
   },
-  "/docs/ch2-ingest-geoip-security": {
+  {
+    href: "/docs/ch2-ingest-geoip-security",
     num: "02",
-    name: "Ingest, GeoIP & Anti-Duplicate Armor",
+    title: "Ingest & GeoIP Armor",
+    category: "Foundations & Ingest",
+    badge: "Ingest Sec",
+    icon: ShieldAlert,
   },
-  "/docs/ch3-graph-entity-clustering": {
+  {
+    href: "/docs/ch3-graph-entity-clustering",
     num: "03",
-    name: "Graph Topology & Entity Clustering",
+    title: "Graph Topology & Entity Clustering (Neo4j GDS)",
+    category: "Graph Discovery",
+    badge: "Neo4j GDS",
+    icon: Network,
   },
-  "/docs/ch4-peeling-mixing-heuristics": {
+  {
+    href: "/docs/ch4-peeling-mixing-heuristics",
     num: "04",
-    name: "Laundering Heuristics & Mixers",
+    title: "Laundering Pattern Detectors (Peeling-Chains & Mixers)",
+    category: "Graph Discovery",
+    badge: "Heuristics",
+    icon: GitFork,
   },
-  "/docs/ch5-dual-transformer-ml": {
+  {
+    href: "/docs/ch5-dual-transformer-ml",
     num: "05",
-    name: "Dual Transformer ML Engine",
+    title: "Dual Transformer ML Engine",
+    category: "ML & Evidence",
+    badge: "PyTorch/PyG",
+    icon: Cpu,
   },
-  "/docs/ch6-risk-engine-xai-legal": {
+  {
+    href: "/docs/ch6-risk-engine-xai-legal",
     num: "06",
-    name: "Multi-Factor Risk & §65B Legal",
+    title: "Multi-Factor Risk Scoring, XAI & Section 65B Legal Dossier",
+    category: "ML & Evidence",
+    badge: "Legal §65B",
+    icon: FileCheck2,
   },
-  "/docs/ch7-online-inference-sync": {
+  {
+    href: "/docs/ch7-online-inference-sync",
     num: "07",
-    name: "Live Post-Ingest Sync (Phase 11)",
+    title: "Live Post-Ingest Online Inference (Phase 11)",
+    category: "Sync & Runbook",
+    badge: "Online Sync",
+    icon: RefreshCw,
   },
-  "/docs/ch8-command-center-dev-ops": {
+  {
+    href: "/docs/ch8-command-center-dev-ops",
     num: "08",
-    name: "Command Center & Local Runbook",
+    title: "Forensic Command Center & Local Operator Guide",
+    category: "Sync & Runbook",
+    badge: "Operations",
+    icon: Terminal,
   },
-  "/assistant": {
+  {
+    href: "/assistant",
     num: "AI",
-    name: "RAG Knowledge Base & Doubt Solver",
+    title: "Forensic Knowledge Base & Intelligence Assistant",
+    category: "Neural Copilot",
+    badge: "RAG Model",
+    icon: Sparkles,
   },
-};
+];
 
 export function DocsHeader() {
   const pathname = usePathname();
-  const current = CHAPTER_MAP[pathname] || {
-    num: "01",
-    name: "Mission & System Topology",
-  };
 
-  const openAssistant = () => {
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "k",
-        ctrlKey: true,
-        bubbles: true,
-      })
-    );
-  };
+  const currentIndex = CHAPTER_ORDER.findIndex((c) => c.href === pathname);
+  const current =
+    currentIndex !== -1
+      ? CHAPTER_ORDER[currentIndex]
+      : CHAPTER_ORDER[0];
+
+  const prevChapter = currentIndex > 0 ? CHAPTER_ORDER[currentIndex - 1] : null;
+  const nextChapter =
+    currentIndex >= 0 && currentIndex < CHAPTER_ORDER.length - 1
+      ? CHAPTER_ORDER[currentIndex + 1]
+      : null;
+
+  const Icon = current.icon;
 
   return (
-    <header className="h-[70px] border-b border-slate-200/90 bg-white/90 backdrop-blur-md sticky top-0 z-40 px-5 sm:px-[30px] flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.03)] relative">
-      {/* Left Context: System State */}
-      <div className="flex items-center gap-2.5 text-[15px] font-mono text-slate-500">
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-        <span className="hidden md:inline font-semibold text-slate-700 tracking-wider uppercase text-[14px]">
-          Sovereign Docs
-        </span>
+    <header className="h-[64px] border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-5 sm:px-8 flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.03)] select-none">
+      {/* Left: Icon, Category & Chapter No in 1 line -> Vertical Divider -> Title */}
+      <div className="flex-1 flex items-center space-x-3.5 min-w-0 mr-4 sm:mr-6">
+        {/* Chapter Icon */}
+        <div className="w-[32px] h-[32px] rounded-[8px] bg-gradient-to-b from-blue-500 to-blue-600 border-t border-t-blue-300/70 border-b border-b-blue-800 text-white flex items-center justify-center flex-shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_5px_rgba(37,99,235,0.2)]">
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+
+        {/* Category & Chapter Badge in 1 line */}
+        <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-[11.5px]">
+          <span className="font-semibold text-slate-600 tracking-wide uppercase">
+            {current.category}
+          </span>
+          <span className="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-[4px] border border-blue-200/80">
+            {current.num === "AI" ? "AI ASSISTANT" : `CH ${current.num}`}
+          </span>
+        </div>
+
+        {/* Vertical Divider */}
+        <div className="h-6 w-[1.5px] bg-slate-300 flex-shrink-0" />
+
+        {/* Chapter Title (Takes full available width, large crisp font-bold) */}
+        <h1 className="flex-1 text-[22px] sm:text-[24px] font-bold text-slate-950 tracking-tight truncate">
+          {current.title}
+        </h1>
       </div>
 
-      {/* Middle: Chapter Progress / Context Indicator */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[15px] font-mono text-slate-600 bg-slate-100/90 px-[15px] py-[5px] rounded-[7px] border border-slate-200/80 shadow-2xs max-w-[55vw] truncate">
-        <span className="text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-[5px] border border-blue-200/70 shadow-2xs shrink-0">
-          CHAPTER {current.num}/08
-        </span>
-        <span className="text-slate-300 shrink-0">•</span>
-        <span className="text-slate-900 font-medium truncate">
-          {current.name}
-        </span>
-      </div>
+      {/* Right Navigation & Instrument Controls */}
+      <div className="flex items-center space-x-2 flex-shrink-0">
+        {/* Prev Chapter Link / Button */}
+        {prevChapter ? (
+          <Link
+            href={prevChapter.href}
+            title={`Previous: ${prevChapter.title}`}
+            className="inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 bg-white border border-slate-200/90 shadow-2xs cursor-pointer"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+            <span className="hidden sm:inline">Prev</span>
+          </Link>
+        ) : (
+          <button
+            disabled
+            className="inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 text-slate-300" />
+            <span className="hidden sm:inline">Prev</span>
+          </button>
+        )}
 
-      {/* Right Action: AI Assistant Trigger */}
-      <div className="flex items-center gap-2.5">
-        <button
-          onClick={openAssistant}
-          type="button"
-          className="btn-tactical-secondary text-slate-800 text-[15px] font-mono font-medium px-3 py-[5px] rounded-[7px] flex items-center gap-2 cursor-pointer shadow-2xs hover:text-blue-900 hover:border-blue-300 group"
-          title="Open Forensic Assistant (Ctrl+K)"
-        >
-          <Bot className="w-[17.5px] h-[17.5px] text-blue-600 group-hover:scale-105 transition-transform" />
-          <span className="hidden sm:inline">Ask AI</span>
-          <kbd className="text-[11px] font-mono font-bold bg-slate-200/80 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200 px-1.5 py-0.5 rounded-[5px] border border-slate-300/80 transition-colors">
-            Ctrl+K
-          </kbd>
-        </button>
+        {/* Next Chapter Link / Button */}
+        {nextChapter ? (
+          <Link
+            href={nextChapter.href}
+            title={`Next: ${nextChapter.title}`}
+            className="inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 bg-white border border-slate-200/90 shadow-2xs cursor-pointer"
+          >
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+          </Link>
+        ) : (
+          <button
+            disabled
+            className="inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed"
+          >
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          </button>
+        )}
+
+        {/* Security / Node Pill */}
+        <div className="hidden xl:flex items-center space-x-1.5 px-2.5 py-[6px] rounded-[7px] bg-slate-50 border border-slate-200/90 text-slate-600 text-[10.5px] font-mono shadow-2xs ml-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-semibold text-slate-800">Air-Gapped</span>
+        </div>
       </div>
     </header>
   );

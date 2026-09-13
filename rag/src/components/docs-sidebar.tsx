@@ -201,10 +201,10 @@ export function DocsSidebar() {
                         <Icon className="w-3.5 h-3.5" />
                       </div>
                       <div className="truncate">
-                        <div className={`truncate font-bold leading-snug tracking-tight ${isActive ? "text-slate-950 text-[11.5px]" : "text-blue-900 text-[11.5px]"}`}>
+                        <div className="truncate font-bold leading-snug tracking-tight text-slate-950 text-[13.5px]">
                           {item.number}. {item.title}
                         </div>
-                        <div className="truncate text-[10px] text-slate-500 font-normal leading-relaxed mt-[1px]">
+                        <div className="truncate text-[10.5px] text-slate-500 font-normal leading-relaxed mt-[1px]">
                           {item.subtitle}
                         </div>
                       </div>
