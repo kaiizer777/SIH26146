@@ -80,18 +80,8 @@ body {
 
 /* Suggested Query Chip */
 .chip-tactical-prompt {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border-top: 1px solid rgba(255, 255, 255, 1);
-  border-left: 1px solid #cbd5e1;
-  border-right: 1px solid #cbd5e1;
-  border-bottom: 1px solid #94a3b8;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 2px 5px rgba(15, 23, 42, 0.06);
-  transition: all 140ms ease;
-}
-
-.chip-tactical-prompt:hover {
   background: #ffffff;
-  border-color: #94a3b8;
+  border: 1px solid #94a3b8;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 3px 8px rgba(15, 23, 42, 0.09);
 }
 
@@ -143,6 +133,71 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* =========================================================================
+   SCALED DOCUMENTATION VIEWPORT (1.25x Proportional Scale)
+   ========================================================================= */
+.docs-main-container h1 {
+  font-size: 45px !important;
+  line-height: 52px !important;
+}
+
+.docs-main-container h2 {
+  font-size: 25px !important;
+  line-height: 32px !important;
+}
+
+.docs-main-container h3 {
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
+.docs-main-container p {
+  font-size: 17.5px !important;
+  line-height: 28px !important;
+}
+
+.docs-main-container code {
+  font-size: 14px !important;
+}
+
+.docs-main-container .text-\[10px\] {
+  font-size: 12.5px !important;
+}
+
+.docs-main-container .text-\[11px\] {
+  font-size: 13.75px !important;
+}
+
+.docs-main-container .text-xs {
+  font-size: 15px !important;
+  line-height: 20px !important;
+}
+
+.docs-main-container .text-sm {
+  font-size: 17.5px !important;
+  line-height: 26px !important;
+}
+
+.docs-main-container .text-base {
+  font-size: 20px !important;
+  line-height: 30px !important;
+}
+
+.docs-main-container .text-xl {
+  font-size: 25px !important;
+  line-height: 32px !important;
+}
+
+.docs-main-container .text-3xl {
+  font-size: 37.5px !important;
+  line-height: 44px !important;
+}
+
+.docs-main-container .text-4xl {
+  font-size: 45px !important;
+  line-height: 52px !important;
 }
 
 

@@ -24,8 +24,8 @@ export default function DocsLayout({
         <DocsHeader />
 
         {/* Content Viewport */}
-        <main className="flex-1 min-w-0 bg-white px-6 sm:px-10 lg:px-12 py-10">
-          <div className="max-w-4xl mx-auto">{children}</div>
+        <main className="flex-1 min-w-0 bg-white px-[30px] sm:px-[50px] lg:px-[60px] py-[50px]">
+          <div className="docs-main-container max-w-[1120px] mx-auto">{children}</div>
         </main>
       </div>
 
