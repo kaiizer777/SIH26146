@@ -152,7 +152,7 @@ export function DocsHeader() {
           <Link
             href={prevChapter.href}
             title={`Previous: ${prevChapter.title}`}
-            className="inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 bg-white border border-slate-200/90 shadow-2xs cursor-pointer"
+            className="btn-tactical-secondary inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
             <span className="hidden sm:inline">Prev</span>
@@ -172,7 +172,7 @@ export function DocsHeader() {
           <Link
             href={nextChapter.href}
             title={`Next: ${nextChapter.title}`}
-            className="inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 bg-white border border-slate-200/90 shadow-2xs cursor-pointer"
+            className="btn-tactical-secondary inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer"
           >
             <span className="hidden sm:inline">Next</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
@@ -188,9 +188,9 @@ export function DocsHeader() {
         )}
 
         {/* Security / Node Pill */}
-        <div className="hidden xl:flex items-center space-x-1.5 px-2.5 py-[6px] rounded-[7px] bg-slate-50 border border-slate-200/90 text-slate-600 text-[10.5px] font-mono shadow-2xs ml-1">
+        <div className="hidden xl:flex items-center space-x-1.5 px-2.5 py-[6px] rounded-[7px] bg-slate-50 border-t border-t-white border-x border-slate-200 border-b border-b-slate-300 text-slate-700 text-[10.5px] font-mono shadow-[0_1px_2px_rgba(0,0,0,0.03)] ml-1">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-semibold text-slate-800">Air-Gapped</span>
+          <span className="font-semibold text-slate-800">Air-Gapped Enclave</span>
         </div>
       </div>
     </header>

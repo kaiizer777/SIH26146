@@ -91,6 +91,17 @@ body {
   box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.12);
 }
 
+/* Tactical Blue Badge for Chapter & Section Numbers */
+.badge-tactical-blue {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.45);
+  border-left: 1px solid rgba(37, 99, 235, 0.8);
+  border-right: 1px solid rgba(37, 99, 235, 0.8);
+  border-bottom: 1px solid #1e3a8a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 5px rgba(37, 99, 235, 0.25);
+  color: #ffffff;
+}
+
 /* Tactical Surface Cards */
 .card-tactical {
   background: #ffffff;

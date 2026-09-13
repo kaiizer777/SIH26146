@@ -1,136 +1,118 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronDown, HelpCircle, Shield, Database, Cpu, Lock, CheckCircle2 } from "lucide-react";
+import { ChevronDown, Database, Cpu, Lock, Shield, Layers, Zap } from "lucide-react";
 
 interface FAQItem {
   question: string;
   category: string;
+  badge: string;
+  icon: React.ComponentType<{ className?: string }>;
   answer: React.ReactNode;
 }
 
 const FAQS: FAQItem[] = [
   {
-    question: "Why dual-database PostgreSQL + Neo4j instead of just graph?",
+    question: "Why use dual-database PostgreSQL + Neo4j instead of just graph?",
     category: "STORAGE ARCHITECTURE",
+    badge: "Dual Engine",
+    icon: Database,
     answer: (
-      <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
-        <p>
-          Relational <strong>PostgreSQL 16</strong> is engineered for high-write-throughput append-only transaction ledgers with strict ACID durability, keyset-based cursor pagination, B-Tree indexes on temporal timestamps, <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">txid</code>, <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">src_ip</code>, and native SQL arrays (<code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">input_addresses text[]</code>, <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">output_amounts numeric[]</code>).
+      <div className="space-y-2.5 text-xs text-slate-700 leading-relaxed">
+        <p className="font-medium text-slate-900">
+          Storing raw transactions in pure graph databases causes severe memory bloat. Decoupling storage provides the best of both worlds:
         </p>
-        <p>
-          Conversely, <strong>Neo4j 5.26 Community with GDS 2.13</strong> is engineered for high-degree entity link analysis: projecting pairwise <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">:CO_SPEND</code> heuristics, running Louvain modularity clustering, computing Personalized PageRank proximity, and traversing deep multi-hop peeling chains (<code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">≥5 hops</code>).
-        </p>
-        <p className="bg-slate-50 p-2.5 rounded border border-slate-200/80 font-mono text-[11px] text-slate-700">
-          <strong>Key Decoupling:</strong> Storing millions of transaction rows in pure graph nodes induces extreme JVM heap bloat and page-cache thrashing. Decoupling the relational ledger (11,938 rows/sec bulk ingest) from in-memory graph data science gives us predictable sub-second queries across both domains.
-        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
+            <div className="font-bold text-slate-900 font-mono text-[11px] uppercase text-blue-700">
+              PostgreSQL 16 (Ledger)
+            </div>
+            <ul className="list-disc pl-4 space-y-1 text-slate-600">
+              <li><strong>High Write Speed:</strong> Ingests 11,938+ rows/sec using native SQL arrays.</li>
+              <li><strong>ACID Durability:</strong> B-Tree indexes for instant transaction lookup by timestamp or TXID.</li>
+            </ul>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-1">
+            <div className="font-bold text-slate-900 font-mono text-[11px] uppercase text-amber-700">
+              Neo4j 5.26 GDS (Graph)
+            </div>
+            <ul className="list-disc pl-4 space-y-1 text-slate-600">
+              <li><strong>Entity Clustering:</strong> Louvain algorithm groups co-spending wallets together.</li>
+              <li><strong>Deep Traversal:</strong> Detects multi-hop peeling chains (5+ hops) in milliseconds.</li>
+            </ul>
+          </div>
+        </div>
       </div>
     ),
   },
   {
-    question: "Why CPU-only PyTorch (2.4.1+cpu) instead of GPU/CUDA?",
+    question: "Why CPU-only PyTorch (2.4.1+cpu) instead of requiring GPU/CUDA?",
     category: "MACHINE LEARNING",
+    badge: "Air-Gap Ready",
+    icon: Cpu,
     answer: (
-      <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
-        <p>
-          Sovereign defense field deployments require zero hardware dependencies on proprietary Nvidia drivers, CUDA toolkits, or cuDNN binaries that create severe supply-chain constraints in air-gapped field operations.
+      <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
+        <p className="font-medium text-slate-900">
+          Sovereign air-gapped field setups cannot rely on external proprietary Nvidia drivers or CUDA toolkits. Both models were optimized for CPU speed:
         </p>
-        <p>
-          Both forensic neural networks were architected specifically for CPU-first execution efficiency:
-        </p>
-        <ul className="list-disc pl-4 space-y-1 font-mono text-[11px] text-slate-700">
-          <li>
-            <strong>18-Feature Deep Autoencoder:</strong> Trained on CPU in only <strong>211.7s (3.53 minutes)</strong> on non-illicit splits with zero divergence.
-          </li>
-          <li>
-            <strong>3-Layer GraphSAGE GNN:</strong> Trained on CPU in only <strong>12.2s</strong> (147 epochs with early stopping) for 24,673 nodes.
-          </li>
-          <li>
-            <strong>Inference Latency:</strong> Only <strong>25.4ms</strong> on CPU for 24,673 nodes—beating the required 2.0s SLA by &gt;70x.
-          </li>
+        <ul className="list-disc pl-4 space-y-1.5 text-slate-600">
+          <li><strong>Ultra-Fast Inference:</strong> Runs on CPU in just <strong>25.4ms</strong> for 24,673 nodes (beating the 2.0s SLA by 70x).</li>
+          <li><strong>Lightweight Training:</strong> 18-Feature Autoencoder trains in <strong>3.5 mins</strong>; GraphSAGE trains in <strong>12.2s</strong>.</li>
+          <li><strong>Zero Supply-Chain Risk:</strong> Runs out of the box on any standard x86 CPU hardware without driver mismatches.</li>
         </ul>
       </div>
     ),
   },
   {
-    question: "How does the air-gap guarantee work in practice with zero CDN dependencies?",
+    question: "How is the zero-leakage air-gap guarantee enforced in practice?",
     category: "SECURITY & COMPLIANCE",
+    badge: "Zero Network Leaks",
+    icon: Lock,
     answer: (
-      <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
-        <p>
-          The system maintains a strict <strong>zero runtime external request policy</strong> verified through network interface packet capture:
+      <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
+        <p className="font-medium text-slate-900">
+          The system maintains a verified <strong>zero runtime external request policy</strong>:
         </p>
-        <ul className="list-disc pl-4 space-y-1 text-slate-700">
-          <li>
-            <strong>Local Webfonts:</strong> Google Fonts are pre-cached as local <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">.woff2</code> assets inside <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">.next/static/media/</code>, eliminating all runtime calls to <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">fonts.googleapis.com</code>.
-          </li>
-          <li>
-            <strong>Local GeoIP MMDB:</strong> MaxMind GeoLite2-City and GeoLite2-ASN databases are bundled as local <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">.mmdb</code> files inside <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">data/geoip/</code>.
-          </li>
-          <li>
-            <strong>Bundled NPM/Python Wheels:</strong> Lucide SVG icons, D3.js visualization scripts, and PyTorch libraries are entirely pre-compiled inside the container filesystems.
-          </li>
+        <ul className="list-disc pl-4 space-y-1.5 text-slate-600">
+          <li><strong>Local Webfonts:</strong> Fonts are bundled locally as <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">.woff2</code> files inside the build; zero Google Fonts CDN calls.</li>
+          <li><strong>Local GeoIP Databases:</strong> MaxMind GeoLite2 City and ASN are packaged as binary <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">.mmdb</code> files; zero external DNS/WHOIS lookups.</li>
+          <li><strong>Pre-compiled Packages:</strong> All Python wheels, D3 scripts, and icons are baked directly into the local image.</li>
         </ul>
       </div>
     ),
   },
   {
-    question: "How does AddressHashMiddleware prevent Base58/Bech32 address leaks in application logs?",
+    question: "How does AddressHashMiddleware prevent Bitcoin address leaks in logs?",
     category: "LOG AUDITING & OPSEC",
+    badge: "Privacy Redaction",
+    icon: Shield,
     answer: (
-      <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
-        <p>
-          Exposing plaintext Bitcoin addresses (<code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">1A1zP...</code> or <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">bc1q...</code>) in application logging poses severe surveillance leakage risks during cross-agency audits.
+      <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
+        <p className="font-medium text-slate-900">
+          Exposing plaintext Bitcoin addresses in logs creates operational security vulnerabilities during multi-agency audits:
         </p>
-        <p>
-          FastAPI implements a custom ASGI <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">AddressHashMiddleware</code> that evaluates all outbound log streams using regex patterns matching Base58 and Bech32 Bitcoin address grammars. Matches are deterministically hashed into SHA-256 tokens (<code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">[ADDR_HASH:9f86d081884c]</code>).
-        </p>
-        <p>
-          This guarantees that even if application logs are exported or compromised, <strong>0 plaintext addresses are leaked</strong> while maintaining correlation traceability across log events.
-        </p>
+        <ul className="list-disc pl-4 space-y-1.5 text-slate-600">
+          <li><strong>Real-Time Interception:</strong> Custom ASGI middleware scans all outgoing log lines for Base58 and Bech32 address patterns.</li>
+          <li><strong>Deterministic Hashing:</strong> Plaintext wallets are replaced with SHA-256 tokens (<code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">[ADDR_HASH:9f86d081884c]</code>).</li>
+          <li><strong>Audit Safe:</strong> Zero plaintext addresses exist in log files, while log events remain correlate-able.</li>
+        </ul>
       </div>
     ),
   },
   {
-    question: "What prevents duplicate transaction processing across concurrent batch uploads?",
-    category: "INGESTION ARMOR",
+    question: "What stops duplicate transaction processing across concurrent batch uploads?",
+    category: "INGESTION INTEGRITY",
+    badge: "Idempotency",
+    icon: Zap,
     answer: (
-      <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
-        <p>
-          The pipeline enforces a multi-tier anti-duplicate armor:
+      <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
+        <p className="font-medium text-slate-900">
+          A multi-layer anti-duplicate shield prevents duplicate records and double-counting:
         </p>
-        <ol className="list-decimal pl-4 space-y-1 text-slate-700">
-          <li>
-            <strong>Redis Distributed Idempotency Lock:</strong> Before file processing commences, a SHA-256 checksum of the raw payload is stored in Redis via atomic <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">SETNX batch:hash 1 EX 3600</code>. Concurrent uploads of the same file are rejected immediately with a conflict status.
-          </li>
-          <li>
-            <strong>Relational B-Tree Primary Key:</strong> The PostgreSQL <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">transactions</code> table enforces a unique constraint on <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">txid</code>.
-          </li>
-          <li>
-            <strong>Idempotent Ingestion Query:</strong> Celery bulk workers execute <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">INSERT ... ON CONFLICT (txid) DO NOTHING</code>, safely skipping duplicate transactions without rolling back valid sibling records.
-          </li>
-        </ol>
-      </div>
-    ),
-  },
-  {
-    question: "How does the system scale when processing tens of millions of historical transactions?",
-    category: "SCALABILITY & PERFORMANCE",
-    answer: (
-      <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
-        <p>
-          Scalability is achieved through strict separation of concerns and pagination discipline:
-        </p>
-        <ul className="list-disc pl-4 space-y-1 text-slate-700">
-          <li>
-            <strong>Keyset (Cursor) Pagination:</strong> Queries avoid high-offset scans (<code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">OFFSET 500000</code>) by utilizing indexed seek predicates (<code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">WHERE id &gt; :last_id ORDER BY id ASC LIMIT 1000</code>), maintaining constant $O(1)$ query overhead.
-          </li>
-          <li>
-            <strong>Micro-Batched Graph Cypher:</strong> Neo4j batch insertion scripts leverage parameterized <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono">UNWIND $batch AS row MERGE ...</code> with explicit transaction commits every 1,000 rows, preventing Java Garbage Collector pauses.
-          </li>
-          <li>
-            <strong>Bounded Graph Visualizer:</strong> The Next.js Command Center enforces a hard ceiling of 150–250 nodes per visual cluster query, preventing WebGL / D3 force-layout starvation in the browser.
-          </li>
+        <ul className="list-disc pl-4 space-y-1.5 text-slate-600">
+          <li><strong>Redis Lock:</strong> File SHA-256 hash is locked in Redis via atomic <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">SETNX</code> to reject concurrent duplicate file uploads.</li>
+          <li><strong>Unique DB Constraints:</strong> PostgreSQL enforces unique constraints on <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">txid</code>.</li>
+          <li><strong>Safe Ingestion:</strong> Celery bulk workers use <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">ON CONFLICT (txid) DO NOTHING</code>, safely skipping duplicate transactions.</li>
         </ul>
       </div>
     ),
@@ -148,6 +130,7 @@ export function FaqAccordion() {
     <div className="space-y-3">
       {FAQS.map((faq, idx) => {
         const isOpen = openIdx === idx;
+        const Icon = faq.icon;
         return (
           <div
             key={idx}
@@ -161,13 +144,20 @@ export function FaqAccordion() {
               onClick={() => toggle(idx)}
               className="w-full text-left px-4 py-3.5 flex items-center justify-between gap-4 cursor-pointer"
             >
-              <div className="flex items-center space-x-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                <div>
-                  <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-                    {faq.category}
+              <div className="flex items-center space-x-3 min-w-0">
+                <div className="w-6 h-6 rounded-[6px] bg-blue-50 border border-blue-200/70 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-3.5 h-3.5 text-blue-600" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">
+                      {faq.category}
+                    </span>
+                    <span className="text-[9.5px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60 font-medium">
+                      {faq.badge}
+                    </span>
                   </div>
-                  <div className="text-xs sm:text-sm font-semibold text-slate-900 mt-0.5">
+                  <div className="text-xs sm:text-sm font-semibold text-slate-900 mt-0.5 truncate sm:whitespace-normal">
                     {faq.question}
                   </div>
                 </div>
@@ -179,7 +169,7 @@ export function FaqAccordion() {
               />
             </button>
             {isOpen && (
-              <div className="px-4 pb-4 pt-1 border-t border-slate-100">
+              <div className="px-4 pb-4 pt-2 border-t border-slate-100">
                 {faq.answer}
               </div>
             )}

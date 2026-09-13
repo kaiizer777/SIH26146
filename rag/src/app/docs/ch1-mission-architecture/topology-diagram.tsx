@@ -263,16 +263,16 @@ export function TopologyDiagram() {
               height="100"
               rx="8"
               fill={selectedService === "nextjs" ? "#ffffff" : "#ffffff"}
-              stroke={selectedService === "nextjs" ? "#0f172a" : "#cbd5e1"}
+              stroke={selectedService === "nextjs" ? "#2563eb" : "#cbd5e1"}
               strokeWidth={selectedService === "nextjs" ? "2.5" : "1"}
               filter="drop-shadow(0 2px 4px rgba(15,23,42,0.06))"
             />
-            <rect x="30" y="100" width="30" height="30" rx="6" fill="#0f172a" />
-            <text x="38" y="120" fill="#38bdf8" fontSize="14" fontFamily="monospace">UI</text>
+            <rect x="30" y="100" width="30" height="30" rx="6" fill="#2563eb" />
+            <text x="38" y="120" fill="#ffffff" fontSize="13" fontWeight="bold" fontFamily="monospace">UI</text>
             <text x="70" y="112" fontSize="12" fontWeight="bold" fill="#0f172a">Next.js 16</text>
             <text x="70" y="126" fontSize="10" fill="#64748b">Port 3000</text>
-            <rect x="30" y="145" width="130" height="20" rx="4" fill="#f1f5f9" />
-            <text x="38" y="159" fontSize="9" fontFamily="monospace" fill="#334155">D3 & Dossier View</text>
+            <rect x="30" y="145" width="130" height="20" rx="4" fill="#eff6ff" />
+            <text x="38" y="159" fontSize="9" fontFamily="monospace" fill="#1d4ed8">D3 & Dossier View</text>
           </g>
 
           {/* Node: FastAPI Gateway */}
@@ -287,16 +287,16 @@ export function TopologyDiagram() {
               height="100"
               rx="8"
               fill={selectedService === "fastapi" ? "#ffffff" : "#ffffff"}
-              stroke={selectedService === "fastapi" ? "#0f172a" : "#cbd5e1"}
+              stroke={selectedService === "fastapi" ? "#2563eb" : "#cbd5e1"}
               strokeWidth={selectedService === "fastapi" ? "2.5" : "1"}
               filter="drop-shadow(0 2px 4px rgba(15,23,42,0.06))"
             />
-            <rect x="280" y="100" width="30" height="30" rx="6" fill="#0f172a" />
-            <text x="286" y="120" fill="#818cf8" fontSize="13" fontFamily="monospace">API</text>
+            <rect x="280" y="100" width="30" height="30" rx="6" fill="#2563eb" />
+            <text x="284" y="120" fill="#ffffff" fontSize="13" fontWeight="bold" fontFamily="monospace">API</text>
             <text x="320" y="112" fontSize="12" fontWeight="bold" fill="#0f172a">FastAPI Core</text>
             <text x="320" y="126" fontSize="10" fill="#64748b">Port 8000 (HTTP)</text>
-            <rect x="280" y="145" width="130" height="20" rx="4" fill="#f1f5f9" />
-            <text x="288" y="159" fontSize="9" fontFamily="monospace" fill="#334155">Bearer & Hash Mask</text>
+            <rect x="280" y="145" width="130" height="20" rx="4" fill="#eff6ff" />
+            <text x="288" y="159" fontSize="9" fontFamily="monospace" fill="#1d4ed8">Bearer & Hash Mask</text>
           </g>
 
           {/* Node: Celery Worker */}
@@ -311,7 +311,7 @@ export function TopologyDiagram() {
               height="85"
               rx="8"
               fill={selectedService === "celery" ? "#ffffff" : "#ffffff"}
-              stroke={selectedService === "celery" ? "#0f172a" : "#cbd5e1"}
+              stroke={selectedService === "celery" ? "#2563eb" : "#cbd5e1"}
               strokeWidth={selectedService === "celery" ? "2.5" : "1"}
               filter="drop-shadow(0 2px 4px rgba(15,23,42,0.06))"
             />
@@ -335,7 +335,7 @@ export function TopologyDiagram() {
               height="85"
               rx="8"
               fill={selectedService === "redis" ? "#ffffff" : "#ffffff"}
-              stroke={selectedService === "redis" ? "#0f172a" : "#cbd5e1"}
+              stroke={selectedService === "redis" ? "#2563eb" : "#cbd5e1"}
               strokeWidth={selectedService === "redis" ? "2.5" : "1"}
               filter="drop-shadow(0 2px 4px rgba(15,23,42,0.06))"
             />
@@ -359,7 +359,7 @@ export function TopologyDiagram() {
               height="85"
               rx="8"
               fill={selectedService === "postgres" ? "#ffffff" : "#ffffff"}
-              stroke={selectedService === "postgres" ? "#0f172a" : "#cbd5e1"}
+              stroke={selectedService === "postgres" ? "#2563eb" : "#cbd5e1"}
               strokeWidth={selectedService === "postgres" ? "2.5" : "1"}
               filter="drop-shadow(0 2px 4px rgba(15,23,42,0.06))"
             />
@@ -383,7 +383,7 @@ export function TopologyDiagram() {
               height="85"
               rx="8"
               fill={selectedService === "neo4j" ? "#ffffff" : "#ffffff"}
-              stroke={selectedService === "neo4j" ? "#0f172a" : "#cbd5e1"}
+              stroke={selectedService === "neo4j" ? "#2563eb" : "#cbd5e1"}
               strokeWidth={selectedService === "neo4j" ? "2.5" : "1"}
               filter="drop-shadow(0 2px 4px rgba(15,23,42,0.06))"
             />
@@ -401,8 +401,8 @@ export function TopologyDiagram() {
       <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
-              <active.icon className="w-5 h-5 text-emerald-400" />
+            <div className="w-10 h-10 rounded-[10px] bg-gradient-to-b from-blue-500 to-blue-600 border-t border-t-blue-300/70 border-b border-b-blue-800 text-white flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_5px_rgba(37,99,235,0.25)] flex-shrink-0">
+              <active.icon className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="text-sm font-bold text-slate-900 flex items-center gap-2">

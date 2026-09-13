@@ -18,9 +18,15 @@ import {
   GitFork,
   Binary,
   Compass,
+  Zap,
+  ShieldCheck,
+  Search,
+  EyeOff,
+  Activity,
 } from "lucide-react";
 import { TopologyDiagram } from "./topology-diagram";
 import { FaqAccordion } from "./faq-accordion";
+import { PipelineStepper } from "./pipeline-stepper";
 
 export const metadata = {
   title: "Chapter 1: The NTRO Mission, Tech Stack & System Topology — NTRO KB",
@@ -31,214 +37,184 @@ export const metadata = {
 export default function Chapter1Page() {
   return (
     <article className="space-y-12 pb-16">
-      {/* SECTION 1: NTRO Mandate & Sovereign Air-Gap Compliance */}
+      {/* SECTION 1: The Problem Statement & Sovereign Intelligence Mandate */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
+          <div className="w-8 h-8 rounded-[8px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-xs flex-shrink-0">
             01
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              NTRO Mandate & Sovereign Air-Gap Compliance
+              The Problem Statement & Sovereign Mandate
             </h2>
             <p className="text-xs text-slate-500 font-mono">
-              Statutory jurisdiction, ransomware attribution, and strict physical air-gap enforcement
+              National cyber-surveillance, Bitcoin money-laundering evasion, and offline air-gap enforcement
             </p>
           </div>
         </div>
 
-        <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
-          <p>
-            Under statutory directive for cyber-surveillance and financial intelligence protection, the
-            <strong> National Technical Research Organisation (NTRO)</strong> is mandated to monitor, attribute,
-            and de-anonymize illicit cryptocurrency transaction flows traversing national communications infrastructure.
-            Illicit threat actors systematically utilize pseudonymous Bitcoin networks, automated peeling chains,
-            CoinJoin mixing pools, and darknet cashout gateways to obscure capital flight, ransomware proceeds,
-            and state-sponsored cyber offensive financing.
-          </p>
+        {/* 3 Executive Threat Pillars (Low Text, High Clarity) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {/* Pillar 1 */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200/90 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 uppercase">
+                Threat Vector
+              </span>
+              <ShieldAlert className="w-4 h-4 text-rose-600" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Ransomware & Illicit Capital Flight
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Criminal syndicates exploit Bitcoin’s pseudonymity to extort institutions and funnel ransom proceeds across national borders without bank oversight.
+            </p>
+          </div>
 
-          <p>
-            To operationalize this directive, the system ingests the verified <strong>Ransomwhere</strong> intelligence corpus,
-            seeding the surveillance graph with <strong>11,186 known illicit addresses</strong> spanning <strong>136 ransomware families</strong>
-            (representing <strong>$1,018,573,922.46 USD</strong> and <strong>115,116.91 BTC</strong> in confirmed ransom payments).
-            These seed clusters provide the ground-truth anchor for Personalized PageRank seed proximity propagation and Louvain modularity clustering.
-          </p>
-        </div>
+          {/* Pillar 2 */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200/90 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 uppercase">
+                Evasion Technique
+              </span>
+              <GitFork className="w-4 h-4 text-amber-600" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Peeling Chains & CoinJoin Tumblers
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Automated scripts split funds into dozens of micro-transfers (peeling) or mix with innocent wallets (CoinJoin) to break linear tracking and confuse investigators.
+            </p>
+          </div>
 
-        {/* Air-gap compliance cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          <div className="card-tactical rounded-lg p-4 bg-slate-50/50 border border-slate-200/80 space-y-2">
-            <div className="flex items-center space-x-2 text-slate-900 font-semibold text-xs font-mono">
+          {/* Pillar 3 */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200/90 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 uppercase">
+                Enclave Constraint
+              </span>
               <Lock className="w-4 h-4 text-emerald-600" />
-              <span>Zero-Leakage Air-Gap Architecture</span>
             </div>
+            <h3 className="text-sm font-bold text-slate-900">
+              100% Air-Gapped Sovereign Isolation
+            </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Designed for isolated sovereign enclaves without external internet routing.
-              All external runtime CDN calls are strictly eliminated. Webfonts are pre-cached as local
-              <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-800 font-mono text-[11px] ml-1">
-                .woff2
-              </code> files in <code className="font-mono text-[11px]">.next/static/media/</code>.
-              MaxMind GeoLite2-City and GeoLite2-ASN databases are packaged locally as binary
-              <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-800 font-mono text-[11px] ml-1">
-                .mmdb
-              </code> files, ensuring autonomous geospatial enrichment without DNS or WHOIS requests.
+              National security rules strictly prohibit public cloud APIs, external DNS queries, or font CDNs. All ML inference, GeoIP lookups, and graphs must run offline.
             </p>
           </div>
+        </div>
 
-          <div className="card-tactical rounded-lg p-4 bg-slate-50/50 border border-slate-200/80 space-y-2">
-            <div className="flex items-center space-x-2 text-slate-900 font-semibold text-xs font-mono">
-              <ShieldAlert className="w-4 h-4 text-sky-600" />
-              <span>AddressHashMiddleware & OPSEC Shield</span>
+        {/* High-Impact Ground Truth Corpus KPI Strip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-0.5">
+            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+              Confirmed Illicit Flow
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              To prevent operational compromise during infrastructure logging and multi-agency exports,
-              FastAPI implements custom ASGI <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-800 font-mono text-[11px]">AddressHashMiddleware</code>.
-              All Base58 and Bech32 Bitcoin addresses emitted to stdout, stderr, or log streams are intercepted
-              and deterministically hashed into SHA-256 tokens (<code className="font-mono text-[11px]">[ADDR_HASH:9f86d081884c]</code>).
-              Zero plaintext addresses are leaked to persistent application logs.
-            </p>
+            <div className="text-lg font-mono font-bold text-slate-950">
+              $1,018,573,922
+            </div>
+            <div className="text-[10.5px] text-slate-500 font-mono">
+              115,116.91 BTC tracked
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-0.5">
+            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+              Ransomware Seeds
+            </div>
+            <div className="text-lg font-mono font-bold text-slate-950">
+              11,186 Wallets
+            </div>
+            <div className="text-[10.5px] text-slate-500 font-mono">
+              Verified Ransomwhere anchors
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-0.5">
+            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+              Malware Families
+            </div>
+            <div className="text-lg font-mono font-bold text-slate-950">
+              136 Strains
+            </div>
+            <div className="text-[10.5px] text-slate-500 font-mono">
+              LockBit, Conti, REvil, WannaCry
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-0.5">
+            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+              Sovereign Status
+            </div>
+            <div className="text-lg font-mono font-bold text-emerald-700 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Air-Gapped
+            </div>
+            <div className="text-[10.5px] text-slate-500 font-mono">
+              0 runtime external calls
+            </div>
+          </div>
+        </div>
+
+        {/* Security & OPSEC Highlights */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          <div className="card-tactical rounded-lg p-3.5 bg-slate-50/50 border border-slate-200/80 flex items-start space-x-3">
+            <Lock className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-slate-600 leading-relaxed">
+              <strong className="text-slate-900">Zero-Leakage Air-Gap:</strong> Webfonts are pre-cached locally as <code className="bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">.woff2</code>. MaxMind GeoIP City & ASN databases are packaged locally as binary <code className="bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">.mmdb</code> files without external DNS lookups.
+            </div>
+          </div>
+
+          <div className="card-tactical rounded-lg p-3.5 bg-slate-50/50 border border-slate-200/80 flex items-start space-x-3">
+            <EyeOff className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-slate-600 leading-relaxed">
+              <strong className="text-slate-900">AddressHashMiddleware OPSEC:</strong> All Base58 and Bech32 Bitcoin addresses emitted to stdout, stderr, or log streams are intercepted and hashed into SHA-256 tokens (<code className="bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">[ADDR_HASH:9f86d081884c]</code>).
+            </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 2: The 5-Tier Forensic Pipeline */}
+      {/* SECTION 2: The 5-Tier Forensic Prototype Pipeline */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
+          <div className="w-8 h-8 rounded-[8px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-xs flex-shrink-0">
             02
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              The 5-Tier Forensic Pipeline
+              The 5-Tier Forensic Prototype Pipeline
             </h2>
             <p className="text-xs text-slate-500 font-mono">
-              End-to-end data progression from multi-format ingest to court-admissible forensic dossier
+              Step-by-step interactive walkthrough: from multi-format bulk ingest to court-admissible legal dossier
             </p>
           </div>
         </div>
 
-        <div className="space-y-3">
-          {/* Tier 1 */}
-          <div className="card-tactical rounded-lg p-4 bg-white border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="w-5 h-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px] font-mono font-bold">
-                  T1
-                </span>
-                <span className="text-xs font-bold text-slate-900 font-mono uppercase">
-                  Multi-Format Ingestion & GeoIP Enrichment
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
-                11,938 ROWS/SEC VERIFIED
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Accepts asynchronous bulk uploads across CSV, JSON, and XML formats. A content-sniffing parser normalizes
-              disparate schemas into unified Pydantic models. Celery worker pools resolve geographic country codes and
-              autonomous system numbers (ASN) via local MaxMind <code className="font-mono text-[11px]">.mmdb</code> files.
-              Invalid rows are isolated into <code className="font-mono text-[11px]">rejected_rows</code> with line numbers and failure rationales.
-            </p>
-          </div>
+        {/* Interactive 5-Stage Stepper Component */}
+        <PipelineStepper />
 
-          {/* Tier 2 */}
-          <div className="card-tactical rounded-lg p-4 bg-white border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="w-5 h-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px] font-mono font-bold">
-                  T2
-                </span>
-                <span className="text-xs font-bold text-slate-900 font-mono uppercase">
-                  Relational Ledger & Neo4j Graph Projection
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 font-semibold">
-                KEYS-ET PAGINATED BATCHING
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Transactions are written with ACID durability to PostgreSQL 16 using native SQL arrays
-              (<code className="font-mono text-[11px]">input_addresses text[]</code>, <code className="font-mono text-[11px]">output_amounts numeric[]</code>)
-              and temporal indices. Keyset-paginated batch scripts project transactions into Neo4j 5.26 Community,
-              materializing <code className="font-mono text-[11px]">:Wallet</code>, <code className="font-mono text-[11px]">:Transaction</code>, and <code className="font-mono text-[11px]">:IP</code> nodes
-              interconnected via <code className="font-mono text-[11px]">:SENDS</code>, <code className="font-mono text-[11px]">:RECEIVES</code>, <code className="font-mono text-[11px]">:OBSERVED</code>,
-              and pairwise multi-input <code className="font-mono text-[11px]">:CO_SPEND</code> edges.
-            </p>
+        {/* Visual Benchmark Comparison Strip */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+          <div className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-blue-600" />
+            Prototype Performance vs Traditional Manual Investigation
           </div>
-
-          {/* Tier 3 */}
-          <div className="card-tactical rounded-lg p-4 bg-white border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="w-5 h-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px] font-mono font-bold">
-                  T3
-                </span>
-                <span className="text-xs font-bold text-slate-900 font-mono uppercase">
-                  Heuristic Detectors & Louvain Modularity Clustering
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-semibold">
-                97.2% PEELING • 100% COINJOIN
-              </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="bg-white p-3 rounded-lg border border-slate-200/80 space-y-1">
+              <div className="text-slate-500 text-[10.5px] font-mono">Ingest Throughput</div>
+              <div className="text-slate-900 font-bold text-sm">11,938 Rows/Sec</div>
+              <p className="text-slate-600 text-[11px]">Multipart CSV, JSON, XML normalized asynchronously via Celery & Redis.</p>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Parameterized Cypher queries traverse the graph to detect linear 1-in-2-out peeling chains
-              (≤5% change output, ≥80% forward transfer, depth ≥5 hops) and CoinJoin mixers (≥3 equal outputs ±1%).
-              In Neo4j Graph Data Science (GDS 2.13), Louvain modularity optimization partitions co-spending wallets
-              into distinct entity clusters, and Personalized PageRank propagates seed proximity scores from Ransomwhere anchors.
-            </p>
-          </div>
-
-          {/* Tier 4 */}
-          <div className="card-tactical rounded-lg p-4 bg-white border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="w-5 h-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px] font-mono font-bold">
-                  T4
-                </span>
-                <span className="text-xs font-bold text-slate-900 font-mono uppercase">
-                  Dual Transformer / Deep Learning Engine (F2 & F4)
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 font-semibold">
-                211.7s AUTOENCODER • 12.2s SAGE
-              </span>
+            <div className="bg-white p-3 rounded-lg border border-slate-200/80 space-y-1">
+              <div className="text-slate-500 text-[10.5px] font-mono">Pattern Detection Rate</div>
+              <div className="text-slate-900 font-bold text-sm">97.2% Peeling • 100% Mixers</div>
+              <p className="text-slate-600 text-[11px]">Parameterized Cypher traverses multi-hop peeling paths and CoinJoin pools.</p>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Two complementary PyTorch models evaluate risk in parallel on CPU:
-              <br />
-              <strong>1. Unsupervised 18-Feature Autoencoder (F2):</strong> Extracts reconstruction Mean Squared Error (MSE)
-              to pinpoint unusual transaction topologies, flagging values above the 95th percentile.
-              <br />
-              <strong>2. 3-Layer GraphSAGE GNN (F4):</strong> Implements mean aggregation over 8 topological features
-              (<code className="font-mono text-[11px]">[cluster_id, anomaly_score, is_mixing, fee_log, inputs, outputs, entropy, asn_risk]</code>)
-              trained with Focal Loss (<code className="font-mono text-[11px]">γ=2.0, α=6.20</code>) to conquer class imbalance.
-            </p>
-          </div>
-
-          {/* Tier 5 */}
-          <div className="card-tactical rounded-lg p-4 bg-white border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="w-5 h-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px] font-mono font-bold">
-                  T5
-                </span>
-                <span className="text-xs font-bold text-slate-900 font-mono uppercase">
-                  Explainable AI (XAI) & Section 65B Evidentiary Dossiers
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 font-semibold">
-                SHAP WATERFALL & GNN SUBGRAPHS
-              </span>
+            <div className="bg-white p-3 rounded-lg border border-slate-200/80 space-y-1">
+              <div className="text-slate-500 text-[10.5px] font-mono">Deep Learning Latency</div>
+              <div className="text-slate-900 font-bold text-sm">25.4ms on Standard CPU</div>
+              <p className="text-slate-600 text-[11px]">PyTorch Autoencoder + GraphSAGE GNN running without GPU/CUDA dependencies.</p>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Transforms opaque mathematical scores into court-admissible evidence.
-              <strong> SHAP Waterfall</strong> attributes the 18 Autoencoder feature contributions;
-              <strong> GNNExplainer</strong> extracts critical subgraphs and edge importance masks;
-              and the <strong>Evidence Trail Compiler</strong> builds a deterministic English narrative detailing
-              triggered laundering rules, cluster memberships, and seed proximity. Output reports comply with
-              <strong> Section 65B of the Indian Evidence Act</strong> for judicial submission.
-            </p>
           </div>
         </div>
       </section>
@@ -246,12 +222,12 @@ export default function Chapter1Page() {
       {/* SECTION 3: Strictly Pinned Tech Stack & Operational Rationale */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
+          <div className="w-8 h-8 rounded-[8px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-xs flex-shrink-0">
             03
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Strictly Pinned Tech Stack & Operational Rationale
+              Core Technology Stack & Architecture
             </h2>
             <p className="text-xs text-slate-500 font-mono">
               Hermetically sealed dependencies pinned for long-term air-gapped reproducibility
@@ -259,93 +235,202 @@ export default function Chapter1Page() {
           </div>
         </div>
 
-        {/* Tech Stack Breakdown Table */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 font-mono text-[11px] text-slate-700">
-                <th className="py-3 px-4 font-bold">Technology</th>
-                <th className="py-3 px-4 font-bold">Pinned Version</th>
-                <th className="py-3 px-4 font-bold">Operational Function</th>
-                <th className="py-3 px-4 font-bold">Architectural Rationale</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Server className="w-3.5 h-3.5 text-indigo-600" />
-                  FastAPI
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">0.115.x / Python 3.11</td>
-                <td className="py-3 px-4">Forensic REST API Gateway</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  Asynchronous I/O, Pydantic v2 data validation, lifespan management with clean Neo4j/Postgres pool teardown, and log address hashing middleware.
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
-                  Celery + Redis
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">Celery 5.4 / Redis 7-alpine</td>
-                <td className="py-3 px-4">Async Worker & Idempotency Broker</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  Decouples CPU-heavy multipart CSV/JSON/XML parsing and MaxMind GeoIP lookups. Redis <code className="font-mono text-[10px]">SETNX</code> locks prevent duplicate file execution.
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Database className="w-3.5 h-3.5 text-blue-600" />
-                  PostgreSQL
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">16-alpine</td>
-                <td className="py-3 px-4">Relational Ledger & Temporal Index</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  ACID durability for raw transactions. Native arrays (<code className="font-mono text-[10px]">input_addresses</code>, <code className="font-mono text-[10px]">output_amounts</code>) eliminate unnecessary join tables during bulk COPY ingest (11k+ rows/s).
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Network className="w-3.5 h-3.5 text-amber-600" />
-                  Neo4j Community + GDS
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">Neo4j 5.26 / GDS 2.13.x</td>
-                <td className="py-3 px-4">Graph Topology & Community Detection</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  In-memory graph projection of <code className="font-mono text-[10px]">:CO_SPEND</code> edges. Executes Louvain modularity and Personalized PageRank over seed ransomware clusters.
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Cpu className="w-3.5 h-3.5 text-purple-600" />
-                  PyTorch + PyG
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">Torch 2.4.1+cpu / PyG 2.6.1</td>
-                <td className="py-3 px-4">Deep Learning Inference Runtime</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  CPU-optimized inference eliminates GPU driver and CUDA compatibility risks in air-gapped field hardware. Runs Autoencoder MSE and GraphSAGE in 25.4ms.
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Terminal className="w-3.5 h-3.5 text-sky-600" />
-                  Next.js + Tailwind
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">Next 16 / Tailwind 4</td>
-                <td className="py-3 px-4">Forensic Surveillance Command Center</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  App Router with zero runtime CDN calls. D3.js force-directed graph canvas with GNN attention highlighting, tactile HUD inspector, and SHAP waterfall chart.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        {/* 6 Executive Service Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {/* Card 1: FastAPI */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 font-bold text-slate-900 text-sm">
+                <Server className="w-4 h-4 text-indigo-600" />
+                <span>FastAPI 0.115</span>
+              </div>
+              <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200 font-semibold">
+                Python 3.11
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              High-throughput async REST gateway handling Pydantic v2 data validation, connection pool teardowns, and real-time log address redactor middleware.
+            </p>
+            <div className="pt-1 text-[11px] font-mono text-slate-500 border-t border-slate-100 flex items-center justify-between">
+              <span>Port: TCP 8000</span>
+              <span className="font-semibold text-slate-800">&lt;50ms Latency</span>
+            </div>
+          </div>
+
+          {/* Card 2: Celery + Redis */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 font-bold text-slate-900 text-sm">
+                <RefreshCw className="w-4 h-4 text-emerald-600" />
+                <span>Celery 5.4 + Redis 7</span>
+              </div>
+              <span className="text-[10px] font-mono bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
+                Async Queue
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Decouples CPU-heavy multipart uploads and local MaxMind MMDB GeoIP lookups. Redis atomic <code className="font-mono text-[10px] bg-slate-100 px-1 py-0.5 rounded">SETNX</code> locks prevent duplicate file execution.
+            </p>
+            <div className="pt-1 text-[11px] font-mono text-slate-500 border-t border-slate-100 flex items-center justify-between">
+              <span>Port: TCP 6379</span>
+              <span className="font-semibold text-slate-800">11.9k rows/sec</span>
+            </div>
+          </div>
+
+          {/* Card 3: PostgreSQL */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 font-bold text-slate-900 text-sm">
+                <Database className="w-4 h-4 text-blue-600" />
+                <span>PostgreSQL 16</span>
+              </div>
+              <span className="text-[10px] font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 font-semibold">
+                ACID Ledger
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Provides immutable ledger durability for raw transactions. Native SQL array columns eliminate slow join tables during high-volume bulk COPY ingest.
+            </p>
+            <div className="pt-1 text-[11px] font-mono text-slate-500 border-t border-slate-100 flex items-center justify-between">
+              <span>Port: TCP 5432</span>
+              <span className="font-semibold text-slate-800">B-Tree Indices</span>
+            </div>
+          </div>
+
+          {/* Card 4: Neo4j GDS */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 font-bold text-slate-900 text-sm">
+                <Network className="w-4 h-4 text-amber-600" />
+                <span>Neo4j 5.26 + GDS</span>
+              </div>
+              <span className="text-[10px] font-mono bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 font-semibold">
+                Graph Science
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              In-memory graph projection of <code className="font-mono text-[10px] bg-slate-100 px-1 py-0.5 rounded">:CO_SPEND</code> wallet networks. Runs Louvain modularity clustering and PageRank seed proximity propagation.
+            </p>
+            <div className="pt-1 text-[11px] font-mono text-slate-500 border-t border-slate-100 flex items-center justify-between">
+              <span>Port: TCP 7687</span>
+              <span className="font-semibold text-slate-800">Sub-second Hops</span>
+            </div>
+          </div>
+
+          {/* Card 5: PyTorch CPU */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 font-bold text-slate-900 text-sm">
+                <Cpu className="w-4 h-4 text-purple-600" />
+                <span>PyTorch 2.4.1 (CPU)</span>
+              </div>
+              <span className="text-[10px] font-mono bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200 font-semibold">
+                PyG 2.6.1
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              CPU-optimized deep learning runtime. Runs 18-feature Autoencoder MSE anomaly detection and 3-layer GraphSAGE GNN with zero GPU driver dependencies.
+            </p>
+            <div className="pt-1 text-[11px] font-mono text-slate-500 border-t border-slate-100 flex items-center justify-between">
+              <span>Runtime: CPU-Only</span>
+              <span className="font-semibold text-slate-800">25.4ms Inference</span>
+            </div>
+          </div>
+
+          {/* Card 6: Next.js Command Center */}
+          <div className="card-tactical rounded-xl p-4 bg-white border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 font-bold text-slate-900 text-sm">
+                <Terminal className="w-4 h-4 text-sky-600" />
+                <span>Next.js 16 + Tailwind</span>
+              </div>
+              <span className="text-[10px] font-mono bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded border border-sky-200 font-semibold">
+                D3.js Force
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Forensic Command Center with local webfonts and 0 external CDN calls. Features interactive D3 graph canvas, SHAP waterfall inspector, and Section 65B dossier compiler.
+            </p>
+            <div className="pt-1 text-[11px] font-mono text-slate-500 border-t border-slate-100 flex items-center justify-between">
+              <span>Port: TCP 3000</span>
+              <span className="font-semibold text-slate-800">&lt;150ms Load</span>
+            </div>
+          </div>
         </div>
+
+        {/* Collapsible Container & Port Specs Matrix */}
+        <details className="group border border-slate-200 rounded-xl bg-slate-50/50 p-4 transition-all">
+          <summary className="text-xs font-mono font-bold text-slate-700 cursor-pointer select-none flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-slate-500" />
+              Detailed Container Port & Volume Mount Matrix (Click to Expand)
+            </span>
+            <span className="text-[11px] text-blue-600 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div className="mt-3 overflow-x-auto border-t border-slate-200 pt-3">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="font-mono text-[10.5px] text-slate-600 border-b border-slate-200">
+                  <th className="py-2 px-3">Service</th>
+                  <th className="py-2 px-3">Port Binding</th>
+                  <th className="py-2 px-3">Protocol</th>
+                  <th className="py-2 px-3">Volume Mount</th>
+                  <th className="py-2 px-3">OPSEC Constraint</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700 text-[11.5px]">
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-900">Forensic UI</td>
+                  <td className="py-2.5 px-3 font-mono text-sky-700 font-semibold">TCP 3000</td>
+                  <td className="py-2.5 px-3">HTTP Next.js SSR</td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">/app/.next</td>
+                  <td className="py-2.5 px-3 text-slate-600">Strict localhost; 0 external CDN calls</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-900">REST Gateway</td>
+                  <td className="py-2.5 px-3 font-mono text-indigo-700 font-semibold">TCP 8000</td>
+                  <td className="py-2.5 px-3">HTTP REST / JSON</td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">/app/data</td>
+                  <td className="py-2.5 px-3 text-slate-600">Bearer Auth; AddressHashMiddleware</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-900">Async Ingest</td>
+                  <td className="py-2.5 px-3 font-mono text-emerald-700 font-semibold">Worker PID</td>
+                  <td className="py-2.5 px-3">Celery IPC / AMQP</td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">/app/data/geoip</td>
+                  <td className="py-2.5 px-3 text-slate-600">Local MaxMind MMDB; no outbound DNS</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-900">Task Broker</td>
+                  <td className="py-2.5 px-3 font-mono text-rose-700 font-semibold">TCP 6379</td>
+                  <td className="py-2.5 px-3">RESP Protocol</td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">redis_data (AOF)</td>
+                  <td className="py-2.5 px-3 text-slate-600">Internal docker network; atomic locks</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-900">Relational DB</td>
+                  <td className="py-2.5 px-3 font-mono text-blue-700 font-semibold">TCP 5432</td>
+                  <td className="py-2.5 px-3">PostgreSQL Wire</td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">postgres_data</td>
+                  <td className="py-2.5 px-3 text-slate-600">ACID ledger; B-Tree indices on txid</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-3 font-semibold text-slate-900">Graph DB</td>
+                  <td className="py-2.5 px-3 font-mono text-amber-700 font-semibold">TCP 7687</td>
+                  <td className="py-2.5 px-3">Bolt Protocol</td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">neo4j_data</td>
+                  <td className="py-2.5 px-3 text-slate-600">GDS 2.13.x; bounded in-memory projection</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
       </section>
 
-      {/* INTERACTIVE VISUAL ELEMENT: Clickable SVG/CSS System Topology Diagram */}
+      {/* SECTION 4: Interactive System Topology & Service Bus */}
       <section className="space-y-4">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
+          <div className="w-8 h-8 rounded-[8px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-xs flex-shrink-0">
             04
           </div>
           <div>
@@ -353,7 +438,7 @@ export default function Chapter1Page() {
               Interactive System Topology & Inter-Service Bus
             </h2>
             <p className="text-xs text-slate-500 font-mono">
-              Live interactive mapping of service ports, protocols, and empirical latency metrics
+              Click any service node below to inspect live ports, protocols, latencies, and operational rationales
             </p>
           </div>
         </div>
@@ -362,100 +447,18 @@ export default function Chapter1Page() {
         <TopologyDiagram />
       </section>
 
-      {/* SECTION 4: Architecture Specifications Table & Container Topology */}
+      {/* SECTION 5: Architectural Defenses & Core FAQs */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
+          <div className="w-8 h-8 rounded-[8px] badge-tactical-blue flex items-center justify-center font-mono font-bold text-sm shadow-xs flex-shrink-0">
             05
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Architecture Specifications & Port Matrix
+              Architectural Defense & Key Questions
             </h2>
             <p className="text-xs text-slate-500 font-mono">
-              Containerized port bindings, security constraints, and data volume mounts
-            </p>
-          </div>
-        </div>
-
-        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 font-mono text-[11px] text-slate-700">
-                <th className="py-3 px-3 font-bold">Service</th>
-                <th className="py-3 px-3 font-bold">Container / Process</th>
-                <th className="py-3 px-3 font-bold">Port Binding</th>
-                <th className="py-3 px-3 font-bold">Network Protocol</th>
-                <th className="py-3 px-3 font-bold">Storage / Volume Mount</th>
-                <th className="py-3 px-3 font-bold">Security & Isolation</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Forensic UI</td>
-                <td className="py-3 px-3 font-mono text-[11px]">frontend / node</td>
-                <td className="py-3 px-3 font-mono text-sky-700 font-semibold">TCP 3000</td>
-                <td className="py-3 px-3">HTTP / Next.js SSR</td>
-                <td className="py-3 px-3 font-mono text-[11px]">/app/.next</td>
-                <td className="py-3 px-3 text-slate-600">Strictly localhost bound; 0 CDN calls</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">REST Gateway</td>
-                <td className="py-3 px-3 font-mono text-[11px]">backend / uvicorn</td>
-                <td className="py-3 px-3 font-mono text-indigo-700 font-semibold">TCP 8000</td>
-                <td className="py-3 px-3">HTTP REST / JSON</td>
-                <td className="py-3 px-3 font-mono text-[11px]">/app/data</td>
-                <td className="py-3 px-3 text-slate-600">Static Bearer token; AddressHashMiddleware</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Async Ingest</td>
-                <td className="py-3 px-3 font-mono text-[11px]">celery worker</td>
-                <td className="py-3 px-3 font-mono text-emerald-700 font-semibold">Internal PID</td>
-                <td className="py-3 px-3">Celery IPC / AMQP</td>
-                <td className="py-3 px-3 font-mono text-[11px]">/app/data/geoip</td>
-                <td className="py-3 px-3 text-slate-600">Local MaxMind MMDB; no outbound DNS</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Task Broker</td>
-                <td className="py-3 px-3 font-mono text-[11px]">redis:7-alpine</td>
-                <td className="py-3 px-3 font-mono text-rose-700 font-semibold">TCP 6379</td>
-                <td className="py-3 px-3">RESP (Redis Protocol)</td>
-                <td className="py-3 px-3 font-mono text-[11px]">redis_data (AOF)</td>
-                <td className="py-3 px-3 text-slate-600">Internal docker bridge; atomic idempotency keys</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Relational DB</td>
-                <td className="py-3 px-3 font-mono text-[11px]">postgres:16-alpine</td>
-                <td className="py-3 px-3 font-mono text-blue-700 font-semibold">TCP 5432</td>
-                <td className="py-3 px-3">PostgreSQL Wire</td>
-                <td className="py-3 px-3 font-mono text-[11px]">postgres_data</td>
-                <td className="py-3 px-3 text-slate-600">ACID ledger; B-Tree indexes on txid & temporal ts</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Graph DB</td>
-                <td className="py-3 px-3 font-mono text-[11px]">neo4j:5.26-community</td>
-                <td className="py-3 px-3 font-mono text-amber-700 font-semibold">TCP 7687</td>
-                <td className="py-3 px-3">Bolt Protocol</td>
-                <td className="py-3 px-3 font-mono text-[11px]">neo4j_data</td>
-                <td className="py-3 px-3 text-slate-600">GDS plugin 2.13.x; memory-clamped projections</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* SECTION 5: Teammate FAQ Accordion */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
-            06
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Architectural FAQ & Engineering Defense
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">
-              Direct technical rationales addressing dual-storage, CPU-only ML, address hashing, and idempotency
+              Direct technical rationales addressing dual-storage, CPU-only ML, OPSEC address hashing, and idempotency
             </p>
           </div>
         </div>
@@ -467,7 +470,7 @@ export default function Chapter1Page() {
       {/* CHAPTER FOOTER NAVIGATION */}
       <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-xs font-mono text-slate-500">
-          DOCUMENT SPECIFICATION • SEC-DOC-26146-CH01
+          NTRO FORENSIC INTELLIGENCE • SEC-DOC-26146-CH01
         </div>
 
         <Link
