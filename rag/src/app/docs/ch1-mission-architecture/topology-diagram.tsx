@@ -169,6 +169,35 @@ export function TopologyDiagram() {
         </div>
       </div>
 
+      {/* Mobile/Tablet Quick Service Selector Bar */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 px-0.5">
+          <span className="font-semibold text-slate-700">SERVICE NODES</span>
+          <span className="text-slate-400 text-[10px]">Tap to inspect details</span>
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          {Object.values(SERVICES).map((srv) => {
+            const isSel = selectedService === srv.id;
+            const Icon = srv.icon;
+            return (
+              <button
+                key={srv.id}
+                type="button"
+                onClick={() => setSelectedService(srv.id)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all shrink-0 cursor-pointer ${
+                  isSel
+                    ? "bg-slate-900 text-white shadow-xs border border-slate-900"
+                    : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isSel ? "text-emerald-400" : "text-slate-500"}`} />
+                <span>{srv.name.split(" ")[0]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* SVG Interactive Architecture Map */}
       <div className="space-y-2">
         {/* Mobile Horizontal Scroll Indicator */}

@@ -121,14 +121,14 @@ export function DocsHeader() {
   };
 
   return (
-    <header className="h-[64px] border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-3 sm:px-5 lg:px-8 flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.03)] select-none">
+    <header className="h-[56px] sm:h-[64px] border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-2.5 sm:px-5 lg:px-8 flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.03)] select-none">
       {/* Left: Mobile Menu Trigger + Category & Chapter No -> Vertical Divider -> Title */}
-      <div className="flex-1 flex items-center space-x-2 sm:space-x-3.5 min-w-0 mr-2 sm:mr-4 lg:mr-6">
+      <div className="flex-1 flex items-center space-x-1.5 sm:space-x-3.5 min-w-0 mr-1.5 sm:mr-4 lg:mr-6">
         {/* Mobile Hamburger Trigger (< lg only) */}
         <button
           type="button"
           onClick={handleToggleSidebar}
-          className="lg:hidden p-2 -ml-1 text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center shrink-0 border border-slate-200/80 bg-slate-50/80 shadow-2xs"
+          className="lg:hidden p-1.5 sm:p-2 -ml-0.5 text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center shrink-0 border border-slate-200/80 bg-slate-50/80 shadow-2xs min-w-[34px] min-h-[34px]"
           aria-label="Toggle navigation sidebar"
           title="Toggle Navigation"
         >
@@ -136,7 +136,7 @@ export function DocsHeader() {
         </button>
 
         {/* Category & Chapter Badge */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0 font-mono text-[11px] sm:text-[11.5px]">
+        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 font-mono text-[10px] sm:text-[11.5px]">
           <span className="hidden md:inline font-semibold text-slate-600 tracking-wide uppercase">
             {current.category}
           </span>
@@ -147,22 +147,22 @@ export function DocsHeader() {
         </div>
 
         {/* Vertical Divider */}
-        <div className="h-5 sm:h-6 w-[1.5px] bg-slate-300 flex-shrink-0" />
+        <div className="h-4 sm:h-6 w-[1.5px] bg-slate-300 flex-shrink-0" />
 
         {/* Chapter Title (Takes full available width, large crisp font-bold) */}
-        <h1 className="flex-1 text-sm sm:text-base md:text-lg lg:text-[22px] xl:text-[24px] font-bold text-slate-950 tracking-tight truncate">
+        <h1 className="flex-1 text-[13px] sm:text-base md:text-lg lg:text-[22px] xl:text-[24px] font-bold text-slate-950 tracking-tight truncate">
           {current.title}
         </h1>
       </div>
 
       {/* Right Navigation & Instrument Controls */}
-      <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
+      <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
         {/* Prev Chapter Link / Button */}
         {prevChapter ? (
           <Link
             href={prevChapter.href}
             title={`Previous: ${prevChapter.title}`}
-            className="btn-tactical-secondary inline-flex items-center space-x-1 px-2 sm:px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer"
+            className="btn-tactical-secondary inline-flex items-center justify-center space-x-1 p-1.5 sm:px-3 sm:py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer min-w-[32px] sm:min-w-0"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
             <span className="hidden sm:inline">Prev</span>
@@ -170,7 +170,7 @@ export function DocsHeader() {
         ) : (
           <button
             disabled
-            className="inline-flex items-center space-x-1 px-2 sm:px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed"
+            className="inline-flex items-center justify-center space-x-1 p-1.5 sm:px-3 sm:py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed min-w-[32px] sm:min-w-0"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-slate-300" />
             <span className="hidden sm:inline">Prev</span>
@@ -182,7 +182,7 @@ export function DocsHeader() {
           <Link
             href={nextChapter.href}
             title={`Next: ${nextChapter.title}`}
-            className="btn-tactical-secondary inline-flex items-center space-x-1 px-2 sm:px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer"
+            className="btn-tactical-secondary inline-flex items-center justify-center space-x-1 p-1.5 sm:px-3 sm:py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer min-w-[32px] sm:min-w-0"
           >
             <span className="hidden sm:inline">Next</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
@@ -190,7 +190,7 @@ export function DocsHeader() {
         ) : (
           <button
             disabled
-            className="inline-flex items-center space-x-1 px-2 sm:px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed"
+            className="inline-flex items-center justify-center space-x-1 p-1.5 sm:px-3 sm:py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed min-w-[32px] sm:min-w-0"
           >
             <span className="hidden sm:inline">Next</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
