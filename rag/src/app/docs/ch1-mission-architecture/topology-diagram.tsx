@@ -145,7 +145,7 @@ export function TopologyDiagram() {
   const active = SERVICES[selectedService] || SERVICES.fastapi;
 
   return (
-    <div className="card-tactical rounded-xl p-6 bg-white border border-slate-200 shadow-sm space-y-6">
+    <div className="card-tactical rounded-xl p-4 sm:p-6 bg-white border border-slate-200 shadow-sm space-y-6">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
         <div>
@@ -159,7 +159,7 @@ export function TopologyDiagram() {
             Click on any service node to inspect network ports, protocol contracts, and verified latency.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <span className="px-2 py-0.5 text-[10px] font-mono font-semibold bg-slate-100 text-slate-700 rounded border border-slate-200">
             6 SERVICES ONLINE
           </span>
@@ -170,11 +170,17 @@ export function TopologyDiagram() {
       </div>
 
       {/* SVG Interactive Architecture Map */}
-      <div className="relative w-full overflow-x-auto bg-slate-50/60 rounded-xl border border-slate-200 p-4">
-        <svg
-          viewBox="0 0 920 280"
-          className="w-full h-auto min-w-[760px] select-none"
-        >
+      <div className="space-y-2">
+        {/* Mobile Horizontal Scroll Indicator */}
+        <div className="md:hidden flex items-center justify-between text-[11px] font-mono text-slate-500 px-1">
+          <span className="font-semibold text-slate-700">SERVICE BUS GRAPH</span>
+          <span className="text-sky-600 font-bold flex items-center gap-1">Swipe to explore →</span>
+        </div>
+        <div className="relative w-full overflow-x-auto bg-slate-50/60 rounded-xl border border-slate-200 p-3 sm:p-4 overscroll-x-contain">
+          <svg
+            viewBox="0 0 920 280"
+            className="w-full h-auto min-w-[760px] select-none"
+          >
           {/* Connector Paths */}
           <defs>
             <marker
@@ -391,35 +397,36 @@ export function TopologyDiagram() {
           </g>
         </svg>
       </div>
+      </div>
 
       {/* Dynamic Inspector Detail Panel */}
-      <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
+      <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs shrink-0">
               <active.icon className="w-5 h-5 text-emerald-400" />
             </div>
-            <div>
-              <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                 <span>{active.name}</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200 font-bold">
                   {active.port === "Worker Pool" ? "CELERY-PID" : `TCP :${active.port}`}
                 </span>
               </div>
-              <div className="text-xs text-slate-500 font-medium">
+              <div className="text-xs text-slate-500 font-medium truncate sm:whitespace-normal">
                 {active.role}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-slate-600 bg-white px-2.5 py-1 rounded border border-slate-200">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[11px] sm:text-xs font-mono text-slate-600 bg-white px-2.5 py-1 rounded border border-slate-200">
               Protocol: <strong className="text-slate-900">{active.protocol}</strong>
             </span>
           </div>
         </div>
 
         {/* Technical specs grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-2">
           <div className="bg-white p-3 rounded-lg border border-slate-200/70 space-y-1">
             <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
               Verified Throughput

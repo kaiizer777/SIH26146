@@ -459,9 +459,9 @@ export function PeelingSimulator() {
               </div>
 
               {/* Node Graph Schematic (HTML / SVG) */}
-              <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 py-2">
+              <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-4 py-2">
                 {/* 1. Input Node */}
-                <div className="md:col-span-3 p-3.5 rounded-lg bg-white border border-slate-200 shadow-2xs space-y-1.5">
+                <div className="lg:col-span-3 p-3.5 rounded-lg bg-white border border-slate-200 shadow-2xs space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
                       1 INPUT WALLET
@@ -480,13 +480,13 @@ export function PeelingSimulator() {
                 </div>
 
                 {/* 2. Arrow to Central TX */}
-                <div className="md:col-span-1 flex items-center justify-center">
-                  <ArrowRight className="w-5 h-5 text-slate-400 hidden md:block" />
-                  <div className="w-px h-6 bg-slate-200 md:hidden" />
+                <div className="lg:col-span-1 flex items-center justify-center">
+                  <ArrowRight className="w-5 h-5 text-slate-400 hidden lg:block" />
+                  <div className="w-px h-6 bg-slate-200 lg:hidden" />
                 </div>
 
                 {/* 3. Transaction Node */}
-                <div className="md:col-span-4 p-4 rounded-xl bg-slate-900 text-white shadow-xs space-y-2 text-center">
+                <div className="lg:col-span-4 p-4 rounded-xl bg-slate-900 text-white shadow-xs space-y-2 text-center">
                   <div className="flex items-center justify-center gap-1.5 text-[10px] font-mono tracking-wider uppercase text-slate-400 font-semibold">
                     <GitFork className="w-3.5 h-3.5 text-sky-400" />
                     Transaction (1-in-2-out)
@@ -507,13 +507,13 @@ export function PeelingSimulator() {
                 </div>
 
                 {/* 4. Arrow to 2 Outputs */}
-                <div className="md:col-span-1 flex items-center justify-center">
-                  <ArrowRight className="w-5 h-5 text-slate-400 hidden md:block" />
-                  <div className="w-px h-6 bg-slate-200 md:hidden" />
+                <div className="lg:col-span-1 flex items-center justify-center">
+                  <ArrowRight className="w-5 h-5 text-slate-400 hidden lg:block" />
+                  <div className="w-px h-6 bg-slate-200 lg:hidden" />
                 </div>
 
                 {/* 5. Two Output Wallets */}
-                <div className="md:col-span-3 space-y-3">
+                <div className="lg:col-span-3 space-y-3">
                   {/* Output A: Peeled Amount (Exchange / Cashout) */}
                   <div className="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200/90 space-y-1">
                     <div className="flex items-center justify-between">
@@ -696,8 +696,8 @@ export function PeelingSimulator() {
             </div>
 
             {/* Table of all hops */}
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
-              <table className="w-full text-left font-mono text-xs">
+            <div className="border border-slate-200 rounded-lg overflow-x-auto">
+              <table className="w-full text-left font-mono text-xs min-w-[500px]">
                 <thead className="bg-slate-100 text-slate-600 text-[10px] uppercase border-b border-slate-200">
                   <tr>
                     <th className="py-2 px-3">Hop</th>

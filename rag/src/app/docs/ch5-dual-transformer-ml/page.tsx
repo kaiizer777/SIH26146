@@ -229,7 +229,7 @@ export default function Chapter5Page() {
                 Given an input vector <em>x</em> &in; &reals;<sup>B &times; 18</sup> normalized via <code className="font-mono text-slate-800 text-[11px]">StandardScaler</code>, 
                 each scalar feature <em>x<sub>i</sub></em> is mapped independently into continuous latent space &reals;<sup>32</sup> via dedicated weight vectors and biases:
               </p>
-              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900">
+              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900 overflow-x-auto">
                 <code>{"X_tokens[i] = x_i · W_i + b_i,   W_i ∈ ℝ^(1 × 32),   b_i ∈ ℝ^32"}</code>
               </div>
               <p className="text-[11px] text-slate-500">
@@ -248,13 +248,13 @@ export default function Chapter5Page() {
                 A learnable classification token <em>e</em><sub>cls</sub> &in; &reals;<sup>1 &times; 32</sup> initialized with truncated normal variance (&sigma; = 0.02) 
                 is prepended to the feature sequence, yielding sequence length <em>L</em> = 1 + 18 = 19:
               </p>
-              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900">
+              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900 overflow-x-auto">
                 <code>{"E = [e_cls, e_1, e_2, ..., e_18] ∈ ℝ^(B × 19 × 32)"}</code>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
                 The token sequence passes through <strong>2 Pre-LayerNorm Transformer Encoder layers</strong> with 4 attention heads (<em>d<sub>k</sub></em> = 8, <em>d</em><sub>ff</sub> = 64, dropout = 0.1):
               </p>
-              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-800 space-y-1">
+              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-800 space-y-1 overflow-x-auto">
                 <div>{"h^(l+1) = h^(l) + Dropout( MultiHeadAttention( LayerNorm(h^(l)) ) )"}</div>
                 <div>{"h^(l+1) = h^(l+1) + Dropout( FeedForward( LayerNorm(h^(l+1)) ) )"}</div>
               </div>
@@ -271,7 +271,7 @@ export default function Chapter5Page() {
                 is projected via a linear reconstruction head to predict the original normalized input features <em>x&#770;</em> &in; &reals;<sup>B &times; 18</sup>. 
                 The anomaly score is the Mean Squared Error:
               </p>
-              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900">
+              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900 overflow-x-auto">
                 <code>{"MSE(x, x̂) = (1 / 18) · ∑_{i=1}^{18} (x_i - x̂_i)^2"}</code>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -360,7 +360,7 @@ export default function Chapter5Page() {
               vector <em>e<sub>i,j</sub></em> &in; &reals;<sup>16</sup>, which directly modulates attention calculation:
             </p>
 
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 font-mono text-xs text-slate-900 space-y-1">
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 font-mono text-xs text-slate-900 space-y-1 overflow-x-auto">
               <div>{"α_{i,j} = softmax_j( ((W_3 h_i)^T (W_4 h_j + W_e e_{i,j})) / √d )"}</div>
               <div>{"h_i^(l+1) = W_1 h_i^(l) + ∑_{j ∈ N(i)} α_{i,j} W_2 h_j^(l)"}</div>
             </div>
@@ -375,7 +375,7 @@ export default function Chapter5Page() {
                 With 24,673 graph wallets comprising 3,426 positive seeds and 21,247 non-illicit nodes (21,247 / 3,426 = 6.20 class imbalance, dynamic focal weight &alpha;<sub>t</sub> = 6.20), standard binary cross-entropy 
                 is saturated by easy benign examples. The Relational Graph Transformer applies Lin et al. (ICCV 2017) Focal Loss:
               </p>
-              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900">
+              <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900 overflow-x-auto">
                 <code>{"ℒ_focal = -α_t · (1 - p_t)^γ · log(p_t),   γ = 2.0,   α_t = 6.20"}</code>
               </div>
               <p className="text-[11px] text-slate-500">

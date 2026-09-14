@@ -24,7 +24,7 @@ export default function DocsLayout({
         <DocsHeader />
 
         {/* Content Viewport */}
-        <main className="flex-1 min-w-0 bg-white px-8 sm:px-14 lg:px-20 xl:px-24 py-12">
+        <main className="flex-1 min-w-0 bg-white px-4 sm:px-8 lg:px-20 xl:px-24 py-6 sm:py-12">
           <div className="docs-main-container max-w-4xl w-full mx-auto">{children}</div>
         </main>
       </div>

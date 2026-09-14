@@ -60,26 +60,26 @@ export default function Chapter2Page() {
         </p>
 
         {/* Quick Benchmark & Metric Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Throughput Verified</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">11,938 rows/s</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">100k rows in 8.38s</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-2">
+          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200/80 font-mono">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold truncate">Throughput Verified</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 truncate">11,938 rows/s</div>
+            <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">100k rows in 8.38s</div>
           </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">GeoIP Air-Gap</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">0 External DNS</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">Local .mmdb &lt;0.05ms</div>
+          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200/80 font-mono">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold truncate">GeoIP Air-Gap</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 truncate">0 External DNS</div>
+            <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">Local .mmdb &lt;0.05ms</div>
           </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Ransomwhere Seeds</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">11,186 Addresses</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">136 Families ($1.018B)</div>
+          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200/80 font-mono">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold truncate">Ransomwhere Seeds</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 truncate">11,186 Addresses</div>
+            <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">136 Families ($1.018B)</div>
           </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Idempotency Guard</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">Redis SHA-256</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">HTTP 409 • 24h TTL</div>
+          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200/80 font-mono">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold truncate">Idempotency Guard</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 truncate">Redis SHA-256</div>
+            <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">HTTP 409 • 24h TTL</div>
           </div>
         </div>
       </div>
@@ -157,8 +157,8 @@ export default function Chapter2Page() {
             Every transaction is strictly validated against the <a href="file:///c:/Users/bari2/Desktop/SIH26146/backend/app/schemas/ingest.py" className="font-mono text-sky-600 hover:underline"><code>TransactionRecord</code></a> Pydantic v2 model before staging. All 14 fields map deterministically to the PostgreSQL relational ledger:
           </p>
 
-          <div className="overflow-x-auto border border-slate-200 rounded-lg">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto border border-slate-200 rounded-lg w-full max-w-full overscroll-x-contain">
+            <table className="w-full text-left text-xs min-w-[580px]">
               <thead className="bg-slate-50 font-mono text-[11px] text-slate-500 border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-3">Field Name</th>
@@ -579,7 +579,7 @@ export default function Chapter2Page() {
                     and enqueues <code className="font-mono text-[11px]">process_ingest_file.delay(...)</code> into Celery. Returns immediately with <code className="font-mono text-[11px]">task_id</code>.
                   </p>
                 </div>
-                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700 break-all">
                   <span className="text-slate-400">Response:</span> {`{"task_id": "9b1deb4d...", "status": "PENDING"}`}
                 </div>
               </div>
@@ -609,7 +609,7 @@ export default function Chapter2Page() {
                     </span>
                   </p>
                 </div>
-                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700 break-all">
                   <span className="text-slate-400">Payload:</span> {`{"status": "SUCCESS", "result": {"total_inserted": 100000}}`}
                 </div>
               </div>
@@ -634,7 +634,7 @@ export default function Chapter2Page() {
                     retrieves task-scoped rows from PostgreSQL (<code className="font-mono text-[11px]">txid = ANY(:txids)</code>), executes FT-Transformer CPU scoring, and atomically registers dossiers in RAM.
                   </p>
                 </div>
-                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700 break-all">
                   <span className="text-slate-400">Response:</span> {`{"scored": 240, "upserted": 240, "skipped_existing": 0}`}
                 </div>
               </div>
@@ -695,8 +695,8 @@ export default function Chapter2Page() {
             </div>
 
             {/* Verdict thresholds comparison table */}
-            <div className="overflow-x-auto border border-slate-200 rounded-lg bg-white">
-              <table className="w-full text-left text-xs font-mono">
+            <div className="overflow-x-auto border border-slate-200 rounded-lg bg-white w-full max-w-full overscroll-x-contain">
+              <table className="w-full text-left text-xs font-mono min-w-[580px]">
                 <thead className="bg-slate-50 text-[10px] text-slate-500 border-b border-slate-200">
                   <tr>
                     <th className="py-2 px-3">Verdict Classification</th>
@@ -795,15 +795,17 @@ export default function Chapter2Page() {
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}
-      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <Link
           href="/docs/ch1-mission-architecture"
-          className="p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-2 group cursor-pointer transition-colors shadow-xs"
+          className="p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center justify-between sm:justify-start gap-2 group cursor-pointer transition-colors shadow-xs w-full sm:w-auto"
         >
-          <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform" />
-          <div className="text-left">
-            <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Previous Chapter</div>
-            <div className="font-semibold text-slate-900">Ch 1: Mission &amp; Architecture</div>
+          <div className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform shrink-0" />
+            <div className="text-left">
+              <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Previous Chapter</div>
+              <div className="font-semibold text-slate-900">Ch 1: Mission &amp; Architecture</div>
+            </div>
           </div>
         </Link>
 
@@ -813,13 +815,13 @@ export default function Chapter2Page() {
 
         <Link
           href="/docs/ch3-graph-entity-clustering"
-          className="btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center gap-2 group cursor-pointer shadow-xs"
+          className="btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center justify-between sm:justify-start gap-2 group cursor-pointer shadow-xs w-full sm:w-auto"
         >
           <div className="text-left">
             <div className="text-[10px] text-blue-200 font-mono uppercase tracking-wider font-semibold">Next Chapter</div>
             <div className="font-semibold text-white">Ch 3: Graph Topology &amp; Entity Clustering</div>
           </div>
-          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2" />
+          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2 shrink-0" />
         </Link>
       </div>
     </article>

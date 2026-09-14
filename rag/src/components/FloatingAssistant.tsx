@@ -61,6 +61,16 @@ const SUGGESTED_QUERIES = [
   },
 ];
 
+let drawerMsgCounter = 0;
+function createDrawerMessageId(prefix: string): string {
+  drawerMsgCounter += 1;
+  return `${prefix}-${Date.now()}-${drawerMsgCounter}`;
+}
+
+function getFormattedTime(): string {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export function FloatingAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<DrawerChatMessage[]>([]);
@@ -74,19 +84,21 @@ export function FloatingAssistant() {
 
   // Load chat history from localStorage on initial mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("ntro_rag_chat_history");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setMessages(parsed);
+    queueMicrotask(() => {
+      try {
+        const saved = localStorage.getItem("ntro_rag_chat_history");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setMessages(parsed);
+          }
         }
+      } catch (err) {
+        console.error("Failed to load chat history from localStorage:", err);
+      } finally {
+        setIsLoaded(true);
       }
-    } catch (err) {
-      console.error("Failed to load chat history from localStorage:", err);
-    } finally {
-      setIsLoaded(true);
-    }
+    });
   }, []);
 
   // Save chat history to localStorage whenever messages update
@@ -183,10 +195,10 @@ export function FloatingAssistant() {
     if (!trimmedQuery || isSynthesizing) return;
 
     const userMessage: DrawerChatMessage = {
-      id: `drawer-user-${Date.now()}`,
+      id: createDrawerMessageId("drawer-user"),
       role: "user",
       content: trimmedQuery,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: getFormattedTime(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -220,7 +232,7 @@ export function FloatingAssistant() {
       const topItem = data.retrieved?.[0]?.item;
 
       const assistantMessage: DrawerChatMessage = {
-        id: `drawer-asst-${Date.now()}`,
+        id: createDrawerMessageId("drawer-asst"),
         role: "assistant",
         content: data.answer || "No response generated.",
         sources: sources.length > 0 ? sources : undefined,
@@ -228,17 +240,17 @@ export function FloatingAssistant() {
         chapterTitle: topItem?.chapterTitle,
         model: data.model || "Air-Gap RAG Engine",
         latencyMs: data.latencyMs,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        timestamp: getFormattedTime(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
       const errorText = err instanceof Error ? err.message : "Failed to synthesize answer.";
       const assistantErrorMsg: DrawerChatMessage = {
-        id: `drawer-asst-err-${Date.now()}`,
+        id: createDrawerMessageId("drawer-asst-err"),
         role: "assistant",
         content: `⚠️ **Synthesis Error:** ${errorText}\n\nPlease verify that the RAG indexing service and LLM API key are configured.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        timestamp: getFormattedTime(),
       };
       setMessages((prev) => [...prev, assistantErrorMsg]);
     } finally {
@@ -265,19 +277,19 @@ export function FloatingAssistant() {
   return (
     <>
       {/* Floating Tactical Chat Trigger Button */}
-      <div className="fixed bottom-6 right-6 z-50 group">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 group">
         <button
           onClick={() => setIsOpen(true)}
-          className="relative w-12 h-12 rounded-full bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 border-t border-t-blue-300/80 border-x border-x-blue-600/80 border-b border-b-blue-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_14px_rgba(29,78,216,0.35)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_20px_rgba(29,78,216,0.45)] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)] flex items-center justify-center text-white transition-all duration-140 cursor-pointer focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+          className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 border-t border-t-blue-300/80 border-x border-x-blue-600/80 border-b border-b-blue-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_14px_rgba(29,78,216,0.35)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_20px_rgba(29,78,216,0.45)] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)] flex items-center justify-center text-white transition-all duration-140 cursor-pointer focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
           aria-label="Open NTRO Forensic Assistant (Ctrl+K)"
           title="Open Forensic Assistant (Ctrl+K)"
         >
           <MessageSquare className="w-5 h-5 text-white" />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-blue-700 animate-pulse" />
+          <span className="absolute top-2 sm:top-2.5 right-2 sm:right-2.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-blue-700 animate-pulse" />
         </button>
 
-        {/* Tactical Shortcut Tooltip */}
-        <div className="absolute right-14 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-slate-900 text-white text-[11px] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-140 pointer-events-none shadow-md border border-slate-700 flex items-center gap-1.5">
+        {/* Tactical Shortcut Tooltip (Desktop only) */}
+        <div className="hidden sm:flex absolute right-14 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-slate-900 text-white text-[11px] font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-140 pointer-events-none shadow-md border border-slate-700 items-center gap-1.5">
           <span>Forensic Assistant</span>
           <span className="text-[9px] bg-slate-800 px-1 py-0.5 rounded text-slate-400 font-bold border border-slate-700">
             Ctrl+K
@@ -289,33 +301,33 @@ export function FloatingAssistant() {
       {isOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/40 backdrop-blur-xs transition-opacity duration-200">
           <div
-            className="w-full max-w-2xl bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
+            className="w-full max-w-full sm:max-w-xl md:max-w-2xl bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
             role="dialog"
             aria-modal="true"
           >
             {/* Drawer Header */}
-            <div className="px-4 py-3.5 border-b border-slate-200 bg-white/95 backdrop-blur flex items-center justify-between shrink-0">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 border-t border-t-blue-300/70 border-x border-x-blue-600/70 border-b border-b-blue-900 flex items-center justify-center text-white shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_6px_rgba(29,78,216,0.25)]">
-                  <Bot className="w-4 h-4 text-white" />
+            <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 border-b border-slate-200 bg-white/95 backdrop-blur flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0 pr-2">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 border-t border-t-blue-300/70 border-x border-x-blue-600/70 border-b border-b-blue-900 flex items-center justify-center text-white shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_6px_rgba(29,78,216,0.25)]">
+                  <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-slate-900 tracking-tight">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-[11px] sm:text-xs font-mono font-bold text-slate-900 tracking-tight truncate">
                       NTRO FORENSIC ASSISTANT
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       ONLINE
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-slate-500 block">
+                  <span className="text-[10px] sm:text-[11px] font-mono text-slate-500 block truncate">
                     Sovereign Air-Gap RAG Engine
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-1.5">
+              <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
                 {messages.length > 0 && (
                   <button
                     type="button"
@@ -330,7 +342,7 @@ export function FloatingAssistant() {
                 <Link
                   href="/assistant"
                   onClick={() => setIsOpen(false)}
-                  className="btn-tactical-secondary px-2.5 py-1 text-[11px] font-mono text-slate-700 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="btn-tactical-secondary px-2 sm:px-2.5 py-1 text-[10.5px] sm:text-[11px] font-mono text-slate-700 rounded flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer"
                   title="Open full page assistant"
                 >
                   <ExternalLink className="w-3 h-3 text-slate-500" />
@@ -348,7 +360,7 @@ export function FloatingAssistant() {
             </div>
 
             {/* Drawer Scrollable Conversation Thread */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/40">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-slate-50/40">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col justify-between py-4">
                   {/* Top Welcome Card */}
@@ -404,17 +416,17 @@ export function FloatingAssistant() {
                   </div>
 
                   {/* System Architecture Metadata Badges */}
-                  <div className="pt-3 border-t border-slate-200/80 flex items-center justify-around text-[10px] font-mono text-slate-500">
+                  <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-center sm:justify-around gap-2 text-[10px] font-mono text-slate-500">
                     <span className="flex items-center gap-1">
                       <Database className="w-3 h-3 text-slate-400" />
                       14 Docs Indexed
                     </span>
-                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-300 hidden sm:inline">•</span>
                     <span className="flex items-center gap-1">
                       <Cpu className="w-3 h-3 text-slate-400" />
                       Strict Grounding
                     </span>
-                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-300 hidden sm:inline">•</span>
                     <span className="flex items-center gap-1">
                       <Search className="w-3 h-3 text-emerald-600" />
                       Sub-sec RAG
@@ -539,7 +551,7 @@ export function FloatingAssistant() {
             </div>
 
             {/* Drawer Bottom Input Console */}
-            <div className="p-3 border-t border-slate-200 bg-white shrink-0">
+            <div className="p-2.5 sm:p-3 border-t border-slate-200 bg-white shrink-0">
               <form
                 onSubmit={handleSend}
                 className="relative bg-slate-50 border border-slate-300 rounded-xl p-2 shadow-2xs focus-within:border-slate-800 focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/5 transition-all"
@@ -551,23 +563,23 @@ export function FloatingAssistant() {
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask a technical query (e.g., Explain Phase 7 GNN)..."
-                  className="w-full max-h-28 min-h-[36px] bg-transparent text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 px-1 py-1 focus:outline-none resize-none font-sans leading-relaxed"
+                  className="w-full max-h-28 min-h-[38px] bg-transparent text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 px-1 py-1 focus:outline-none resize-none font-sans leading-relaxed"
                 />
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 mt-1">
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400">
+                  <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-slate-400">
                     <span className="bg-slate-200/80 px-1 py-0.2 rounded text-slate-600 font-semibold">↵ Enter</span>
-                    <span className="hidden sm:inline">to send •</span>
-                    <span className="bg-slate-200/80 px-1 py-0.2 rounded text-slate-600 font-semibold hidden sm:inline">Shift+↵</span>
-                    <span className="hidden sm:inline">newline</span>
+                    <span>to send •</span>
+                    <span className="bg-slate-200/80 px-1 py-0.2 rounded text-slate-600 font-semibold">Shift+↵</span>
+                    <span>newline</span>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-1">
                     {query.trim() && (
                       <button
                         type="button"
                         onClick={() => setQuery("")}
-                        className="text-[10px] font-mono text-slate-400 hover:text-slate-600 px-1.5 py-0.5 rounded cursor-pointer"
+                        className="text-[10px] font-mono text-slate-400 hover:text-slate-600 px-2 py-1 rounded cursor-pointer"
                       >
                         Clear
                       </button>
@@ -576,7 +588,7 @@ export function FloatingAssistant() {
                     <button
                       type="submit"
                       disabled={isSynthesizing || !query.trim()}
-                      className="btn-tactical-primary text-white px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-xs font-mono font-medium shadow-xs"
+                      className="btn-tactical-primary text-white px-3.5 py-1.5 min-h-[36px] rounded-lg flex items-center justify-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-xs font-mono font-medium shadow-xs ml-auto sm:ml-0"
                       title="Send message (Enter)"
                     >
                       {isSynthesizing ? (

@@ -21,8 +21,8 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
   };
 
   return (
-    <div className="my-3 rounded-xl border border-slate-800 overflow-hidden bg-slate-950 text-slate-100 shadow-md">
-      <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400">
+    <div className="my-3 rounded-xl border border-slate-800 overflow-hidden bg-slate-950 text-slate-100 shadow-md min-w-0 max-w-full">
+      <div className="flex items-center justify-between px-3 sm:px-3.5 py-1.5 bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400">
         <div className="flex items-center gap-1.5">
           <Terminal className="w-3.5 h-3.5 text-amber-400" />
           <span className="uppercase tracking-wider font-semibold text-slate-300">{lang || "code"}</span>
@@ -46,8 +46,8 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
           )}
         </button>
       </div>
-      <pre className="font-mono bg-slate-950 p-3.5 text-xs text-slate-200 overflow-x-auto leading-relaxed border-0">
-        <code>{code}</code>
+      <pre className="font-mono bg-slate-950 p-3 sm:p-3.5 text-xs text-slate-200 overflow-x-auto leading-relaxed border-0 overscroll-x-contain max-w-full">
+        <code className="block">{code}</code>
       </pre>
     </div>
   );
@@ -65,7 +65,7 @@ function renderInlineText(text: string): React.ReactNode[] {
       return (
         <code
           key={index}
-          className="font-mono bg-slate-100 text-slate-900 px-1.5 py-0.5 rounded text-xs border border-slate-200"
+          className="font-mono bg-slate-100 text-slate-900 px-1.5 py-0.5 rounded text-xs border border-slate-200 break-all"
         >
           {part.slice(1, -1)}
         </code>
@@ -91,7 +91,7 @@ function renderInlineText(text: string): React.ReactNode[] {
           href={linkMatch[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sky-600 hover:underline font-medium"
+          className="text-sky-600 hover:underline font-medium break-all sm:break-normal"
         >
           {linkMatch[1]}
         </a>
@@ -182,11 +182,11 @@ function MarkdownTable({ headers, alignments, rows }: MarkdownTableProps) {
   };
 
   return (
-    <div className="my-3 rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-xs">
+    <div className="my-3 rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-xs min-w-0 max-w-full">
       {/* Table Sub-header Bar */}
-      <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-50 border-b border-slate-200 text-[11px] font-mono text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 sm:px-3.5 py-1.5 bg-slate-50 border-b border-slate-200 text-[11px] font-mono text-slate-500">
         <div className="flex items-center gap-1.5">
-          <Table className="w-3.5 h-3.5 text-blue-600" />
+          <Table className="w-3.5 h-3.5 text-blue-600 shrink-0" />
           <span className="font-semibold text-slate-700">Forensic Matrix</span>
           <span className="text-[10px] text-slate-400">({rows.length} rows)</span>
         </div>
@@ -211,14 +211,14 @@ function MarkdownTable({ headers, alignments, rows }: MarkdownTableProps) {
       </div>
 
       {/* Horizontal Scrollable Table Wrapper */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse min-w-[580px]">
+      <div className="overflow-x-auto w-full max-w-full overscroll-x-contain">
+        <table className="w-full text-left text-xs border-collapse min-w-[520px] sm:min-w-[580px]">
           <thead>
             <tr className="bg-slate-100/75 border-b border-slate-200 font-mono text-[11px] text-slate-700 font-bold tracking-tight">
               {headers.map((header, idx) => (
                 <th
                   key={idx}
-                  className={`py-2.5 px-3.5 border-r border-slate-200/70 last:border-r-0 whitespace-nowrap ${getAlignClass(
+                  className={`py-2 sm:py-2.5 px-2.5 sm:px-3.5 border-r border-slate-200/70 last:border-r-0 whitespace-nowrap ${getAlignClass(
                     alignments[idx] || "left"
                   )}`}
                 >
@@ -242,7 +242,7 @@ function MarkdownTable({ headers, alignments, rows }: MarkdownTableProps) {
                     return (
                       <td
                         key={colIdx}
-                        className={`py-2 px-3.5 text-slate-700 leading-relaxed border-r border-slate-100 last:border-r-0 ${getAlignClass(
+                        className={`py-2 px-2.5 sm:px-3.5 text-slate-700 leading-relaxed border-r border-slate-100 last:border-r-0 ${getAlignClass(
                           align
                         )}`}
                       >
@@ -401,7 +401,7 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       elements.push(
         <blockquote
           key={`bq-${elements.length}`}
-          className="border-l-2 border-slate-400 pl-3 py-1 my-2 bg-slate-50/70 text-slate-700 italic rounded-r text-xs sm:text-sm space-y-1"
+          className="border-l-2 border-slate-400 pl-3 py-1 my-2 bg-slate-50/70 text-slate-700 italic rounded-r text-xs sm:text-sm space-y-1 overflow-x-auto max-w-full break-words"
         >
           {quoteLines.map((ql, qIdx) => (
             <p key={qIdx}>{renderInlineText(ql)}</p>
@@ -421,9 +421,9 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       elements.push(
         <ul key={`ul-${elements.length}`} className="space-y-1.5 my-2">
           {bulletItems.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2">
+            <li key={idx} className="flex items-start gap-2 min-w-0">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 shrink-0" />
-              <span className="flex-1 leading-relaxed">{renderInlineText(item)}</span>
+              <span className="flex-1 min-w-0 leading-relaxed break-words">{renderInlineText(item)}</span>
             </li>
           ))}
         </ul>
@@ -441,11 +441,11 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       elements.push(
         <ol key={`ol-${elements.length}`} className="space-y-1.5 my-2">
           {numItems.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2">
+            <li key={idx} className="flex items-start gap-2 min-w-0">
               <span className="font-mono text-xs font-semibold text-slate-500 shrink-0 mt-0.5">
                 {idx + 1}.
               </span>
-              <span className="flex-1 leading-relaxed">{renderInlineText(item)}</span>
+              <span className="flex-1 min-w-0 leading-relaxed break-words">{renderInlineText(item)}</span>
             </li>
           ))}
         </ol>
@@ -469,7 +469,7 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
 
     if (paraLines.length > 0) {
       elements.push(
-        <p key={`p-${elements.length}`} className="my-1.5 leading-relaxed text-slate-800">
+        <p key={`p-${elements.length}`} className="my-1.5 leading-relaxed text-slate-800 break-words">
           {paraLines.map((pl, plIdx) => (
             <React.Fragment key={plIdx}>
               {plIdx > 0 && " "}
@@ -491,7 +491,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
   const sections = content.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="space-y-2 text-sm text-slate-800 leading-relaxed font-sans">
+    <div className="space-y-2 text-sm text-slate-800 leading-relaxed font-sans min-w-0 max-w-full">
       {sections.map((section, secIdx) => {
         if (!section) return null;
 

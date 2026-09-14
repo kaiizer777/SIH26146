@@ -14,6 +14,7 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  Menu,
 } from "lucide-react";
 
 interface ChapterMeta {
@@ -115,37 +116,53 @@ export function DocsHeader() {
       ? CHAPTER_ORDER[currentIndex + 1]
       : null;
 
+  const handleToggleSidebar = () => {
+    window.dispatchEvent(new CustomEvent("ntro:toggle-docs-sidebar"));
+  };
+
   return (
-    <header className="h-[64px] border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-5 sm:px-8 flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.03)] select-none">
-      {/* Left: Category & Chapter No in 1 line -> Vertical Divider -> Title */}
-      <div className="flex-1 flex items-center space-x-3.5 min-w-0 mr-4 sm:mr-6">
-        {/* Category & Chapter Badge in 1 line */}
-        <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-[11.5px]">
-          <span className="font-semibold text-slate-600 tracking-wide uppercase">
+    <header className="h-[64px] border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-3 sm:px-5 lg:px-8 flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.03)] select-none">
+      {/* Left: Mobile Menu Trigger + Category & Chapter No -> Vertical Divider -> Title */}
+      <div className="flex-1 flex items-center space-x-2 sm:space-x-3.5 min-w-0 mr-2 sm:mr-4 lg:mr-6">
+        {/* Mobile Hamburger Trigger (< lg only) */}
+        <button
+          type="button"
+          onClick={handleToggleSidebar}
+          className="lg:hidden p-2 -ml-1 text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center justify-center shrink-0 border border-slate-200/80 bg-slate-50/80 shadow-2xs"
+          aria-label="Toggle navigation sidebar"
+          title="Toggle Navigation"
+        >
+          <Menu className="w-4 h-4 text-slate-700" />
+        </button>
+
+        {/* Category & Chapter Badge */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0 font-mono text-[11px] sm:text-[11.5px]">
+          <span className="hidden md:inline font-semibold text-slate-600 tracking-wide uppercase">
             {current.category}
           </span>
-          <span className="font-bold text-slate-950 bg-slate-100 px-1.5 py-0.5 rounded-[4px] border border-slate-300/90 shadow-2xs">
+          <span className="hidden md:inline text-slate-300">·</span>
+          <span className="font-bold text-slate-950 bg-slate-100 px-1.5 py-0.5 rounded-[4px] border border-slate-300/90 shadow-2xs whitespace-nowrap">
             {current.num === "AI" ? "AI ASSISTANT" : `CH ${current.num}`}
           </span>
         </div>
 
         {/* Vertical Divider */}
-        <div className="h-6 w-[1.5px] bg-slate-300 flex-shrink-0" />
+        <div className="h-5 sm:h-6 w-[1.5px] bg-slate-300 flex-shrink-0" />
 
         {/* Chapter Title (Takes full available width, large crisp font-bold) */}
-        <h1 className="flex-1 text-[22px] sm:text-[24px] font-bold text-slate-950 tracking-tight truncate">
+        <h1 className="flex-1 text-sm sm:text-base md:text-lg lg:text-[22px] xl:text-[24px] font-bold text-slate-950 tracking-tight truncate">
           {current.title}
         </h1>
       </div>
 
       {/* Right Navigation & Instrument Controls */}
-      <div className="flex items-center space-x-2 flex-shrink-0">
+      <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
         {/* Prev Chapter Link / Button */}
         {prevChapter ? (
           <Link
             href={prevChapter.href}
             title={`Previous: ${prevChapter.title}`}
-            className="btn-tactical-secondary inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer"
+            className="btn-tactical-secondary inline-flex items-center space-x-1 px-2 sm:px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
             <span className="hidden sm:inline">Prev</span>
@@ -153,7 +170,7 @@ export function DocsHeader() {
         ) : (
           <button
             disabled
-            className="inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed"
+            className="inline-flex items-center space-x-1 px-2 sm:px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-slate-300" />
             <span className="hidden sm:inline">Prev</span>
@@ -165,7 +182,7 @@ export function DocsHeader() {
           <Link
             href={nextChapter.href}
             title={`Next: ${nextChapter.title}`}
-            className="btn-tactical-secondary inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer"
+            className="btn-tactical-secondary inline-flex items-center space-x-1 px-2 sm:px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-800 cursor-pointer"
           >
             <span className="hidden sm:inline">Next</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
@@ -173,7 +190,7 @@ export function DocsHeader() {
         ) : (
           <button
             disabled
-            className="inline-flex items-center space-x-1.5 px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed"
+            className="inline-flex items-center space-x-1 px-2 sm:px-3 py-[6px] rounded-[7px] text-[12px] font-semibold text-slate-300 bg-slate-50 border border-slate-200/60 opacity-60 cursor-not-allowed"
           >
             <span className="hidden sm:inline">Next</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
@@ -185,7 +202,6 @@ export function DocsHeader() {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-semibold text-slate-800">Air-Gapped Enclave</span>
         </div>
-
       </div>
     </header>
   );

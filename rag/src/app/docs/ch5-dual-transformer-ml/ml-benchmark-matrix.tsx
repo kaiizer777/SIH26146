@@ -154,7 +154,7 @@ export function MlBenchmarkMatrix() {
           </div>
 
           {/* Mode Selector */}
-          <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 shadow-2xs self-start">
+          <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 shadow-2xs self-start flex-wrap sm:flex-nowrap max-w-full overflow-x-auto">
             <button
               onClick={() => setFilterMode("all")}
               className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
@@ -316,106 +316,112 @@ export function MlBenchmarkMatrix() {
         </div>
       ) : (
         /* The Comprehensive Side-by-Side Comparison Table */
-        <div className="p-4 sm:p-6 overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[760px]">
-            <thead>
-              <tr className="bg-slate-100/80 text-slate-700 font-mono uppercase text-[10px] border-y border-slate-200">
-                <th className="py-2.5 px-3">Model &amp; Architecture</th>
-                <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3 text-right">F1 Score</th>
-                <th className="py-2.5 px-3 text-right">Precision</th>
-                <th className="py-2.5 px-3 text-right">Recall</th>
-                <th className="py-2.5 px-3 text-right">ROC-AUC</th>
-                <th className="py-2.5 px-3">CPU Latency</th>
-                <th className="py-2.5 px-3">Parameters / Disk</th>
-                <th className="py-2.5 px-3">XAI Mechanism</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-600">
-              {filteredModels.map((m) => {
-                return (
-                  <tr
-                    key={m.modelName}
-                    className={`transition-colors ${
-                      m.isSota
-                        ? "bg-slate-50/70 hover:bg-slate-100/70 font-medium text-slate-900"
-                        : "hover:bg-slate-50/50"
-                    }`}
-                  >
-                    {/* Model Name & Architecture */}
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {m.isSota && (
-                          <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                        )}
-                        <span className="font-bold text-slate-900">{m.shortName}</span>
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        {m.architectureType}
-                      </div>
-                      <div className="text-[9px] text-slate-400 font-mono">
-                        {m.checkpointFilename}
-                      </div>
-                    </td>
-
-                    {/* Status Badge */}
-                    <td className="py-3 px-3">
-                      {m.isSota ? (
-                        <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-block">
-                          ACTIVE SOTA
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200 inline-block">
-                          BASELINE
-                        </span>
-                      )}
-                    </td>
-
-                    {/* F1 */}
-                    <td className="py-3 px-3 font-mono font-bold text-right text-slate-900">
-                      {m.f1}
-                    </td>
-
-                    {/* Precision */}
-                    <td className="py-3 px-3 font-mono text-right text-slate-700">
-                      {m.precision}
-                    </td>
-
-                    {/* Recall */}
-                    <td className="py-3 px-3 font-mono text-right text-slate-700">
-                      {m.recall}
-                      {m.peelingRecall !== "N/A (Tabular Anomaly)" && (
-                        <div className="text-[9px] text-emerald-600 font-bold">
-                          Peeling: {m.peelingRecall}
+        <div className="p-4 sm:p-6 space-y-3">
+          <div className="sm:hidden flex items-center justify-between text-[10px] font-mono text-slate-400 px-1">
+            <span>Swipe table horizontally &harr;</span>
+            <span>All Model Metrics</span>
+          </div>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <table className="w-full text-left text-xs border-collapse min-w-[760px]">
+              <thead>
+                <tr className="bg-slate-100/80 text-slate-700 font-mono uppercase text-[10px] border-b border-slate-200">
+                  <th className="py-2.5 px-3">Model &amp; Architecture</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">F1 Score</th>
+                  <th className="py-2.5 px-3 text-right">Precision</th>
+                  <th className="py-2.5 px-3 text-right">Recall</th>
+                  <th className="py-2.5 px-3 text-right">ROC-AUC</th>
+                  <th className="py-2.5 px-3">CPU Latency</th>
+                  <th className="py-2.5 px-3">Parameters / Disk</th>
+                  <th className="py-2.5 px-3">XAI Mechanism</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-600">
+                {filteredModels.map((m) => {
+                  return (
+                    <tr
+                      key={m.modelName}
+                      className={`transition-colors ${
+                        m.isSota
+                          ? "bg-slate-50/70 hover:bg-slate-100/70 font-medium text-slate-900"
+                          : "hover:bg-slate-50/50"
+                      }`}
+                    >
+                      {/* Model Name & Architecture */}
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-1.5">
+                          {m.isSota && (
+                            <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                          )}
+                          <span className="font-bold text-slate-900">{m.shortName}</span>
                         </div>
-                      )}
-                    </td>
+                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          {m.architectureType}
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-mono">
+                          {m.checkpointFilename}
+                        </div>
+                      </td>
 
-                    {/* ROC-AUC */}
-                    <td className="py-3 px-3 font-mono text-right text-slate-900 font-semibold">
-                      {m.rocAuc}
-                    </td>
+                      {/* Status Badge */}
+                      <td className="py-3 px-3">
+                        {m.isSota ? (
+                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-block">
+                            ACTIVE SOTA
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200 inline-block">
+                            BASELINE
+                          </span>
+                        )}
+                      </td>
 
-                    {/* CPU Latency */}
-                    <td className="py-3 px-3 font-mono text-[11px] text-slate-600">
-                      {m.cpuLatency}
-                    </td>
+                      {/* F1 */}
+                      <td className="py-3 px-3 font-mono font-bold text-right text-slate-900">
+                        {m.f1}
+                      </td>
 
-                    {/* Parameters & Disk Size */}
-                    <td className="py-3 px-3 font-mono text-[11px] text-slate-600">
-                      <div>{m.paramCount} params</div>
-                      <div className="text-[10px] text-slate-400">{m.modelSizeKb}</div>
-                    </td>
+                      {/* Precision */}
+                      <td className="py-3 px-3 font-mono text-right text-slate-700">
+                        {m.precision}
+                      </td>
 
-                    {/* XAI Mechanism */}
-                    <td className="py-3 px-3 text-[11px] text-slate-600 max-w-[220px]">
-                      {m.xaiMechanism}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      {/* Recall */}
+                      <td className="py-3 px-3 font-mono text-right text-slate-700">
+                        {m.recall}
+                        {m.peelingRecall !== "N/A (Tabular Anomaly)" && (
+                          <div className="text-[9px] text-emerald-600 font-bold">
+                            Peeling: {m.peelingRecall}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* ROC-AUC */}
+                      <td className="py-3 px-3 font-mono text-right text-slate-900 font-semibold">
+                        {m.rocAuc}
+                      </td>
+
+                      {/* CPU Latency */}
+                      <td className="py-3 px-3 font-mono text-[11px] text-slate-600">
+                        {m.cpuLatency}
+                      </td>
+
+                      {/* Parameters & Disk Size */}
+                      <td className="py-3 px-3 font-mono text-[11px] text-slate-600">
+                        <div>{m.paramCount} params</div>
+                        <div className="text-[10px] text-slate-400">{m.modelSizeKb}</div>
+                      </td>
+
+                      {/* XAI Mechanism */}
+                      <td className="py-3 px-3 text-[11px] text-slate-600 max-w-[220px]">
+                        {m.xaiMechanism}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
           {/* Table Footnote */}
           <div className="mt-3 pt-3 border-t border-slate-200 text-[10px] font-mono text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between gap-2">

@@ -363,8 +363,8 @@ export default function Chapter4Page() {
             Different privacy software implementations exhibit unique cryptographic footprints that the detector isolates automatically:
           </p>
 
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <table className="w-full text-left font-mono text-xs">
+          <div className="border border-slate-200 rounded-lg overflow-x-auto">
+            <table className="w-full text-left font-mono text-xs min-w-[560px]">
               <thead className="bg-slate-100 text-slate-600 text-[10px] uppercase border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-4 font-bold">Mixing Protocol</th>
@@ -504,8 +504,8 @@ export default function Chapter4Page() {
           </p>
 
           {/* Literature Comparison Table */}
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <table className="w-full text-left font-mono text-xs">
+          <div className="border border-slate-200 rounded-lg overflow-x-auto">
+            <table className="w-full text-left font-mono text-xs min-w-[620px]">
               <thead className="bg-slate-100 text-slate-600 text-[10px] uppercase border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-4 font-bold">Detection Architecture</th>

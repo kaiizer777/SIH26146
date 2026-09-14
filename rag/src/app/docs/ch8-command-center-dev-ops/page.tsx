@@ -284,10 +284,12 @@ _root_logger.addFilter(_AddressPseudonymFilter())`}
 
           {/* Port Matrix Table */}
           <div className="rounded-lg border border-slate-200 overflow-hidden bg-white shadow-xs">
-            <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 font-mono text-xs font-bold text-slate-700 uppercase">
-              Core Infrastructure Port &amp; Protocol Allocations
+            <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between font-mono text-xs font-bold text-slate-700 uppercase">
+              <span>Core Infrastructure Port &amp; Protocol Allocations</span>
+              <span className="text-[10px] text-slate-400 font-normal sm:hidden">Swipe &rarr;</span>
             </div>
-            <table className="w-full text-left font-mono text-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left font-mono text-xs min-w-[640px]">
               <thead className="bg-slate-100/75 text-[10px] text-slate-500 uppercase tracking-wider h-8">
                 <tr>
                   <th className="px-4">Service</th>
@@ -335,6 +337,7 @@ _root_logger.addFilter(_AddressPseudonymFilter())`}
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Terminal Setup Matrix */}
@@ -665,31 +668,33 @@ _root_logger.addFilter(_AddressPseudonymFilter())`}
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}
-      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <Link
           href="/docs/ch7-online-inference-sync"
-          className="p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-2 group cursor-pointer transition-colors shadow-xs"
+          className="w-full sm:w-auto p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center justify-between sm:justify-start gap-2 group cursor-pointer transition-colors shadow-xs"
         >
-          <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform" />
-          <div className="text-left">
-            <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Previous Chapter</div>
-            <div className="font-semibold text-slate-900">Ch 7: Live Post-Ingest Online Inference</div>
+          <div className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform shrink-0" />
+            <div className="text-left">
+              <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Previous Chapter</div>
+              <div className="font-semibold text-slate-900">Ch 7: Live Post-Ingest Online Inference</div>
+            </div>
           </div>
         </Link>
 
-        <div className="text-xs font-mono text-slate-400 text-center">
+        <div className="text-xs font-mono text-slate-400 text-center order-last sm:order-none">
           DOCUMENT SPECIFICATION • SEC-DOC-26146-CH08
         </div>
 
         <Link
           href="/assistant"
-          className="btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center gap-2 group cursor-pointer shadow-xs"
+          className="w-full sm:w-auto btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center justify-between sm:justify-start gap-2 group cursor-pointer shadow-xs"
         >
           <div className="text-left">
             <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Next Surface</div>
             <div className="font-semibold text-slate-100">⚡ Subagent 9: RAG Doubt Solver</div>
           </div>
-          <ArrowRight className="w-4 h-4 text-sky-400 group-hover:translate-x-1 transition-transform ml-2" />
+          <ArrowRight className="w-4 h-4 text-sky-400 group-hover:translate-x-1 transition-transform ml-2 shrink-0" />
         </Link>
       </div>
     </article>

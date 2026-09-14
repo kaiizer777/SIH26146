@@ -200,15 +200,15 @@ export function RiskCalculator() {
           <div className="space-y-5">
             {/* Factor 1: FT-Transformer Anomaly */}
             <div className="p-3.5 rounded-lg border border-slate-200/80 bg-slate-50/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-mono text-xs font-bold">
+              <div className="flex items-start sm:items-center justify-between gap-2">
+                <div className="flex items-start sm:items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 sm:mt-0">
                     S
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      FT-Transformer Tabular Anomaly (S_anomaly)
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <div className="text-xs font-bold text-slate-900 flex flex-wrap items-center gap-1.5">
+                      <span>FT-Transformer Tabular Anomaly (S_anomaly)</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
                         Weight: 35%
                       </span>
                     </div>
@@ -217,7 +217,7 @@ export function RiskCalculator() {
                     </div>
                   </div>
                 </div>
-                <div className="font-mono text-sm font-bold text-indigo-950">
+                <div className="font-mono text-sm font-bold text-indigo-950 shrink-0">
                   {anomalyScore.toFixed(2)}
                 </div>
               </div>
@@ -233,7 +233,7 @@ export function RiskCalculator() {
                     setAnomalyScore(parseFloat(e.target.value));
                     setActivePreset(null);
                   }}
-                  className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                  className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg cursor-pointer py-1 sm:py-0"
                 />
               </div>
               <div className="flex justify-between text-[10px] font-mono text-slate-400">
@@ -245,15 +245,15 @@ export function RiskCalculator() {
 
             {/* Factor 2: Graph Transformer / GNN Risk */}
             <div className="p-3.5 rounded-lg border border-slate-200/80 bg-slate-50/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center font-mono text-xs font-bold">
+              <div className="flex items-start sm:items-center justify-between gap-2">
+                <div className="flex items-start sm:items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 sm:mt-0">
                     P
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      Relational Graph Transformer Risk (P_gnn)
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200">
+                    <div className="text-xs font-bold text-slate-900 flex flex-wrap items-center gap-1.5">
+                      <span>Relational Graph Transformer Risk (P_gnn)</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
                         Weight: 45%
                       </span>
                     </div>
@@ -262,7 +262,7 @@ export function RiskCalculator() {
                     </div>
                   </div>
                 </div>
-                <div className="font-mono text-sm font-bold text-sky-950">
+                <div className="font-mono text-sm font-bold text-sky-950 shrink-0">
                   {gnnRisk.toFixed(2)}
                 </div>
               </div>
@@ -278,7 +278,7 @@ export function RiskCalculator() {
                     setGnnRisk(parseFloat(e.target.value));
                     setActivePreset(null);
                   }}
-                  className="w-full accent-sky-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                  className="w-full accent-sky-600 h-2 bg-slate-200 rounded-lg cursor-pointer py-1 sm:py-0"
                 />
               </div>
               <div className="flex justify-between text-[10px] font-mono text-slate-400">
@@ -290,15 +290,15 @@ export function RiskCalculator() {
 
             {/* Factor 3: Heuristic Rules Bonus */}
             <div className="p-3.5 rounded-lg border border-slate-200/80 bg-slate-50/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-mono text-xs font-bold">
+              <div className="flex items-start sm:items-center justify-between gap-2">
+                <div className="flex items-start sm:items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 sm:mt-0">
                     R
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      Deterministic Rule Violations (R_rules)
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                    <div className="text-xs font-bold text-slate-900 flex flex-wrap items-center gap-1.5">
+                      <span>Deterministic Rule Violations (R_rules)</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                         Weight: 15%
                       </span>
                     </div>
@@ -307,7 +307,7 @@ export function RiskCalculator() {
                     </div>
                   </div>
                 </div>
-                <div className="font-mono text-sm font-bold text-amber-950">
+                <div className="font-mono text-sm font-bold text-amber-950 shrink-0">
                   {rulesBonus.toFixed(2)}
                 </div>
               </div>
@@ -323,7 +323,7 @@ export function RiskCalculator() {
                     setRulesBonus(parseFloat(e.target.value));
                     setActivePreset(null);
                   }}
-                  className="w-full accent-amber-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                  className="w-full accent-amber-600 h-2 bg-slate-200 rounded-lg cursor-pointer py-1 sm:py-0"
                 />
               </div>
               <div className="flex justify-between text-[10px] font-mono text-slate-400">
@@ -334,15 +334,15 @@ export function RiskCalculator() {
             </div>
 
             {/* Factor 4: Mixing / Peeling Flag Toggle */}
-            <div className="p-3.5 rounded-lg border border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center font-mono text-xs font-bold">
+            <div className="p-3.5 rounded-lg border border-slate-200/80 bg-slate-50/50 flex items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-2">
+                <div className="w-6 h-6 rounded bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 sm:mt-0">
                   M
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    Structural Peeling / CoinJoin Flag (M_mixing)
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                  <div className="text-xs font-bold text-slate-900 flex flex-wrap items-center gap-1.5">
+                    <span>Structural Peeling / CoinJoin Flag (M_mixing)</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
                       Weight: 5% (Flat 0.05)
                     </span>
                   </div>
@@ -358,7 +358,7 @@ export function RiskCalculator() {
                   setIsMixing(!isMixing);
                   setActivePreset(null);
                 }}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                   isMixing ? "bg-purple-600" : "bg-slate-300"
                 }`}
               >
@@ -373,7 +373,7 @@ export function RiskCalculator() {
         </div>
 
         {/* Right Column: Dynamic Gauge & Verdict Tier (5 Cols) */}
-        <div className="lg:col-span-5 flex flex-col justify-between p-5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-6">
+        <div className="lg:col-span-5 flex flex-col justify-between p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-6">
           <div>
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
@@ -421,12 +421,12 @@ export function RiskCalculator() {
               </div>
 
               {/* Dynamic Verdict Badge */}
-              <div className="mt-4 flex items-center justify-center">
+              <div className="mt-4 flex items-center justify-center max-w-full">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold font-mono border flex items-center gap-1.5 shadow-xs ${verdict.badgeClass}`}
+                  className={`px-3 py-1 rounded-full text-xs font-bold font-mono border flex items-center justify-center gap-1.5 shadow-xs text-center max-w-full flex-wrap ${verdict.badgeClass}`}
                 >
-                  <verdict.icon className="w-3.5 h-3.5" />
-                  VERDICT: {verdict.tier} ({verdict.statusText})
+                  <verdict.icon className="w-3.5 h-3.5 shrink-0" />
+                  <span>VERDICT: {verdict.tier} ({verdict.statusText})</span>
                 </span>
               </div>
             </div>

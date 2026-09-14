@@ -431,12 +431,12 @@ export function CliCommandGenerator() {
       {/* Tactical Widget Top Bar */}
       <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center space-x-2.5">
-          <div className="w-7 h-7 rounded bg-slate-900 text-white flex items-center justify-center shadow-xs">
+          <div className="w-7 h-7 rounded bg-slate-900 text-white flex items-center justify-center shadow-xs shrink-0">
             <Terminal className="w-3.5 h-3.5 text-sky-400" />
           </div>
           <div>
-            <div className="text-xs font-mono font-bold tracking-wide uppercase text-slate-900 flex items-center gap-2">
-              Operator Runbook Generator
+            <div className="text-xs font-mono font-bold tracking-wide uppercase text-slate-900 flex items-center gap-2 flex-wrap">
+              <span>Operator Runbook Generator</span>
               <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded border border-sky-200 font-bold">
                 WINDOWS POWERSHELL
               </span>
@@ -450,7 +450,7 @@ export function CliCommandGenerator() {
         {/* 1-Click Copy CTA with Painted Light Depth */}
         <button
           onClick={handleCopy}
-          className="btn-tactical-primary text-white text-xs font-mono px-3.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer shadow-xs"
+          className="w-full sm:w-auto justify-center btn-tactical-primary text-white text-xs font-mono px-3.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer shadow-xs"
         >
           {copied ? (
             <>
@@ -484,7 +484,7 @@ export function CliCommandGenerator() {
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-sky-600" : "text-slate-400"}`} />
+              <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-sky-600" : "text-slate-400"}`} />
               <span>{task.name}</span>
             </button>
           );
@@ -492,11 +492,11 @@ export function CliCommandGenerator() {
       </div>
 
       {/* Task Configuration & Command Surface */}
-      <div className="p-5 space-y-5">
+      <div className="p-4 sm:p-5 space-y-5">
         {/* Task Summary Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200/80">
           <div>
-            <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+            <div className="text-xs font-bold text-slate-900 flex items-center gap-2 flex-wrap">
               <span>{currentTask.name}</span>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
                 {currentTask.category}
@@ -504,8 +504,8 @@ export function CliCommandGenerator() {
             </div>
             <div className="text-xs text-slate-600 mt-0.5">{currentTask.shortDesc}</div>
           </div>
-          <div className="text-[11px] font-mono text-slate-500 bg-white px-2.5 py-1 rounded border border-slate-200 self-start sm:self-auto">
-            Dir: <code className="text-slate-900 font-semibold">{currentTask.workingDir}</code>
+          <div className="text-[11px] font-mono text-slate-500 bg-white px-2.5 py-1 rounded border border-slate-200 self-start sm:self-auto max-w-full">
+            Dir: <code className="text-slate-900 font-semibold break-all sm:break-normal">{currentTask.workingDir}</code>
           </div>
         </div>
 
@@ -537,7 +537,7 @@ export function CliCommandGenerator() {
                 if (opt.type === "select") {
                   return (
                     <div key={opt.id} className="flex items-center gap-2 text-xs font-mono">
-                      <span className="text-slate-600">{opt.label}:</span>
+                      <span className="text-slate-600 shrink-0">{opt.label}:</span>
                       <select
                         value={val}
                         onChange={(e) => handleParamChange(opt.id, e.target.value)}
@@ -555,7 +555,7 @@ export function CliCommandGenerator() {
                 if (opt.type === "text") {
                   return (
                     <div key={opt.id} className="flex items-center gap-2 text-xs font-mono w-full sm:w-auto">
-                      <span className="text-slate-600">{opt.label}:</span>
+                      <span className="text-slate-600 shrink-0">{opt.label}:</span>
                       <input
                         type="text"
                         value={val}
@@ -575,18 +575,18 @@ export function CliCommandGenerator() {
         {/* Command Display Terminal */}
         <div className="rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
           {/* Terminal Titlebar */}
-          <div className="px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
-            <div className="flex items-center space-x-2">
-              <div className="flex space-x-1.5">
+          <div className="px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between gap-2 text-xs font-mono">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
+              <div className="flex space-x-1.5 shrink-0">
                 <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
               </div>
-              <span className="text-slate-400 ml-2 text-[11px] truncate">
+              <span className="text-slate-400 ml-2 text-[11px] truncate min-w-0">
                 {currentTask.terminalTitle}
               </span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 shrink-0">
               <button
                 onClick={() => setActiveTab("command")}
                 className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${

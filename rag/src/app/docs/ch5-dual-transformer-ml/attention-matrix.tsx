@@ -232,7 +232,7 @@ export function AttentionMatrix() {
           </div>
 
           {/* Mode Switcher */}
-          <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 shadow-2xs self-start">
+          <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 shadow-2xs self-start flex-wrap sm:flex-nowrap">
             <button
               onClick={() => setDisplayMode("matrix")}
               className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
@@ -314,6 +314,12 @@ export function AttentionMatrix() {
                 <span className="text-[11px] text-slate-400">
                   Click row to isolate cross-attention profile
                 </span>
+              </div>
+
+              {/* Mobile Scroll Hint */}
+              <div className="sm:hidden flex items-center justify-between text-[10px] font-mono text-slate-400 px-1 pb-1">
+                <span>Swipe horizontally to view all 18 features &harr;</span>
+                <span>18 &times; 18 Heatmap</span>
               </div>
 
               {/* Scrollable Matrix Container */}
@@ -500,7 +506,7 @@ export function AttentionMatrix() {
 
         {/* RIGHT: Selected Feature Inspector Card */}
         <div className="xl:col-span-4 space-y-4">
-          <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-4 sticky top-20">
+          <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-4 xl:sticky xl:top-20">
             {/* Header of Inspector */}
             <div className="border-b border-slate-200 pb-3">
               <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-slate-500">

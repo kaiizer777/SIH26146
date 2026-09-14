@@ -629,20 +629,24 @@ def _clear_fallback(task_id: str) -> None:
           </div>
 
           {/* Master SLA Table */}
-          <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-xs">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-slate-50 font-mono text-[11px] text-slate-600 border-b border-slate-200 uppercase tracking-wider">
-                <tr>
-                  <th className="py-3 px-3.5">Pipeline Tier / Operation</th>
-                  <th className="py-3 px-3.5">Target SLA</th>
-                  <th className="py-3 px-3.5">Measured Distribution (p50 / p95 / p99)</th>
-                  <th className="py-3 px-3.5">Execution Boundary</th>
-                  <th className="py-3 px-3.5">Production Architecture &amp; Implementation</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
-                <tr className="hover:bg-slate-50/50">
-                  <td className="py-3 px-3.5 font-bold text-slate-900">
+          <div className="space-y-1.5">
+            <div className="flex sm:hidden items-center justify-end text-[10px] font-mono text-slate-400 gap-1">
+              <span>Swipe horizontally to view full SLA matrix &rarr;</span>
+            </div>
+            <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-xs">
+              <table className="w-full text-left text-xs border-collapse min-w-[740px]">
+                <thead className="bg-slate-50 font-mono text-[11px] text-slate-600 border-b border-slate-200 uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3 px-3.5">Pipeline Tier / Operation</th>
+                    <th className="py-3 px-3.5">Target SLA</th>
+                    <th className="py-3 px-3.5">Measured Distribution (p50 / p95 / p99)</th>
+                    <th className="py-3 px-3.5">Execution Boundary</th>
+                    <th className="py-3 px-3.5">Production Architecture &amp; Implementation</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-3 px-3.5 font-bold text-slate-900">
                     <div className="flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5 text-amber-500" />
                       In-Memory RAM Pointer Lookup
@@ -727,6 +731,7 @@ def _clear_fallback(task_id: str) -> None:
                 </tr>
               </tbody>
             </table>
+          </div>
           </div>
 
           {/* Architectural Memory Callout */}
@@ -875,31 +880,33 @@ def upsert_batch(scored_items: list[dict[str, Any]]) -> tuple[int, int]:
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}
-      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <Link
           href="/docs/ch6-risk-engine-xai-legal"
-          className="p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-2 group cursor-pointer transition-colors shadow-xs"
+          className="w-full sm:w-auto p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center justify-between sm:justify-start gap-2 group cursor-pointer transition-colors shadow-xs"
         >
-          <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform" />
-          <div className="text-left">
-            <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Previous Chapter</div>
-            <div className="font-semibold text-slate-900">Ch 6: Multi-Factor Risk &amp; Section 65B Legal</div>
+          <div className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform shrink-0" />
+            <div className="text-left">
+              <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Previous Chapter</div>
+              <div className="font-semibold text-slate-900">Ch 6: Multi-Factor Risk &amp; Section 65B Legal</div>
+            </div>
           </div>
         </Link>
 
-        <div className="text-xs font-mono text-slate-400 text-center">
+        <div className="text-xs font-mono text-slate-400 text-center order-last sm:order-none">
           DOCUMENT SPECIFICATION • SEC-DOC-26146-CH07
         </div>
 
         <Link
           href="/docs/ch8-command-center-dev-ops"
-          className="btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center gap-2 group cursor-pointer shadow-xs"
+          className="w-full sm:w-auto btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center justify-between sm:justify-start gap-2 group cursor-pointer shadow-xs"
         >
           <div className="text-left">
             <div className="text-[10px] text-blue-200 font-mono uppercase tracking-wider font-semibold">Next Chapter</div>
             <div className="font-semibold text-white">Ch 8: Command Center &amp; Ops Runbook</div>
           </div>
-          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2" />
+          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2 shrink-0" />
         </Link>
       </div>
     </article>

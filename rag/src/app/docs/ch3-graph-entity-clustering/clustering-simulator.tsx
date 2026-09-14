@@ -224,7 +224,7 @@ export function ClusteringSimulator() {
         </div>
 
         {/* Playback Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
             disabled={currentStepIndex === 0}
@@ -441,7 +441,7 @@ export function ClusteringSimulator() {
             </svg>
 
             {/* Bottom Status Ribbon */}
-            <div className="mt-2 pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400">
+            <div className="mt-2 pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
               <span className="flex items-center gap-1.5">
                 <Database className="w-3.5 h-3.5 text-sky-400" />
                 <span>{currentStep.syncStatus}</span>

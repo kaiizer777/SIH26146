@@ -107,8 +107,8 @@ export function SyncPlayground() {
           <div className="text-[10px] font-mono uppercase text-slate-400 font-bold">
             Simulated Ingest Batch Payload
           </div>
-          <div className="flex items-center gap-2 font-mono text-slate-800 font-semibold">
-            <Database className="w-3.5 h-3.5 text-sky-600" />
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 font-mono text-slate-800 font-semibold">
+            <Database className="w-3.5 h-3.5 text-sky-600 shrink-0" />
             <span>ransomware_illicit_run_nov26.csv</span>
             <span className="text-slate-400">&bull;</span>
             <span className="text-slate-600">250 txs</span>
@@ -120,7 +120,7 @@ export function SyncPlayground() {
         <button
           onClick={runSimulation}
           disabled={isSimulating}
-          className="btn-tactical-primary text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+          className="btn-tactical-primary text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 self-start md:self-auto shrink-0"
         >
           {isSimulating ? (
             <>
@@ -137,14 +137,14 @@ export function SyncPlayground() {
       </div>
 
       {/* HTTP Query Header Bar */}
-      <div className="p-3.5 rounded-lg bg-slate-900 text-white font-mono text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
-        <div className="flex items-center gap-2 truncate">
-          <span className="px-2 py-0.5 rounded bg-sky-600 font-bold text-[10px]">GET</span>
+      <div className="p-3.5 rounded-lg bg-slate-900 text-white font-mono text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="px-2 py-0.5 rounded bg-sky-600 font-bold text-[10px] shrink-0">GET</span>
           <span className="text-slate-300 truncate">
             /api/v1/entity/{sampleWallet}/explain
           </span>
         </div>
-        <div className="flex items-center gap-3 text-[11px]">
+        <div className="flex items-center gap-3 text-[11px] shrink-0">
           {mode === "with_phase11" ? (
             <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -162,10 +162,10 @@ export function SyncPlayground() {
       </div>
 
       {/* Tab Switcher: UI Preview vs Raw JSON vs Headers */}
-      <div className="border-b border-slate-200 flex items-center gap-4 text-xs font-mono">
+      <div className="border-b border-slate-200 flex items-center gap-4 text-xs font-mono overflow-x-auto max-w-full pb-0.5">
         <button
           onClick={() => setActiveTab("preview")}
-          className={`pb-2.5 font-bold cursor-pointer transition-colors border-b-2 ${
+          className={`pb-2.5 font-bold cursor-pointer transition-colors border-b-2 shrink-0 ${
             activeTab === "preview"
               ? "border-slate-900 text-slate-900"
               : "border-transparent text-slate-400 hover:text-slate-600"
@@ -175,7 +175,7 @@ export function SyncPlayground() {
         </button>
         <button
           onClick={() => setActiveTab("json")}
-          className={`pb-2.5 font-bold cursor-pointer transition-colors border-b-2 ${
+          className={`pb-2.5 font-bold cursor-pointer transition-colors border-b-2 shrink-0 ${
             activeTab === "json"
               ? "border-slate-900 text-slate-900"
               : "border-transparent text-slate-400 hover:text-slate-600"
@@ -185,7 +185,7 @@ export function SyncPlayground() {
         </button>
         <button
           onClick={() => setActiveTab("headers")}
-          className={`pb-2.5 font-bold cursor-pointer transition-colors border-b-2 ${
+          className={`pb-2.5 font-bold cursor-pointer transition-colors border-b-2 shrink-0 ${
             activeTab === "headers"
               ? "border-slate-900 text-slate-900"
               : "border-transparent text-slate-400 hover:text-slate-600"
@@ -200,7 +200,7 @@ export function SyncPlayground() {
         <div className="space-y-4">
           {mode === "with_phase11" ? (
             /* Success State: Provisional Dossier Rendering */
-            <div className="p-5 rounded-xl border border-emerald-200 bg-white space-y-4 shadow-xs">
+            <div className="p-4 sm:p-5 rounded-xl border border-emerald-200 bg-white space-y-4 shadow-xs">
               {/* Amber Provisional Warning Banner */}
               <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-3">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -218,11 +218,11 @@ export function SyncPlayground() {
               </div>
 
               {/* Entity Overview Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 font-mono text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                   <div className="text-[10px] text-slate-400 uppercase font-bold">Verdict</div>
                   <div className="text-sm font-bold text-rose-600 mt-1 flex items-center gap-1.5">
-                    <ShieldAlert className="w-4 h-4" />
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
                     HIGH RISK (0.642)
                   </div>
                   <div className="text-[10px] text-slate-500 mt-0.5">Composite Score</div>
@@ -252,20 +252,20 @@ export function SyncPlayground() {
               </div>
 
               {/* Forensic Status Chip */}
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 font-mono">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100 font-mono">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                   <span className="text-slate-700 font-semibold">Zero 404s Achieved</span>
                   <span>&bull; In-memory synchronization latency: 1.4ms</span>
                 </div>
-                <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">
+                <span className="self-start sm:self-auto text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">
                   INVESTIGATION PROCEEDING
                 </span>
               </div>
             </div>
           ) : (
             /* Failure State: 404 Forensic Crisis Rendering */
-            <div className="p-5 rounded-xl border border-rose-200 bg-rose-50/40 space-y-4 shadow-xs">
+            <div className="p-4 sm:p-5 rounded-xl border border-rose-200 bg-rose-50/40 space-y-4 shadow-xs">
               <div className="p-4 rounded-lg bg-white border border-rose-200 flex items-start gap-3">
                 <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                 <div className="space-y-1.5 text-xs">
@@ -273,7 +273,7 @@ export function SyncPlayground() {
                     HTTP 404 Not Found &mdash; Unsynchronized Memory Store
                   </div>
                   <p className="text-rose-800 leading-relaxed">
-                    The operator clicked an alert for wallet <code className="font-mono bg-rose-100 px-1 py-0.5 rounded text-[11px] text-rose-950 font-bold">{sampleWallet}</code> immediately after Celery finished bulk ingestion.
+                    The operator clicked an alert for wallet <code className="font-mono bg-rose-100 px-1 py-0.5 rounded text-[11px] text-rose-950 font-bold break-all">{sampleWallet}</code> immediately after Celery finished bulk ingestion.
                   </p>
                   <p className="text-slate-600 leading-relaxed">
                     <strong>Why this occurred:</strong> Celery inserted the row into PostgreSQL, but ran inside an isolated OS worker process. FastAPI&rsquo;s in-memory <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-900">xai_store</code> was loaded once at startup and received no notification. The entity is absent from RAM, triggering an instant 404 exception.

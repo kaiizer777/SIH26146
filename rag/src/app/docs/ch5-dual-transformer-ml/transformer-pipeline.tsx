@@ -196,7 +196,7 @@ export function TransformerPipeline() {
           </div>
 
           {/* Model Toggle Buttons */}
-          <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 shadow-2xs self-start">
+          <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 shadow-2xs self-start flex-wrap sm:flex-nowrap max-w-full overflow-x-auto">
             <button
               onClick={() => {
                 setActiveModel("ft");
@@ -327,7 +327,7 @@ export function TransformerPipeline() {
 
         {/* RIGHT: Detailed Step Inspector Card */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 shadow-2xs space-y-4 sticky top-20">
+          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 shadow-2xs space-y-4 lg:sticky lg:top-20">
             {/* Header of Inspector */}
             <div className="border-b border-slate-200 pb-3">
               <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-slate-500">

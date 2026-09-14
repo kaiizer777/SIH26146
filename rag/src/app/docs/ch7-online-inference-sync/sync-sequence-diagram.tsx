@@ -250,8 +250,8 @@ export function SyncSequenceDiagram() {
         </div>
       </div>
 
-      {/* Step Pills Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+      {/* Step Controls */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {STEPS.map((s) => {
           const isActive = s.step === activeStep;
           const isPassed = s.step < activeStep;
@@ -284,8 +284,8 @@ export function SyncSequenceDiagram() {
       </div>
 
       {/* 4 Process Pillars Visual Diagram */}
-      <div className="p-5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <div className="p-4 sm:p-5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {ACTORS.map((actor) => {
             const Icon = actor.icon;
             const isSource = current.source.toLowerCase().includes(actor.id);
@@ -304,7 +304,7 @@ export function SyncSequenceDiagram() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div
-                      className={`w-7 h-7 rounded flex items-center justify-center ${
+                      className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
                         isCurrentInvolved ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
                       }`}
                     >
@@ -316,7 +316,7 @@ export function SyncSequenceDiagram() {
                     </div>
                   </div>
                   {isCurrentInvolved && (
-                    <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />
+                    <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping shrink-0" />
                   )}
                 </div>
 
@@ -340,21 +340,21 @@ export function SyncSequenceDiagram() {
 
         {/* Dynamic Action Banner between Source and Target */}
         <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 font-mono text-xs">
-              <span className="font-bold text-slate-900 uppercase">TRANSMISSION:</span>
+          <div className="space-y-1 w-full md:w-auto">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 font-mono text-xs">
+              <span className="font-bold text-slate-900 uppercase shrink-0">TRANSMISSION:</span>
               <span className="text-sky-700 font-semibold">{current.source}</span>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span className="text-indigo-700 font-semibold">{current.target}</span>
             </div>
             <div className="text-xs text-slate-600">
-              <code className="font-mono text-[11px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-900 font-semibold">
+              <code className="font-mono text-[11px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-900 font-semibold break-all sm:break-normal">
                 {current.action}
               </code>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-[11px] bg-slate-50 px-3 py-1.5 rounded border border-slate-200">
+          <div className="flex items-center gap-2 font-mono text-[11px] bg-slate-50 px-3 py-1.5 rounded border border-slate-200 self-start md:self-auto shrink-0">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span className="text-slate-500">PROTOCOL:</span>
             <span className="text-slate-900 font-semibold">{current.protocol}</span>

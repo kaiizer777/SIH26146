@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,8 +15,7 @@ import {
   Database,
   ChevronRight,
   Search,
-  Sparkles,
-  Layers,
+  X,
 } from "lucide-react";
 
 interface ChapterItem {
@@ -118,11 +118,17 @@ const CHAPTER_GROUPS: { group: string; prefix: string; items: ChapterItem[] }[] 
   },
 ];
 
-export function DocsSidebar() {
-  const pathname = usePathname();
-
+function SidebarInner({
+  pathname,
+  onClose,
+  isMobile,
+}: {
+  pathname: string;
+  onClose?: () => void;
+  isMobile?: boolean;
+}) {
   return (
-    <aside className="w-[320px] flex-shrink-0 border-r border-slate-200/90 bg-gradient-to-b from-slate-50/95 via-slate-50/60 to-slate-100/80 flex flex-col h-screen sticky top-0 select-none backdrop-blur-sm z-30 overflow-hidden">
+    <>
       {/* Sovereign Platform Header Identification */}
       <div className="p-3.5 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shrink-0">
         <div className="flex items-center justify-between mb-2.5">
@@ -140,14 +146,28 @@ export function DocsSidebar() {
               </div>
             </div>
           </div>
-          <span className="px-[7px] py-[2px] text-[9px] font-mono font-bold bg-blue-50 text-blue-700 rounded-[5px] border border-blue-200/80 shadow-2xs">
-            v2.4-SEC
-          </span>
+          <div className="flex items-center space-x-1.5">
+            <span className="px-[7px] py-[2px] text-[9px] font-mono font-bold bg-blue-50 text-blue-700 rounded-[5px] border border-blue-200/80 shadow-2xs">
+              v2.4-SEC
+            </span>
+            {isMobile && onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1 text-slate-500 hover:text-slate-900 rounded-md hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200/80"
+                aria-label="Close navigation menu"
+                title="Close Navigation"
+              >
+                <X className="w-4 h-4 text-slate-700" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Tactical Search / Query Trigger - Fixed in active tactile state with zero hover twitch */}
+        {/* Tactical Search / Query Trigger */}
         <button
           onClick={() => {
+            onClose?.();
             window.dispatchEvent(
               new KeyboardEvent("keydown", {
                 key: "k",
@@ -171,7 +191,7 @@ export function DocsSidebar() {
         </button>
       </div>
 
-      {/* Chapters Navigation - Gracefully distributed across full 100vh */}
+      {/* Chapters Navigation - Distributed cleanly */}
       <div className="flex-1 flex flex-col justify-between px-3 py-3 overflow-y-auto no-scrollbar">
         {CHAPTER_GROUPS.map((group) => (
           <div key={group.group} className="space-y-[5px]">
@@ -188,6 +208,7 @@ export function DocsSidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={() => onClose?.()}
                     className={`relative flex items-center justify-between px-2.5 py-[8.5px] rounded-[10px] text-[11px] outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
                       isActive
                         ? "bg-white border border-blue-200/90 shadow-[0_2px_8px_rgba(37,99,235,0.08),0_1px_2px_rgba(15,23,42,0.04)]"
@@ -255,7 +276,86 @@ export function DocsSidebar() {
         </div>
         <span className="text-[9px] text-slate-400 font-mono tracking-tight">FIPS-140-3</span>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function DocsSidebar() {
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handleToggle = () => setIsOpen((prev) => !prev);
+    const handleClose = () => setIsOpen(false);
+
+    window.addEventListener("ntro:toggle-docs-sidebar", handleToggle);
+    window.addEventListener("ntro:close-docs-sidebar", handleClose);
+
+    return () => {
+      window.removeEventListener("ntro:toggle-docs-sidebar", handleToggle);
+      window.removeEventListener("ntro:close-docs-sidebar", handleClose);
+    };
+  }, []);
+
+  // Auto-close on route change (render-time state adjustment)
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setIsOpen(false);
+  }
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      {/* 1. Desktop Sticky 100vh Sidebar (>= 1024px / lg) - 100% UNTOUCHED on PC */}
+      <aside className="w-[320px] flex-shrink-0 border-r border-slate-200/90 bg-gradient-to-b from-slate-50/95 via-slate-50/60 to-slate-100/80 flex-col h-screen sticky top-0 select-none backdrop-blur-sm z-30 overflow-hidden hidden lg:flex">
+        <SidebarInner pathname={pathname} />
+      </aside>
+
+      {/* 2. Mobile Slide-Over Sheet / Drawer (< 1024px / lg) */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs transition-opacity duration-200"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Slide-over Drawer Sheet */}
+          <aside
+            className="fixed inset-y-0 left-0 w-[300px] sm:w-[320px] max-w-[85vw] bg-white border-r border-slate-200/90 shadow-2xl flex flex-col h-full overflow-hidden z-50 animate-in slide-in-from-left duration-200 select-none"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Documentation Navigation"
+          >
+            <SidebarInner pathname={pathname} onClose={() => setIsOpen(false)} isMobile />
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
 

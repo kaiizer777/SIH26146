@@ -243,7 +243,7 @@ export function LegalCertificateViewer() {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
       {/* Header Bar */}
-      <div className="bg-slate-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800">
+      <div className="bg-slate-900 text-white px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold tracking-wider uppercase border border-emerald-400/30">
@@ -259,8 +259,8 @@ export function LegalCertificateViewer() {
         </div>
 
         {/* Entity Selector */}
-        <div className="flex items-center gap-2">
-          <label htmlFor="entity-select" className="text-xs font-mono text-slate-400">Target:</label>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <label htmlFor="entity-select" className="text-xs font-mono text-slate-400 shrink-0">Target:</label>
           <select
             id="entity-select"
             value={selectedEntityIndex}
@@ -269,7 +269,7 @@ export function LegalCertificateViewer() {
               setIsTampered(false);
               setVerificationStatus("idle");
             }}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-mono border border-slate-700 cursor-pointer focus:outline-hidden focus:border-slate-500"
+            className="w-full sm:w-auto max-w-full px-2.5 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-mono border border-slate-700 cursor-pointer focus:outline-hidden focus:border-slate-500"
           >
             {SAMPLE_ENTITIES.map((ent, idx) => (
               <option key={ent.address} value={idx}>
@@ -281,12 +281,12 @@ export function LegalCertificateViewer() {
       </div>
 
       {/* Action & Verification Ribbon */}
-      <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Tab Controls */}
-        <div className="flex items-center gap-1.5 font-mono text-xs">
+        <div className="flex items-center gap-1.5 font-mono text-xs overflow-x-auto max-w-full pb-1 sm:pb-0 w-full sm:w-auto shrink-0">
           <button
             onClick={() => setActiveTab("certificate")}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === "certificate"
                 ? "bg-slate-900 text-white shadow-xs font-bold"
                 : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
@@ -297,7 +297,7 @@ export function LegalCertificateViewer() {
           </button>
           <button
             onClick={() => setActiveTab("json")}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === "json"
                 ? "bg-slate-900 text-white shadow-xs font-bold"
                 : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
@@ -308,7 +308,7 @@ export function LegalCertificateViewer() {
           </button>
           <button
             onClick={() => setActiveTab("custody")}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === "custody"
                 ? "bg-slate-900 text-white shadow-xs font-bold"
                 : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
@@ -320,7 +320,7 @@ export function LegalCertificateViewer() {
         </div>
 
         {/* Tactical Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Integrity Test Button */}
           <button
             onClick={verifyIntegrity}
@@ -381,7 +381,7 @@ export function LegalCertificateViewer() {
       {/* Live Verification Status Banner */}
       {verificationStatus !== "idle" && (
         <div
-          className={`px-5 py-3 text-xs font-mono flex items-center justify-between border-b transition-all ${
+          className={`px-4 sm:px-5 py-3 text-xs font-mono flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b transition-all ${
             verificationStatus === "valid"
               ? "bg-emerald-50 text-emerald-800 border-emerald-200"
               : verificationStatus === "tampered"
@@ -389,13 +389,13 @@ export function LegalCertificateViewer() {
               : "bg-slate-100 text-slate-700 border-slate-200"
           }`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-start sm:items-center gap-2">
             {verificationStatus === "valid" ? (
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
             ) : verificationStatus === "tampered" ? (
-              <ShieldAlert className="w-4 h-4 text-rose-600" />
+              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5 sm:mt-0" />
             ) : (
-              <RefreshCw className="w-4 h-4 animate-spin text-slate-600" />
+              <RefreshCw className="w-4 h-4 animate-spin text-slate-600 shrink-0 mt-0.5 sm:mt-0" />
             )}
             <div>
               {verificationStatus === "valid" && (
@@ -414,54 +414,54 @@ export function LegalCertificateViewer() {
             </div>
           </div>
 
-          <div className="font-mono text-[11px] font-bold">
-            {verificationStatus === "valid" && <span className="text-emerald-700">STATUS: 200 VERIFIED</span>}
-            {verificationStatus === "tampered" && <span className="text-rose-700">STATUS: 409 COMPROMISED</span>}
+          <div className="font-mono text-[11px] font-bold self-start sm:self-auto shrink-0">
+            {verificationStatus === "valid" && <span className="text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">STATUS: 200 VERIFIED</span>}
+            {verificationStatus === "tampered" && <span className="text-rose-700 bg-rose-100/70 px-2 py-0.5 rounded">STATUS: 409 COMPROMISED</span>}
           </div>
         </div>
       )}
 
       {/* Tab Content 1: Official Certificate View */}
       {activeTab === "certificate" && (
-        <div className="p-6 sm:p-8 bg-slate-50/40">
+        <div className="p-3 sm:p-6 lg:p-8 bg-slate-50/40 overflow-x-auto">
           {/* Certificate Container with official styling */}
-          <div className="max-w-3xl mx-auto bg-white border-2 border-slate-900 p-6 sm:p-8 shadow-md relative">
+          <div className="max-w-3xl mx-auto bg-white border-2 border-slate-900 p-4 sm:p-6 lg:p-8 shadow-md relative min-w-0">
             {/* Watermark */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-4">
-              <div className="transform -rotate-25 text-5xl sm:text-6xl font-black text-slate-900 tracking-widest uppercase">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-4 overflow-hidden">
+              <div className="transform -rotate-25 text-2xl xs:text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-widest uppercase select-none text-center">
                 COURT ADMISSIBLE • SEC 65B
               </div>
             </div>
 
             {/* Official Header */}
             <div className="text-center border-b-2 border-slate-900 pb-5 space-y-1 relative z-10">
-              <div className="text-xs font-mono font-bold uppercase tracking-widest text-slate-500">
+              <div className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest text-slate-500">
                 GOVERNMENT OF INDIA • NATIONAL TECHNICAL RESEARCH ORGANISATION (NTRO)
               </div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-slate-950 uppercase tracking-tight">
+              <h2 className="text-base sm:text-xl font-extrabold text-slate-950 uppercase tracking-tight">
                 Certificate of Admissibility of Electronic Records
               </h2>
-              <div className="text-xs font-mono font-semibold text-slate-700">
+              <div className="text-[11px] sm:text-xs font-mono font-semibold text-slate-700">
                 Issued Pursuant to Section 65B Indian Evidence Act, 1872 &amp; Section 63 Bharatiya Sakshya Adhiniyam, 2023
               </div>
             </div>
 
             {/* Certificate Metadata Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-4 border-b border-slate-200 text-[11px] font-mono relative z-10 bg-slate-50/70 p-3 my-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 py-3 sm:py-4 border-b border-slate-200 text-[11px] font-mono relative z-10 bg-slate-50/70 p-3 my-4">
               <div>
-                <span className="text-slate-400 uppercase">Dossier ID</span>
-                <div className="font-bold text-slate-900">{canonicalPayload.certificate_id}</div>
+                <span className="text-slate-400 uppercase text-[10px]">Dossier ID</span>
+                <div className="font-bold text-slate-900 break-all">{canonicalPayload.certificate_id}</div>
               </div>
               <div>
-                <span className="text-slate-400 uppercase">Sovereign Node</span>
-                <div className="font-bold text-slate-900">{canonicalPayload.air_gap_attestation.runtime_node}</div>
+                <span className="text-slate-400 uppercase text-[10px]">Sovereign Node</span>
+                <div className="font-bold text-slate-900 break-all">{canonicalPayload.air_gap_attestation.runtime_node}</div>
               </div>
               <div>
-                <span className="text-slate-400 uppercase">Generated IST</span>
+                <span className="text-slate-400 uppercase text-[10px]">Generated IST</span>
                 <div className="font-bold text-slate-900">13-SEP-2026 20:04 IST</div>
               </div>
               <div>
-                <span className="text-slate-400 uppercase">Classification</span>
+                <span className="text-slate-400 uppercase text-[10px]">Classification</span>
                 <div className="font-bold text-rose-700">SECRET • LEO SENSITIVE</div>
               </div>
             </div>
@@ -505,14 +505,14 @@ export function LegalCertificateViewer() {
                 </div>
                 <div className="p-3 rounded bg-slate-50 border border-slate-200 space-y-2 font-mono text-[11px]">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-200/80 pb-1.5">
-                    <span className="text-slate-600 font-semibold">FT-Transformer Checksum:</span>
-                    <code className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-800">
+                    <span className="text-slate-600 font-semibold shrink-0">FT-Transformer Checksum:</span>
+                    <code className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-800 break-all">
                       {MODEL_WEIGHTS_CHECKSUMS.ft_transformer}
                     </code>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <span className="text-slate-600 font-semibold">Graph Transformer Checksum:</span>
-                    <code className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-800">
+                    <span className="text-slate-600 font-semibold shrink-0">Graph Transformer Checksum:</span>
+                    <code className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-800 break-all">
                       {MODEL_WEIGHTS_CHECKSUMS.graph_transformer}
                     </code>
                   </div>
@@ -531,7 +531,7 @@ export function LegalCertificateViewer() {
 
               {/* 4. Digital Signature & Checksum Stamp */}
               <div className="p-3.5 rounded bg-slate-900 text-white font-mono space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-[11px] flex-wrap gap-1">
                   <span className="text-emerald-400 font-bold flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5" /> CANONICAL SHA-256 DIGITAL SEAL
                   </span>
@@ -540,14 +540,14 @@ export function LegalCertificateViewer() {
                 <div className="bg-black/50 p-2.5 rounded text-[11px] text-emerald-300 break-all font-mono tracking-wider">
                   {isTampered ? liveDigest : sealedOriginalDigest}
                 </div>
-                <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1">
+                <div className="text-[10px] text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-1">
                   <span>Signer: NTRO Cyber &amp; Technical Directorate Automated Custody Engine</span>
                   <span>Algorithm: FIPS 180-4 SHA-256</span>
                 </div>
               </div>
 
               {/* Official Signatures Row */}
-              <div className="pt-6 grid grid-cols-2 gap-8 text-center text-xs font-mono">
+              <div className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 text-center text-xs font-mono">
                 <div className="border-t border-slate-400 pt-2 space-y-1">
                   <div className="font-bold text-slate-900">Dr. Rajesh V. Sharma, Sc. 'G'</div>
                   <div className="text-[10px] text-slate-500">Chief Cryptographic Systems Custodian</div>

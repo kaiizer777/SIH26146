@@ -222,68 +222,141 @@ body {
 }
 
 /* =========================================================================
-   SCALED DOCUMENTATION VIEWPORT (1.25x Proportional Scale)
+   SCALED DOCUMENTATION VIEWPORT
    ========================================================================= */
-.docs-main-container h1 {
-  font-size: 45px !important;
-  line-height: 52px !important;
+
+/* Mobile scaling (< 768px): clean, proportional typography preventing overflow on 320px-767px */
+@media (max-width: 767px) {
+  .docs-main-container h1 {
+    font-size: 28px !important;
+    line-height: 34px !important;
+    word-break: break-word;
+  }
+
+  .docs-main-container h2 {
+    font-size: 20px !important;
+    line-height: 26px !important;
+    word-break: break-word;
+  }
+
+  .docs-main-container h3 {
+    font-size: 17px !important;
+    line-height: 23px !important;
+    word-break: break-word;
+  }
+
+  .docs-main-container p {
+    font-size: 15px !important;
+    line-height: 24px !important;
+  }
+
+  .docs-main-container code {
+    font-size: 12.5px !important;
+    word-break: break-word;
+  }
+
+  .docs-main-container .text-\[10px\] {
+    font-size: 10px !important;
+  }
+
+  .docs-main-container .text-\[11px\] {
+    font-size: 11px !important;
+  }
+
+  .docs-main-container .text-xs {
+    font-size: 12px !important;
+    line-height: 16px !important;
+  }
+
+  .docs-main-container .text-sm {
+    font-size: 13.5px !important;
+    line-height: 20px !important;
+  }
+
+  .docs-main-container .text-base {
+    font-size: 15px !important;
+    line-height: 22px !important;
+  }
+
+  .docs-main-container .text-xl {
+    font-size: 18px !important;
+    line-height: 24px !important;
+  }
+
+  .docs-main-container .text-3xl {
+    font-size: 24px !important;
+    line-height: 30px !important;
+  }
+
+  .docs-main-container .text-4xl {
+    font-size: 28px !important;
+    line-height: 34px !important;
+  }
 }
 
-.docs-main-container h2 {
-  font-size: 25px !important;
-  line-height: 32px !important;
-}
+/* Desktop & Tablet scaled viewport (>= 768px): 1.25x Proportional Scale (100% UNTOUCHED) */
+@media (min-width: 768px) {
+  .docs-main-container h1 {
+    font-size: 45px !important;
+    line-height: 52px !important;
+  }
 
-.docs-main-container h3 {
-  font-size: 20px !important;
-  line-height: 28px !important;
-}
+  .docs-main-container h2 {
+    font-size: 25px !important;
+    line-height: 32px !important;
+  }
 
-.docs-main-container p {
-  font-size: 17.5px !important;
-  line-height: 28px !important;
-}
+  .docs-main-container h3 {
+    font-size: 20px !important;
+    line-height: 28px !important;
+  }
 
-.docs-main-container code {
-  font-size: 14px !important;
-}
+  .docs-main-container p {
+    font-size: 17.5px !important;
+    line-height: 28px !important;
+  }
 
-.docs-main-container .text-\[10px\] {
-  font-size: 12.5px !important;
-}
+  .docs-main-container code {
+    font-size: 14px !important;
+  }
 
-.docs-main-container .text-\[11px\] {
-  font-size: 13.75px !important;
-}
+  .docs-main-container .text-\[10px\] {
+    font-size: 12.5px !important;
+  }
 
-.docs-main-container .text-xs {
-  font-size: 15px !important;
-  line-height: 20px !important;
-}
+  .docs-main-container .text-\[11px\] {
+    font-size: 13.75px !important;
+  }
 
-.docs-main-container .text-sm {
-  font-size: 17.5px !important;
-  line-height: 26px !important;
-}
+  .docs-main-container .text-xs {
+    font-size: 15px !important;
+    line-height: 20px !important;
+  }
 
-.docs-main-container .text-base {
-  font-size: 20px !important;
-  line-height: 30px !important;
-}
+  .docs-main-container .text-sm {
+    font-size: 17.5px !important;
+    line-height: 26px !important;
+  }
 
-.docs-main-container .text-xl {
-  font-size: 25px !important;
-  line-height: 32px !important;
-}
+  .docs-main-container .text-base {
+    font-size: 20px !important;
+    line-height: 30px !important;
+  }
 
-.docs-main-container .text-3xl {
-  font-size: 37.5px !important;
-  line-height: 44px !important;
-}
+  .docs-main-container .text-xl {
+    font-size: 25px !important;
+    line-height: 32px !important;
+  }
 
-.docs-main-container .text-4xl {
-  font-size: 45px !important;
-  line-height: 52px !important;
+  .docs-main-container .text-3xl {
+    font-size: 37.5px !important;
+    line-height: 44px !important;
+  }
+
+  .docs-main-container .text-4xl {
+    font-size: 45px !important;
+    line-height: 52px !important;
+  }
 }
 
 /* AuthGate Shake Animation for Invalid Attempts */

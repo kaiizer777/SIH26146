@@ -39,20 +39,22 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    try {
-      const cookieToken = getCookie(AUTH_STORAGE_KEY);
-      // Cookie is the source of truth
-      if (cookieToken === MASTER_PASSCODE) {
-        setIsAuthenticated(true);
-      } else {
-        // If cookie was cleared or not set, wipe storage so it locks immediately!
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    queueMicrotask(() => {
+      try {
+        const cookieToken = getCookie(AUTH_STORAGE_KEY);
+        // Cookie is the source of truth
+        if (cookieToken === MASTER_PASSCODE) {
+          setIsAuthenticated(true);
+        } else {
+          // If cookie was cleared or not set, wipe storage so it locks immediately!
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          sessionStorage.removeItem(AUTH_STORAGE_KEY);
+          setIsAuthenticated(false);
+        }
+      } catch {
         setIsAuthenticated(false);
       }
-    } catch {
-      setIsAuthenticated(false);
-    }
+    });
   }, []);
 
   useEffect(() => {
@@ -128,44 +130,44 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       <div className="absolute inset-0 bg-radial-[circle_at_50%_18%] from-blue-50/60 via-transparent to-slate-100/70 pointer-events-none" />
 
       {/* Top Sovereign Header (Matches DocsHeader aesthetic) */}
-      <header className="w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md px-6 py-3.5 flex items-center justify-between z-10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200/90 flex items-center justify-center shadow-xs">
+      <header className="w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between z-10 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+        <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 border border-blue-200/90 flex items-center justify-center shadow-xs shrink-0">
             <Shield className="w-4 h-4 text-blue-600" />
           </div>
-          <div>
-            <div className="text-[12px] font-mono font-bold tracking-wider text-slate-950 uppercase">
+          <div className="min-w-0">
+            <div className="text-[11.5px] sm:text-[12px] font-mono font-bold tracking-wider text-slate-950 uppercase truncate">
               NTRO Forensic Intelligence Suite
             </div>
-            <div className="text-[10px] text-slate-500 font-mono tracking-wide">
+            <div className="text-[9.5px] sm:text-[10px] text-slate-500 font-mono tracking-wide truncate max-w-[210px] xs:max-w-[280px] sm:max-w-none">
               Bitcoin Forensic Engine • Classified Knowledge Base
             </div>
           </div>
         </div>
-        <div className="hidden sm:flex items-center space-x-2 text-[10.5px] font-mono text-slate-700 bg-slate-50 px-3 py-1.5 rounded-[7px] border-t border-t-white border-x border-slate-200 border-b border-b-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+        <div className="hidden sm:flex items-center space-x-2 text-[10.5px] font-mono text-slate-700 bg-slate-50 px-3 py-1.5 rounded-[7px] border-t border-t-white border-x border-slate-200 border-b border-b-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.03)] shrink-0">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-semibold text-slate-800">Air-Gapped Enclave Clearance: Required</span>
         </div>
       </header>
 
       {/* Center Clearance Card */}
-      <main className="flex-1 flex items-center justify-center px-4 py-10 z-10">
+      <main className="flex-1 flex items-center justify-center px-3 sm:px-4 py-6 sm:py-10 z-10">
         <div
-          className={`w-full max-w-[430px] bg-white border-t border-t-white border-x border-slate-200/90 border-b border-b-slate-300 rounded-2xl p-7 sm:p-8 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] relative ${
+          className={`w-full max-w-[430px] bg-white border-t border-t-white border-x border-slate-200/90 border-b border-b-slate-300 rounded-2xl p-5 sm:p-8 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08),0_1px_3px_rgba(15,23,42,0.04)] relative ${
             error ? "animate-shake" : ""
           }`}
         >
           {/* Card Top Presentation */}
-          <div className="flex flex-col items-center text-center mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 text-white border-t border-t-blue-300/80 border-x border-x-blue-600/80 border-b border-b-blue-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_rgba(37,99,235,0.25)] flex items-center justify-center mb-3">
-              <KeyRound className="w-5 h-5 text-white" />
+          <div className="flex flex-col items-center text-center mb-5 sm:mb-6">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 text-white border-t border-t-blue-300/80 border-x border-x-blue-600/80 border-b border-b-blue-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_rgba(37,99,235,0.25)] flex items-center justify-center mb-2.5 sm:mb-3">
+              <KeyRound className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-[10.5px] font-mono font-bold tracking-wider text-blue-700 uppercase mb-2.5">
-              <Shield className="w-3.5 h-3.5 text-blue-600" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-blue-50 border border-blue-200/80 text-[9.5px] sm:text-[10.5px] font-mono font-bold tracking-wider text-blue-700 uppercase mb-2">
+              <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
               <span>Sovereign Enclave Access</span>
             </div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-950">Enter Access Passcode</h2>
-            <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-950">Enter Access Passcode</h2>
+            <p className="text-[11.5px] sm:text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
               Enter your authorization passcode to unlock the classified intelligence dossier and neural copilot.
             </p>
           </div>
@@ -174,15 +176,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           <form onSubmit={handleUnlock} className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[11px] font-mono uppercase tracking-wider text-slate-700 font-bold">
+                <label className="block text-[10.5px] sm:text-[11px] font-mono uppercase tracking-wider text-slate-700 font-bold">
                   Authorization Passcode
                 </label>
-                <span className="text-[10px] font-mono text-slate-400 font-semibold">
+                <span className="text-[9.5px] sm:text-[10px] font-mono text-slate-400 font-semibold">
                   5 DIGITS
                 </span>
               </div>
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <div className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                   <Lock className="w-4 h-4 text-slate-400" />
                 </div>
                 <input
@@ -199,13 +201,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     error
                       ? "border-red-500 ring-2 ring-red-500/20 text-red-900 bg-red-50/40"
                       : "border-slate-300/90 focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-500/15 text-slate-900"
-                  } rounded-xl pl-10 pr-11 py-3 font-mono text-center sm:text-left text-base tracking-[0.25em] outline-none transition-all placeholder:font-sans placeholder:tracking-normal placeholder:text-xs placeholder:text-slate-400 shadow-[inset_0_1.5px_2.5px_rgba(15,23,42,0.06),0_1px_0_rgba(255,255,255,0.9)]`}
+                  } rounded-xl pl-9 pr-10 sm:pl-10 sm:pr-11 py-2.5 sm:py-3 font-mono text-center sm:text-left text-sm sm:text-base tracking-[0.2em] sm:tracking-[0.25em] outline-none transition-all placeholder:font-sans placeholder:tracking-normal placeholder:text-xs placeholder:text-slate-400 shadow-[inset_0_1.5px_2.5px_rgba(15,23,42,0.06),0_1px_0_rgba(255,255,255,0.9)]`}
                   autoComplete="off"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+                  className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide passcode" : "Show passcode"}
                   title={showPassword ? "Hide passcode" : "Show passcode"}
@@ -232,16 +234,16 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 cursor-pointer accent-blue-600"
                 />
-                <span className="text-slate-700 text-[11.5px] font-medium">Remember on this terminal</span>
+                <span className="text-slate-700 text-[11px] sm:text-[11.5px] font-medium">Remember on this terminal</span>
               </label>
-              <span className="text-[10px] font-mono text-slate-400 font-semibold">30-DAY PERSIST</span>
+              <span className="text-[9.5px] sm:text-[10px] font-mono text-slate-400 font-semibold">30-DAY PERSIST</span>
             </div>
 
             {/* Tactical 3D Primary Button */}
             <button
               type="submit"
               disabled={isSubmitting || !passcode.trim()}
-              className="btn-tactical-primary w-full mt-2 py-3 px-4 rounded-xl text-white font-bold text-sm tracking-wide flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_3px_10px_rgba(30,64,175,0.25)]"
+              className="btn-tactical-primary w-full mt-2 py-2.5 sm:py-3 px-4 rounded-xl text-white font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_3px_10px_rgba(30,64,175,0.25)]"
             >
               {isSubmitting ? (
                 <>
@@ -259,21 +261,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           </form>
 
           {/* Air-Gap Sovereign Enclave Telemetry Badge Footer */}
-          <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between text-[10.5px] font-mono text-slate-500">
+          <div className="mt-5 pt-4 sm:mt-6 sm:pt-5 border-t border-slate-100 flex flex-wrap items-center justify-center sm:justify-between gap-1.5 sm:gap-2 text-[9.5px] sm:text-[10.5px] font-mono text-slate-500">
             <div className="flex items-center space-x-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-slate-700 font-semibold">AIR-GAP ISOLATION</span>
             </div>
-            <span className="text-slate-300">•</span>
+            <span className="text-slate-300 hidden sm:inline">•</span>
             <span className="text-slate-600 font-medium">AES-256 SESSION</span>
-            <span className="text-slate-300">•</span>
+            <span className="text-slate-300 hidden sm:inline">•</span>
             <span className="text-slate-600 font-medium">FIPS-140-3</span>
           </div>
         </div>
       </main>
 
       {/* Bottom Footer (Matches Sovereign Light Theme) */}
-      <footer className="w-full border-t border-slate-200/80 bg-white/80 py-3.5 px-6 text-center text-[10.5px] font-mono text-slate-500 z-10">
+      <footer className="w-full border-t border-slate-200/80 bg-white/80 py-2.5 sm:py-3.5 px-4 sm:px-6 text-center text-[9.5px] sm:text-[10.5px] font-mono text-slate-500 z-10 leading-tight">
         NTRO Sovereign Intelligence Operations • Authorized Personnel Only • Confidential
       </footer>
     </div>

@@ -270,7 +270,7 @@ export function ForensicCockpitPreview() {
               </div>
 
               <div className="divide-y divide-slate-100 overflow-x-auto">
-                <table className="w-full text-left font-mono text-xs">
+                <table className="w-full text-left font-mono text-xs min-w-[520px]">
                   <thead>
                     <tr className="bg-slate-100/75 text-[10px] text-slate-500 uppercase tracking-wider h-8">
                       <th className="px-3">Verdict</th>

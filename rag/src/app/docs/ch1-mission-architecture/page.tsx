@@ -50,26 +50,26 @@ export default function Chapter1Page() {
         </p>
 
         {/* Quick Spec Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Ransomwhere Seeds</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">11,186 Addrs</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">$1.018B Tracked</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-2">
+          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200/80 font-mono">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold truncate">Ransomwhere Seeds</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 truncate">11,186 Addrs</div>
+            <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">$1.018B Tracked</div>
           </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Ingest Throughput</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">11,938 rows/s</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">100k in 8.38s</div>
+          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200/80 font-mono">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold truncate">Ingest Throughput</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 truncate">11,938 rows/s</div>
+            <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">100k in 8.38s</div>
           </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Inference Engine</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">4.8ms CPU</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">Dual Transformer (F1: 0.921)</div>
+          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200/80 font-mono">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold truncate">Inference Engine</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 truncate">4.8ms CPU</div>
+            <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">Dual Transformer (F1: 0.921)</div>
           </div>
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">Air-Gap Integrity</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">0 External Calls</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">Local .woff2 / MMDB</div>
+          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200/80 font-mono">
+            <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold truncate">Air-Gap Integrity</div>
+            <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 truncate">0 External Calls</div>
+            <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">Local .woff2 / MMDB</div>
           </div>
         </div>
       </div>
@@ -297,7 +297,7 @@ export default function Chapter1Page() {
           <div className="text-sm sm:text-base font-bold text-slate-900 overflow-x-auto py-1">
             {"Risk = clip(0.35 * S_anom + 0.45 * P_gnn + 0.15 * R_rules + 0.05 * M_mix, 0.0, 1.0)"}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 text-xs border-t border-slate-200/80">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 text-xs border-t border-slate-200/80">
             <div>
               <span className="text-indigo-700 font-bold">0.35 &bull; S_anom</span>
               <div className="text-[11px] text-slate-500 font-sans mt-0.5">
@@ -352,84 +352,86 @@ export default function Chapter1Page() {
 
         {/* Tech Stack Breakdown Table */}
         <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 font-mono text-[11px] text-slate-700">
-                <th className="py-3 px-4 font-bold">Technology</th>
-                <th className="py-3 px-4 font-bold">Pinned Version</th>
-                <th className="py-3 px-4 font-bold">Operational Function</th>
-                <th className="py-3 px-4 font-bold">Architectural Rationale</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Server className="w-3.5 h-3.5 text-indigo-600" />
-                  FastAPI
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">0.115.x / Python 3.11</td>
-                <td className="py-3 px-4">Forensic REST API Gateway</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  Asynchronous I/O, Pydantic v2 data validation, lifespan management with clean Neo4j/Postgres pool teardown, and log address hashing middleware.
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
-                  Celery + Redis
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">Celery 5.4 / Redis 7-alpine</td>
-                <td className="py-3 px-4">Async Worker & Idempotency Broker</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  Decouples CPU-heavy multipart CSV/JSON/XML parsing and MaxMind GeoIP lookups. Redis <code className="font-mono text-[10px]">SETNX</code> locks prevent duplicate file execution.
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Database className="w-3.5 h-3.5 text-blue-600" />
-                  PostgreSQL
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">16-alpine</td>
-                <td className="py-3 px-4">Relational Ledger & Temporal Index</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  ACID durability for raw transactions. Native arrays (<code className="font-mono text-[10px]">input_addresses</code>, <code className="font-mono text-[10px]">output_amounts</code>) eliminate unnecessary join tables during bulk COPY ingest (11k+ rows/s).
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Network className="w-3.5 h-3.5 text-amber-600" />
-                  Neo4j Community + GDS
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">Neo4j 5.26 / GDS 2.13.x</td>
-                <td className="py-3 px-4">Graph Topology & Community Detection</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  In-memory graph projection of <code className="font-mono text-[10px]">:CO_SPEND</code> edges. Executes Louvain modularity and Personalized PageRank over seed ransomware clusters.
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Cpu className="w-3.5 h-3.5 text-purple-600" />
-                  PyTorch + PyG
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">Torch 2.4.1+cpu / PyG 2.6.1</td>
-                <td className="py-3 px-4">Deep Learning Inference Runtime</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  CPU-optimized sovereign Dual Transformer pipeline (FT-Transformer + PyG TransformerConv) running in 4.8ms composite CPU latency with 231 KB weights (fitting in CPU L3 cache), eliminating GPU driver and CUDA compatibility risks in air-gapped field hardware.
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                  <Terminal className="w-3.5 h-3.5 text-sky-600" />
-                  Next.js + Tailwind
-                </td>
-                <td className="py-3 px-4 font-mono font-semibold text-slate-900">Next 16 / Tailwind 4</td>
-                <td className="py-3 px-4">Forensic Surveillance Command Center</td>
-                <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  App Router with zero runtime CDN calls. D3.js force-directed graph canvas with GNN attention highlighting, tactile HUD inspector, and SHAP waterfall chart.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="overflow-x-auto w-full max-w-full overscroll-x-contain">
+            <table className="w-full text-left text-xs border-collapse min-w-[640px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 font-mono text-[11px] text-slate-700">
+                  <th className="py-3 px-4 font-bold">Technology</th>
+                  <th className="py-3 px-4 font-bold">Pinned Version</th>
+                  <th className="py-3 px-4 font-bold">Operational Function</th>
+                  <th className="py-3 px-4 font-bold">Architectural Rationale</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                <tr className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                    <Server className="w-3.5 h-3.5 text-indigo-600" />
+                    FastAPI
+                  </td>
+                  <td className="py-3 px-4 font-mono font-semibold text-slate-900">0.115.x / Python 3.11</td>
+                  <td className="py-3 px-4">Forensic REST API Gateway</td>
+                  <td className="py-3 px-4 text-slate-600 leading-relaxed">
+                    Asynchronous I/O, Pydantic v2 data validation, lifespan management with clean Neo4j/Postgres pool teardown, and log address hashing middleware.
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                    <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
+                    Celery + Redis
+                  </td>
+                  <td className="py-3 px-4 font-mono font-semibold text-slate-900">Celery 5.4 / Redis 7-alpine</td>
+                  <td className="py-3 px-4">Async Worker & Idempotency Broker</td>
+                  <td className="py-3 px-4 text-slate-600 leading-relaxed">
+                    Decouples CPU-heavy multipart CSV/JSON/XML parsing and MaxMind GeoIP lookups. Redis <code className="font-mono text-[10px]">SETNX</code> locks prevent duplicate file execution.
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                    <Database className="w-3.5 h-3.5 text-blue-600" />
+                    PostgreSQL
+                  </td>
+                  <td className="py-3 px-4 font-mono font-semibold text-slate-900">16-alpine</td>
+                  <td className="py-3 px-4">Relational Ledger & Temporal Index</td>
+                  <td className="py-3 px-4 text-slate-600 leading-relaxed">
+                    ACID durability for raw transactions. Native arrays (<code className="font-mono text-[10px]">input_addresses</code>, <code className="font-mono text-[10px]">output_amounts</code>) eliminate unnecessary join tables during bulk COPY ingest (11k+ rows/s).
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                    <Network className="w-3.5 h-3.5 text-amber-600" />
+                    Neo4j Community + GDS
+                  </td>
+                  <td className="py-3 px-4 font-mono font-semibold text-slate-900">Neo4j 5.26 / GDS 2.13.x</td>
+                  <td className="py-3 px-4">Graph Topology & Community Detection</td>
+                  <td className="py-3 px-4 text-slate-600 leading-relaxed">
+                    In-memory graph projection of <code className="font-mono text-[10px]">:CO_SPEND</code> edges. Executes Louvain modularity and Personalized PageRank over seed ransomware clusters.
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                    <Cpu className="w-3.5 h-3.5 text-purple-600" />
+                    PyTorch + PyG
+                  </td>
+                  <td className="py-3 px-4 font-mono font-semibold text-slate-900">Torch 2.4.1+cpu / PyG 2.6.1</td>
+                  <td className="py-3 px-4">Deep Learning Inference Runtime</td>
+                  <td className="py-3 px-4 text-slate-600 leading-relaxed">
+                    CPU-optimized sovereign Dual Transformer pipeline (FT-Transformer + PyG TransformerConv) running in 4.8ms composite CPU latency with 231 KB weights (fitting in CPU L3 cache), eliminating GPU driver and CUDA compatibility risks in air-gapped field hardware.
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                    <Terminal className="w-3.5 h-3.5 text-sky-600" />
+                    Next.js + Tailwind
+                  </td>
+                  <td className="py-3 px-4 font-mono font-semibold text-slate-900">Next 16 / Tailwind 4</td>
+                  <td className="py-3 px-4">Forensic Surveillance Command Center</td>
+                  <td className="py-3 px-4 text-slate-600 leading-relaxed">
+                    App Router with zero runtime CDN calls. D3.js force-directed graph canvas with GNN attention highlighting, tactile HUD inspector, and SHAP waterfall chart.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -470,86 +472,88 @@ export default function Chapter1Page() {
         </div>
 
         <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 font-mono text-[11px] text-slate-700">
-                <th className="py-3 px-3 font-bold">Service</th>
-                <th className="py-3 px-3 font-bold">Container / Process</th>
-                <th className="py-3 px-3 font-bold">Port Binding</th>
-                <th className="py-3 px-3 font-bold">Network Protocol</th>
-                <th className="py-3 px-3 font-bold">Storage / Volume Mount</th>
-                <th className="py-3 px-3 font-bold">Security & Isolation</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Forensic UI</td>
-                <td className="py-3 px-3 font-mono text-[11px]">frontend / node</td>
-                <td className="py-3 px-3 font-mono text-sky-700 font-semibold">TCP 3000</td>
-                <td className="py-3 px-3">HTTP / Next.js SSR</td>
-                <td className="py-3 px-3 font-mono text-[11px]">/app/.next</td>
-                <td className="py-3 px-3 text-slate-600">Strictly localhost bound; 0 CDN calls</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">REST Gateway</td>
-                <td className="py-3 px-3 font-mono text-[11px]">backend / uvicorn</td>
-                <td className="py-3 px-3 font-mono text-indigo-700 font-semibold">TCP 8000</td>
-                <td className="py-3 px-3">HTTP REST / JSON</td>
-                <td className="py-3 px-3 font-mono text-[11px]">/app/data</td>
-                <td className="py-3 px-3 text-slate-600">Static Bearer token; AddressHashMiddleware</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Async Ingest</td>
-                <td className="py-3 px-3 font-mono text-[11px]">celery worker</td>
-                <td className="py-3 px-3 font-mono text-emerald-700 font-semibold">Internal PID</td>
-                <td className="py-3 px-3">Celery IPC / AMQP</td>
-                <td className="py-3 px-3 font-mono text-[11px]">/app/data/geoip</td>
-                <td className="py-3 px-3 text-slate-600">Local MaxMind MMDB; no outbound DNS</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Task Broker</td>
-                <td className="py-3 px-3 font-mono text-[11px]">redis:7-alpine</td>
-                <td className="py-3 px-3 font-mono text-rose-700 font-semibold">TCP 6379</td>
-                <td className="py-3 px-3">RESP (Redis Protocol)</td>
-                <td className="py-3 px-3 font-mono text-[11px]">redis_data (AOF)</td>
-                <td className="py-3 px-3 text-slate-600">Internal docker bridge; atomic idempotency keys</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Relational DB</td>
-                <td className="py-3 px-3 font-mono text-[11px]">postgres:16-alpine</td>
-                <td className="py-3 px-3 font-mono text-blue-700 font-semibold">TCP 5432</td>
-                <td className="py-3 px-3">PostgreSQL Wire</td>
-                <td className="py-3 px-3 font-mono text-[11px]">postgres_data</td>
-                <td className="py-3 px-3 text-slate-600">ACID ledger; B-Tree indexes on txid & temporal ts</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3 px-3 font-semibold text-slate-900">Graph DB</td>
-                <td className="py-3 px-3 font-mono text-[11px]">neo4j:5.26-community</td>
-                <td className="py-3 px-3 font-mono text-amber-700 font-semibold">TCP 7687</td>
-                <td className="py-3 px-3">Bolt Protocol</td>
-                <td className="py-3 px-3 font-mono text-[11px]">neo4j_data</td>
-                <td className="py-3 px-3 text-slate-600">GDS plugin 2.13.x; memory-clamped projections</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="overflow-x-auto w-full max-w-full overscroll-x-contain">
+            <table className="w-full text-left text-xs border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 font-mono text-[11px] text-slate-700">
+                  <th className="py-3 px-3 font-bold">Service</th>
+                  <th className="py-3 px-3 font-bold">Container / Process</th>
+                  <th className="py-3 px-3 font-bold">Port Binding</th>
+                  <th className="py-3 px-3 font-bold">Network Protocol</th>
+                  <th className="py-3 px-3 font-bold">Storage / Volume Mount</th>
+                  <th className="py-3 px-3 font-bold">Security & Isolation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                <tr className="hover:bg-slate-50/50">
+                  <td className="py-3 px-3 font-semibold text-slate-900">Forensic UI</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">frontend / node</td>
+                  <td className="py-3 px-3 font-mono text-sky-700 font-semibold">TCP 3000</td>
+                  <td className="py-3 px-3">HTTP / Next.js SSR</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">/app/.next</td>
+                  <td className="py-3 px-3 text-slate-600">Strictly localhost bound; 0 CDN calls</td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="py-3 px-3 font-semibold text-slate-900">REST Gateway</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">backend / uvicorn</td>
+                  <td className="py-3 px-3 font-mono text-indigo-700 font-semibold">TCP 8000</td>
+                  <td className="py-3 px-3">HTTP REST / JSON</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">/app/data</td>
+                  <td className="py-3 px-3 text-slate-600">Static Bearer token; AddressHashMiddleware</td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="py-3 px-3 font-semibold text-slate-900">Async Ingest</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">celery worker</td>
+                  <td className="py-3 px-3 font-mono text-emerald-700 font-semibold">Internal PID</td>
+                  <td className="py-3 px-3">Celery IPC / AMQP</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">/app/data/geoip</td>
+                  <td className="py-3 px-3 text-slate-600">Local MaxMind MMDB; no outbound DNS</td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="py-3 px-3 font-semibold text-slate-900">Task Broker</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">redis:7-alpine</td>
+                  <td className="py-3 px-3 font-mono text-rose-700 font-semibold">TCP 6379</td>
+                  <td className="py-3 px-3">RESP (Redis Protocol)</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">redis_data (AOF)</td>
+                  <td className="py-3 px-3 text-slate-600">Internal docker bridge; atomic idempotency keys</td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="py-3 px-3 font-semibold text-slate-900">Relational DB</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">postgres:16-alpine</td>
+                  <td className="py-3 px-3 font-mono text-blue-700 font-semibold">TCP 5432</td>
+                  <td className="py-3 px-3">PostgreSQL Wire</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">postgres_data</td>
+                  <td className="py-3 px-3 text-slate-600">ACID ledger; B-Tree indexes on txid & temporal ts</td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="py-3 px-3 font-semibold text-slate-900">Graph DB</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">neo4j:5.26-community</td>
+                  <td className="py-3 px-3 font-mono text-amber-700 font-semibold">TCP 7687</td>
+                  <td className="py-3 px-3">Bolt Protocol</td>
+                  <td className="py-3 px-3 font-mono text-[11px]">neo4j_data</td>
+                  <td className="py-3 px-3 text-slate-600">GDS plugin 2.13.x; memory-clamped projections</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}
-      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-xs font-mono text-slate-500">
+      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="text-xs font-mono text-slate-500 text-center sm:text-left">
           DOCUMENT SPECIFICATION • SEC-DOC-26146-CH01
         </div>
 
         <Link
           href="/docs/ch2-ingest-geoip-security"
-          className="btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center gap-2 group cursor-pointer shadow-xs"
+          className="btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center justify-between sm:justify-start gap-2 group cursor-pointer shadow-xs w-full sm:w-auto"
         >
           <div className="text-left">
             <div className="text-[10px] text-blue-200 font-mono uppercase tracking-wider font-semibold">Next Chapter</div>
             <div className="font-semibold text-white">Ch 2: Ingest, GeoIP & Anti-Duplicate Armor</div>
           </div>
-          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2" />
+          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2 shrink-0" />
         </Link>
       </div>
     </article>

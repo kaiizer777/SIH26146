@@ -34,36 +34,36 @@ export function BenchmarkCard() {
   return (
     <div className="card-tactical rounded-xl border border-slate-200 overflow-hidden bg-white shadow-xs">
       {/* Header Banner */}
-      <div className="border-b border-slate-200 bg-slate-50/70 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="border-b border-slate-200 bg-slate-50/70 p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
-            <Gauge className="w-3.5 h-3.5 text-sky-600" />
+          <div className="flex items-center gap-2 font-mono text-[10px] sm:text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
+            <Gauge className="w-3.5 h-3.5 text-sky-600 shrink-0" />
             <span>MEASURED FORENSIC INGEST BENCHMARK • POSTGRESQL 16-ALPINE</span>
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
-            Bulk <code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-sm font-mono">COPY FROM STDIN</code> vs Standard ORM <code className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-sm font-mono">INSERT</code>
+          <h3 className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 mt-1 leading-snug">
+            Bulk <code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-xs sm:text-sm font-mono">COPY FROM STDIN</code> vs Standard ORM <code className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-xs sm:text-sm font-mono">INSERT</code>
           </h3>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-slate-200 text-xs font-medium">
-          <span className="px-2.5 py-1 rounded bg-emerald-100/70 text-emerald-800 font-mono font-bold flex items-center gap-1">
-            <Zap className="w-3 h-3 text-emerald-600 fill-emerald-600" />
+        <div className="flex flex-wrap items-center gap-1.5 bg-white p-1 rounded-lg border border-slate-200 text-xs font-medium shrink-0 self-start sm:self-auto">
+          <span className="px-2 sm:px-2.5 py-1 rounded bg-emerald-100/70 text-emerald-800 font-mono font-bold flex items-center gap-1 text-[11px] sm:text-xs">
+            <Zap className="w-3 h-3 text-emerald-600 fill-emerald-600 shrink-0" />
             {speedupMultiple}x FASTER
           </span>
-          <span className="px-2.5 py-1 text-slate-500 font-mono text-[11px]">
+          <span className="px-2 sm:px-2.5 py-1 text-slate-500 font-mono text-[10px] sm:text-[11px]">
             100k rows in 8.38s
           </span>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="p-3.5 sm:p-6 space-y-6">
         {/* Metric Selector Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 border-b border-slate-100 pb-3">
           <button
             type="button"
             onClick={() => setActiveTab("throughput")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === "throughput"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
@@ -75,7 +75,7 @@ export function BenchmarkCard() {
           <button
             type="button"
             onClick={() => setActiveTab("latency")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === "latency"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
@@ -87,7 +87,7 @@ export function BenchmarkCard() {
           <button
             type="button"
             onClick={() => setActiveTab("memory")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === "memory"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
@@ -99,7 +99,7 @@ export function BenchmarkCard() {
           <button
             type="button"
             onClick={() => setActiveTab("wal")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === "wal"
                 ? "bg-slate-900 text-white shadow-xs"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
@@ -274,18 +274,18 @@ export function BenchmarkCard() {
 
         {/* Live Transaction Scaling Calculator */}
         <div className="pt-4 border-t border-slate-200 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div>
               <span className="text-xs font-bold text-slate-900 uppercase font-mono flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-sky-600" />
+                <Sliders className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                 Interactive Volume Scaling Simulator
               </span>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 Select or drag batch transaction volumes to project ingestion execution times:
               </p>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1 self-start sm:self-auto">
               {[10000, 50000, 100000, 250000, 500000].map((vol) => (
                 <button
                   key={vol}
@@ -327,7 +327,7 @@ export function BenchmarkCard() {
               <div className="text-[10px] font-mono font-bold text-emerald-800 uppercase">
                 Bulk COPY Pipeline
               </div>
-              <div className="text-xl font-mono font-extrabold text-emerald-950 mt-1">
+              <div className="text-lg sm:text-xl font-mono font-extrabold text-emerald-950 mt-1">
                 {copyTimeSeconds}s
               </div>
               <div className="text-[10px] text-emerald-700 font-mono">
@@ -339,7 +339,7 @@ export function BenchmarkCard() {
               <div className="text-[10px] font-mono font-bold text-rose-800 uppercase">
                 Standard ORM Baseline
               </div>
-              <div className="text-xl font-mono font-extrabold text-rose-950 mt-1">
+              <div className="text-lg sm:text-xl font-mono font-extrabold text-rose-950 mt-1">
                 {ormTimeSeconds > 60
                   ? `${(ormTimeSeconds / 60).toFixed(1)} min`
                   : `${ormTimeSeconds}s`}
@@ -353,7 +353,7 @@ export function BenchmarkCard() {
               <div className="text-[10px] font-mono font-bold text-sky-800 uppercase">
                 Time Saved (Wall Clock)
               </div>
-              <div className="text-xl font-mono font-extrabold text-sky-950 mt-1">
+              <div className="text-lg sm:text-xl font-mono font-extrabold text-sky-950 mt-1">
                 {timeSavedSeconds > 60
                   ? `${(timeSavedSeconds / 60).toFixed(1)} min`
                   : `${timeSavedSeconds}s`}

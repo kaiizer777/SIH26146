@@ -107,16 +107,16 @@ export default function Chapter6Page() {
 
           {/* Mathematical Formulation Display Card */}
           <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-3 font-mono">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 font-bold uppercase tracking-wider">
               <span>Canonical Mathematical Formulation (Phase 8 Specification)</span>
-              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              <span className="self-start sm:self-auto text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                 PROVABLY BOUNDED [0.0, 1.0]
               </span>
             </div>
             <div className="text-base sm:text-lg font-bold text-slate-900 overflow-x-auto py-2">
               {"Risk = clip(0.35 · S_anomaly + 0.45 · P_gnn + 0.15 · R_rules + 0.05 · M_mixing, 0.0, 1.0)"}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-2 text-xs border-t border-slate-200/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 text-xs border-t border-slate-200/80">
               <div>
                 <span className="text-indigo-700 font-bold">0.35 &bull; S_anomaly</span>
                 <div className="text-[11px] text-slate-500 font-sans mt-0.5">
@@ -463,31 +463,33 @@ export default function Chapter6Page() {
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}
-      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <Link
           href="/docs/ch5-dual-transformer-ml"
-          className="p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-2 group cursor-pointer transition-colors shadow-xs"
+          className="w-full sm:w-auto p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center justify-between sm:justify-start gap-2 group cursor-pointer transition-colors shadow-xs"
         >
-          <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform" />
-          <div className="text-left">
-            <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Previous Chapter</div>
-            <div className="font-semibold text-slate-900">Ch 5: Dual Transformer ML Engine</div>
+          <div className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4 text-slate-400 group-hover:-translate-x-1 transition-transform shrink-0" />
+            <div className="text-left">
+              <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Previous Chapter</div>
+              <div className="font-semibold text-slate-900">Ch 5: Dual Transformer ML Engine</div>
+            </div>
           </div>
         </Link>
 
-        <div className="text-xs font-mono text-slate-400 text-center">
+        <div className="text-xs font-mono text-slate-400 text-center order-last sm:order-none">
           DOCUMENT SPECIFICATION • SEC-DOC-26146-CH06
         </div>
 
         <Link
           href="/docs/ch7-online-inference-sync"
-          className="btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center gap-2 group cursor-pointer shadow-xs"
+          className="w-full sm:w-auto btn-tactical-primary text-white text-xs font-medium px-5 py-2.5 rounded-lg flex items-center justify-between sm:justify-start gap-2 group cursor-pointer shadow-xs"
         >
           <div className="text-left">
             <div className="text-[10px] text-blue-200 font-mono uppercase tracking-wider font-semibold">Next Chapter</div>
             <div className="font-semibold text-white">Ch 7: Live Post-Ingest Sync</div>
           </div>
-          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2" />
+          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform ml-2 shrink-0" />
         </Link>
       </div>
     </article>

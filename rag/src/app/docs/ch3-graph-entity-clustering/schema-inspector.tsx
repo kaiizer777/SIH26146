@@ -512,7 +512,7 @@ export function SchemaInspector() {
       </div>
 
       {/* Entity Selector Tabs */}
-      <div className="p-3 bg-white border-b border-slate-200 flex flex-wrap gap-2">
+      <div className="p-3 bg-white border-b border-slate-200 flex flex-wrap gap-1.5 sm:gap-2">
         {(selectedCategory === "nodes" ? nodeIds : edgeIds).map((id) => {
           const item = SCHEMA_ENTITIES[id];
           const isSelected = selectedEntityId === id;
@@ -598,7 +598,7 @@ export function SchemaInspector() {
 
             <div className="border border-slate-200 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[540px]">
                   <thead className="bg-slate-100/80 text-slate-600 font-mono text-[10px] uppercase border-b border-slate-200">
                     <tr>
                       <th className="py-2 px-3">Property</th>
