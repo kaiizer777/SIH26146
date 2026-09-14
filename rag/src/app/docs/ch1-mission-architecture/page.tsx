@@ -361,20 +361,22 @@ export default function Chapter1Page() {
         {/* Tech Stack Breakdown Table */}
         <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto w-full max-w-full overscroll-x-contain">
-            <table className="w-full text-left text-xs border-collapse min-w-[620px]">
+            <table className="w-full text-left text-xs border-collapse min-w-[700px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 font-mono text-[10.5px] sm:text-[11px] text-slate-700">
-                  <th className="py-2.5 sm:py-3 px-3 sm:px-4 font-bold">Technology</th>
-                  <th className="py-2.5 sm:py-3 px-3 sm:px-4 font-bold">Pinned Version</th>
-                  <th className="py-2.5 sm:py-3 px-3 sm:px-4 font-bold">Operational Function</th>
-                  <th className="py-2.5 sm:py-3 px-3 sm:px-4 font-bold min-w-[220px]">Architectural Rationale</th>
+                  <th className="py-2.5 sm:py-3 px-3 sm:px-4 font-bold w-[180px] sm:w-[22%]">Technology</th>
+                  <th className="py-2.5 sm:py-3 px-3 sm:px-4 font-bold w-[160px] sm:w-[20%]">Pinned Version</th>
+                  <th className="py-2.5 sm:py-3 px-3 sm:px-4 font-bold w-[170px] sm:w-[22%]">Operational Function</th>
+                  <th className="py-2.5 sm:py-3 px-3 sm:px-4 font-bold min-w-[240px] sm:w-[36%]">Architectural Rationale</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 <tr className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-                    <Server className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    FastAPI
+                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Server className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <span>FastAPI</span>
+                    </div>
                   </td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">0.115.x / Python 3.11</td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap">Forensic REST Gateway</td>
@@ -383,9 +385,11 @@ export default function Chapter1Page() {
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-                    <RefreshCw className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    Celery + Redis
+                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Celery + Redis</span>
+                    </div>
                   </td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">Celery 5.4 / Redis 7</td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap">Async Worker & Broker</td>
@@ -394,9 +398,11 @@ export default function Chapter1Page() {
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-                    <Database className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    PostgreSQL
+                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Database className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span>PostgreSQL</span>
+                    </div>
                   </td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">16-alpine</td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap">Relational Ledger</td>
@@ -405,9 +411,11 @@ export default function Chapter1Page() {
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-                    <Network className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    Neo4j + GDS
+                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Network className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Neo4j + GDS</span>
+                    </div>
                   </td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">Neo4j 5.26 / GDS 2.13</td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap">Graph Topology</td>
@@ -416,9 +424,11 @@ export default function Chapter1Page() {
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-                    <Cpu className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                    PyTorch + PyG
+                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                      <span>PyTorch + PyG</span>
+                    </div>
                   </td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">Torch 2.4.1 / PyG 2.6.1</td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap">Dual Transformer Engine</td>
@@ -427,9 +437,11 @@ export default function Chapter1Page() {
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 flex items-center gap-2 whitespace-nowrap">
-                    <Terminal className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                    Next.js + Tailwind
+                  <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-semibold text-slate-900 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                      <span>Next.js + Tailwind</span>
+                    </div>
                   </td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">Next 16 / Tailwind 4</td>
                   <td className="py-2.5 sm:py-3 px-3 sm:px-4 whitespace-nowrap">Command Center UI</td>
@@ -487,15 +499,15 @@ export default function Chapter1Page() {
 
         <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto w-full max-w-full overscroll-x-contain">
-            <table className="w-full text-left text-xs border-collapse min-w-[660px]">
+            <table className="w-full text-left text-xs border-collapse min-w-[700px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 font-mono text-[10.5px] sm:text-[11px] text-slate-700">
-                  <th className="py-2.5 sm:py-3 px-3 font-bold">Service</th>
-                  <th className="py-2.5 sm:py-3 px-3 font-bold">Container / Process</th>
-                  <th className="py-2.5 sm:py-3 px-3 font-bold">Port Binding</th>
-                  <th className="py-2.5 sm:py-3 px-3 font-bold">Network Protocol</th>
-                  <th className="py-2.5 sm:py-3 px-3 font-bold">Storage / Volume</th>
-                  <th className="py-2.5 sm:py-3 px-3 font-bold min-w-[180px]">Security & Isolation</th>
+                  <th className="py-2.5 sm:py-3 px-3 font-bold w-[120px] sm:w-[15%]">Service</th>
+                  <th className="py-2.5 sm:py-3 px-3 font-bold w-[140px] sm:w-[18%]">Container / Process</th>
+                  <th className="py-2.5 sm:py-3 px-3 font-bold w-[100px] sm:w-[13%]">Port Binding</th>
+                  <th className="py-2.5 sm:py-3 px-3 font-bold w-[130px] sm:w-[17%]">Network Protocol</th>
+                  <th className="py-2.5 sm:py-3 px-3 font-bold w-[110px] sm:w-[14%]">Storage / Volume</th>
+                  <th className="py-2.5 sm:py-3 px-3 font-bold min-w-[180px] sm:w-[23%]">Security & Isolation</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
