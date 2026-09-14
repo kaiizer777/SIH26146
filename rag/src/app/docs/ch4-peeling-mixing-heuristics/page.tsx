@@ -9,24 +9,12 @@ import {
   Database,
   Layers,
   ShieldAlert,
-  Zap,
-  Terminal,
   Cpu,
-  Binary,
-  Flame,
   AlertTriangle,
-  Server,
-  FileCode,
-  HardDrive,
-  Activity,
-  TrendingDown,
-  Percent,
-  Compass,
-  FileCheck2,
+  Network,
 } from "lucide-react";
 import { PeelingSimulator } from "./peeling-simulator";
 import { CoinjoinVisualizer } from "./coinjoin-visualizer";
-import { HeuristicsFaq } from "./heuristics-faq";
 
 export const metadata = {
   title: "Chapter 4: Laundering Pattern Detectors (Peeling-Chains & Mixers) — NTRO KB",
@@ -75,7 +63,7 @@ export default function Chapter4Page() {
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Peeling-Chain Recall</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5">97.2% (451/464)</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">&ge;5 Hops • &le;20% Peel Cut</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">&ge;5 Hops • &le;5% Strict (&le;20% Wide)</div>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">CoinJoin / Mixer Recall</div>
@@ -135,8 +123,8 @@ export default function Chapter4Page() {
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Rather than dumping a 100 BTC ransom directly into a centralized KYC exchange (which triggers immediate AML freezing and SAR filing), 
-                the syndicate initiates a linear chain of transactions. At each hop, a small fraction (e.g. 2–5 BTC, &le;20%) is &quot;peeled off&quot; to a newly generated 
-                deposit address or prepaid debit service, while the remaining change (95–98 BTC) is swept into a fresh change address, which instantly becomes the input for the next hop.
+                the syndicate initiates a linear chain of transactions. At each hop, a small fraction (e.g. 1–5 BTC, &le;5% in strict production, up to &le;20% in wide investigative sweeps) is &quot;peeled off&quot; to a newly generated 
+                deposit address or prepaid debit service, while the remaining change (95–99 BTC) is swept into a fresh change address, which instantly becomes the input for the next hop.
               </p>
               <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700">
                 <strong>Adversarial Goal:</strong> Evade exchange volume thresholds (e.g., $10k FinCEN rule) by atomizing the liquidation over 5 to 40 hops across weeks.
@@ -189,20 +177,82 @@ export default function Chapter4Page() {
           </p>
 
           {/* Mathematical Formulation Card */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
-              Formal Mathematical Predicate: Single Hop $T_k$
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+              <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700">
+                Formal Mathematical Predicate: Single Hop $T_k$ &amp; Multi-Hop Invariants
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                  PROD DEFAULT: &tau;_peel &le; 0.05
+                </span>
+                <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">
+                  WIDE NET: &tau;_peel &le; 0.20
+                </span>
+              </div>
             </div>
-            <div className="bg-slate-900 text-slate-100 p-3.5 rounded-lg font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800">
-              <div className="text-slate-400">// Condition 1: Strict 1-in-2-out topology</div>
-              <div>|In(T_k)| = 1 &amp;&amp; |Out(T_k)| = 2</div>
-              <div className="text-slate-400 mt-2">// Condition 2: Output amount partition</div>
-              <div>Out(T_k) = &#123; (addr_peel, v_peel), (addr_fwd, v_fwd) &#125; where v_peel &le; v_fwd</div>
-              <div className="text-slate-400 mt-2">// Condition 3: Threshold bounds (peel ratio &le; 20%, forward change &ge; 80%)</div>
-              <div className="text-emerald-400">v_peel &le; total_in(T_k) &times; &tau;_peel_max (&tau;_peel_max = 0.20)</div>
-              <div className="text-emerald-400">v_fwd &ge; total_in(T_k) &times; &tau;_change_min (&tau;_change_min = 0.80)</div>
-              <div className="text-slate-400 mt-2">// Condition 4: Forward continuity &amp; Minimum chain depth (H &ge; 5)</div>
-              <div className="text-sky-300">In(T_k+1) = &#123; addr_fwd &#125; for all k in [1, H-1], H &ge; 5</div>
+
+            <div className="bg-slate-900 text-slate-100 p-3.5 rounded-lg font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800 space-y-2">
+              <div>
+                <span className="text-slate-400">// Condition 1: Strict 1-in-2-out topology</span>
+                <div className="text-slate-200">|In(T_k)| = 1 &amp;&amp; |Out(T_k)| = 2</div>
+              </div>
+
+              <div>
+                <span className="text-slate-400">// Condition 2: Output amount partition (peel slice vs forward change)</span>
+                <div className="text-slate-200">Out(T_k) = &#123; (addr_peel, v_peel), (addr_fwd, v_fwd) &#125; where v_peel &le; v_fwd</div>
+              </div>
+
+              <div>
+                <span className="text-slate-400">// Condition 3: Threshold bounds (Strict Production Default vs Investigative Wide-Net)</span>
+                <div className="text-emerald-400 font-semibold">
+                  v_peel &le; total_in(T_k) &times; &tau;_peel_max &nbsp;&nbsp;// Strict Production Default: &tau;_peel_max = 0.05 (--peel-ratio-max = 0.05)
+                </div>
+                <div className="text-amber-400">
+                  v_peel &le; total_in(T_k) &times; 0.20 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Investigative Wide-Net Setting (--peel-ratio-max = 0.20)
+                </div>
+                <div className="text-emerald-400 font-semibold">
+                  v_fwd &ge; total_in(T_k) &times; &tau;_change_min &nbsp;// Forward change threshold: &tau;_change_min = 0.80 (--change-ratio-min = 0.80)
+                </div>
+              </div>
+
+              <div>
+                <span className="text-slate-400">// Condition 4: Forward continuity &amp; Minimum chain depth ($H \ge 5$)</span>
+                <div className="text-sky-300">In(T_k+1) = &#123; addr_fwd &#125; for all k in [1, H-1], where H &ge; 5</div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-800">
+                <span className="text-slate-400">// Condition 5: Cumulative Pass-Through Ratio (&Pi;_pass across chain depth H)</span>
+                <div className="text-indigo-300 font-bold">
+                  &Pi;_pass = v_final_change / v_initial_input = &prod;_(k=1)^H (1 - (v_peel^(k) + fee^(k)) / v_in^(k))
+                </div>
+              </div>
+            </div>
+
+            {/* Threshold & Cumulative Ratio Explanation */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs leading-relaxed">
+              <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-1.5">
+                <div className="font-bold text-slate-900 font-mono text-[11px] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Production Default: &tau;_peel_max &le; 0.05 (5%)
+                </div>
+                <p className="text-slate-600 text-[11px]">
+                  Configured via <code className="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">--peel-ratio-max 0.05</code> and <code className="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">--change-ratio-min 0.80</code>.
+                  Strict 5% peeling filters merchant payouts and payroll sweeps, isolating high-frequency micro-peels where syndicates liquidate 1–5% per hop while keeping 95%+ of the capital flowing down the main change trunk. The 20% setting (<code className="font-mono text-[10px]">--peel-ratio-max 0.20</code>) is maintained for wide-net exploratory forensics.
+                </p>
+              </div>
+
+              <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-1.5">
+                <div className="font-bold text-slate-900 font-mono text-[11px] flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-sky-600" />
+                  Cumulative Pass-Through (&Pi;_pass)
+                </div>
+                <p className="text-slate-600 text-[11px]">
+                  Measures total principal retention over the chain:
+                  <span className="font-mono text-slate-800 block my-1 font-semibold">&Pi;_pass = v_final_change / v_initial_input = &prod;_(k=1)^H (1 - (v_peel^(k) + fee^(k)) / v_in^(k))</span>
+                  In strict production mode with &tau;_peel &le; 0.05, an 8-hop liquidation retains &Pi;_pass &ge; 0.65 (65%+ preserved), mathematically separating deliberate laundering pipelines from organic retail dissipation.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -344,6 +394,70 @@ export default function Chapter4Page() {
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          {/* Advanced Mixer De-Anonymization Heuristics */}
+          <h3 className="text-base font-bold text-slate-900 pt-2">
+            Advanced De-Anonymization Heuristics: Tx0 Pre-Mix &amp; Toxic Change Recombination
+          </h3>
+
+          <p>
+            While naive CoinJoin analysis treats multi-party mixing transactions as opaque black boxes, the NTRO forensic pipeline leverages structural boundary leaks inherent in wallet protocol implementations:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Heuristic 1: Whirlpool Tx0 */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded font-mono text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center gap-1.5">
+                  <GitFork className="w-3.5 h-3.5 text-indigo-600" />
+                  Samourai Whirlpool Tx0 Pre-Mix
+                </span>
+                <span className="text-[10px] font-mono text-slate-500 font-bold">PRE-MIX PREPARATION</span>
+              </div>
+
+              <div className="text-xs text-slate-600 leading-relaxed space-y-2">
+                <p>
+                  Before entering the 5-in 5-out Whirlpool anonymity pool (0.01, 0.05, or 0.50 BTC tiers), the client MUST execute an unmixed preparatory transaction known as <strong>Tx0</strong>.
+                </p>
+                <div className="bg-slate-900 text-slate-100 p-2.5 rounded font-mono text-[11px] space-y-1">
+                  <div className="text-slate-400">// Tx0 Structural Decomposition</div>
+                  <div>In(Tx0) &larr; User Unmixed UTXO(s)</div>
+                  <div className="text-emerald-400">Out_pool &larr; N &times; (Pool_Denom + Miner_Fee)</div>
+                  <div className="text-amber-400">Out_fee  &larr; 1 &times; Flat Coordinator Fee Address</div>
+                  <div className="text-rose-400">Out_chg  &larr; 1 &times; Unmixed Toxic Change Remainder</div>
+                </div>
+                <p>
+                  <strong>De-Anonymization Heuristic:</strong> NTRO intercepts Tx0 candidate clusters by matching the static coordinator fee output fingerprint and forward-links the <em>N</em> equal pool outputs directly into the subsequent Whirlpool mix cycle. This bridges the pre-mix depositor wallet directly to the mixed anonymity pool, bypassing mixing boundaries.
+                </p>
+              </div>
+            </div>
+
+            {/* Heuristic 2: Wasabi 2.0 Toxic Change */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded font-mono text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                  Wasabi 2.0 Toxic Change Recombination
+                </span>
+                <span className="text-[10px] font-mono text-slate-500 font-bold">POST-MIX RECOMBINATION</span>
+              </div>
+
+              <div className="text-xs text-slate-600 leading-relaxed space-y-2">
+                <p>
+                  Wasabi Wallet 2.0 (WabiSabi) decomposes arbitrary amounts into variable credential denominations. Unlike pure pools, transactions emit non-standard change outputs designated as <strong>toxic change</strong>.
+                </p>
+                <div className="bg-slate-900 text-slate-100 p-2.5 rounded font-mono text-[11px] space-y-1">
+                  <div className="text-slate-400">// Toxic Change Recombination Signature</div>
+                  <div>Inputs(T_recomb) &cap; Outputs_change(T_CoinJoin) &ne; &empty;</div>
+                  <div className="text-rose-400">&exist; u &isin; Inputs(T_recomb) where u &isin; U_KYC</div>
+                  <div className="text-amber-400">&rArr; CIOH Collapse: A_set &rarr; 1 (Full Deanonymization)</div>
+                </div>
+                <p>
+                  <strong>De-Anonymization Heuristic:</strong> When a user recombines toxic change with external KYC UTXOs or post-mix coins in a multi-input consolidation spend, the Common Input Ownership Heuristic (CIOH) collapses the anonymity set completely, clustering the participant&apos;s mixed outputs back to their identifiable KYC entity.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="p-3.5 rounded-lg bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-900 space-y-1">
@@ -516,6 +630,77 @@ export default function Chapter4Page() {
               </p>
             </div>
           </div>
+
+          {/* Downstream SOTA Model Ground Truth Callout */}
+          <div className="p-4 sm:p-5 rounded-xl bg-slate-900 text-slate-100 border border-slate-800 space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                  <Network className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white tracking-tight">
+                    Downstream SOTA Model Ground Truth: Relational Graph Transformer
+                  </h4>
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    PyG TransformerConv &bull; 34,865 Parameters &bull; 145.42 KB &bull; 0.0120 ms/node
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                  PEELING RECALL: 94.8%
+                </span>
+                <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/30">
+                  TEST F1: 0.9209
+                </span>
+              </div>
+            </div>
+
+            {/* Metric KPI Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+              <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase font-bold">Peeling Path Recall</div>
+                <div className="text-lg font-bold text-emerald-400">94.8%</div>
+                <div className="text-[10px] text-emerald-300/80 font-sans">
+                  +13.6% gain over legacy GraphSAGE (81.2%)
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase font-bold">Head 4 Relational Attention</div>
+                <div className="text-lg font-bold text-amber-400">&alpha; &ge; 0.85</div>
+                <div className="text-[10px] text-slate-400 font-sans">
+                  Dedicated specifically to :PEELING_FLOW edges
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase font-bold">Legacy GraphSAGE Baseline</div>
+                <div className="text-lg font-bold text-slate-400">81.2% Recall</div>
+                <div className="text-[10px] text-rose-400 font-sans">
+                  12.2s baseline &bull; F1=0.8696 multi-rel
+                </div>
+              </div>
+            </div>
+
+            {/* Architecture Explanation */}
+            <div className="text-xs text-slate-300 leading-relaxed space-y-2.5 pt-1">
+              <p>
+                <strong className="text-white">Homogeneous Wallet-to-Wallet Edge Synthesis:</strong> The raw Bitcoin ledger is fundamentally a bipartite graph 
+                composed of alternating address nodes and transaction nodes (<code className="text-sky-300 font-mono text-[11px]">(:Wallet)-[:SENDS]-&gt;(:Transaction)-[:RECEIVES]-&gt;(:Wallet)</code>). 
+                To execute multi-hop message-passing in PyTorch Geometric (<code className="text-sky-300 font-mono text-[11px]">PyG TransformerConv</code>) without suffering exponential neighborhood dilation, 
+                the NTRO detection pipeline synthesizes qualifying multi-hop peeling paths into homogeneous wallet-to-wallet relationships: 
+                <code className="text-emerald-300 font-mono text-[11px]">(:Wallet)-[:PEELING_FLOW &#123;hops: H, pass_through: &Pi;_pass&#125;]-&gt;(:Wallet)</code>.
+              </p>
+              <p>
+                <strong className="text-white">Relational Multi-Head Attention Allocation:</strong> Across the 4-head attention mechanism, <strong>Head 4</strong> is 
+                specifically parameterized to attend to Relation 2 (<code className="text-amber-300 font-mono text-[11px]">:PEELING_FLOW</code>), maintaining an empirical attention weight 
+                <code className="text-amber-300 font-mono text-[11px]">&alpha; &ge; 0.85</code>. This concentrates message-passing directly along asymmetric liquidation corridors, 
+                enabling rapid risk propagation from ransomware seed clusters to downstream deposit endpoints and boosting Peeling Path Recall to <strong>94.8%</strong> (+13.6% over GraphSAGE&apos;s 81.2%).
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -552,26 +737,6 @@ export default function Chapter4Page() {
           </div>
           <CoinjoinVisualizer />
         </div>
-      </section>
-
-      {/* SECTION 7: Teammate FAQ Accordion */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
-            07
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Teammate FAQ &amp; Forensic Engineering Defense
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">
-              Architectural defense rationales covering false positives, CIOH contamination, and relational ML embeddings
-            </p>
-          </div>
-        </div>
-
-        {/* EMBEDDED FAQ ACCORDION */}
-        <HeuristicsFaq />
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}

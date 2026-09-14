@@ -2,22 +2,13 @@
 
 import React, { useState, useMemo } from "react";
 import {
-  Sliders,
-  ShieldAlert,
-  ShieldCheck,
   AlertTriangle,
   Flame,
-  CheckCircle2,
   RefreshCw,
-  Zap,
-  TrendingUp,
-  Cpu,
-  Network,
   Scale,
-  Sparkles,
-  Info,
-  ArrowRight,
-  HelpCircle,
+  ShieldAlert,
+  ShieldCheck,
+  Zap,
 } from "lucide-react";
 
 interface PresetConfig {
@@ -36,7 +27,7 @@ const PRESETS: PresetConfig[] = [
     badge: "CRITICAL SYNDICATE",
     anomaly: 0.94,
     gnn: 0.98,
-    rules: 0.85,
+    rules: 0.80,
     mixing: true,
     desc: "Active LockBit/BlackCat ransomware affiliate laundering through high-hop peeling chain and coinjoin clusters with direct seed proximity.",
   },
@@ -45,16 +36,16 @@ const PRESETS: PresetConfig[] = [
     badge: "HIGH RISK FLOW",
     anomaly: 0.82,
     gnn: 0.62,
-    rules: 0.45,
+    rules: 0.40,
     mixing: true,
     desc: "Automated peel chain peeling off <0.1 BTC per hop with high change-address retention and irregular fee spikes.",
   },
   {
     name: "Unregulated P2P OTC Desk",
     badge: "MEDIUM WATCHLIST",
-    anomaly: 0.54,
-    gnn: 0.35,
-    rules: 0.20,
+    anomaly: 0.58,
+    gnn: 0.42,
+    rules: 0.40,
     mixing: false,
     desc: "Over-the-counter liquidity provider exhibiting unusual broadcast ASN count and multi-input aggregation without illicit seed adjacency.",
   },
@@ -91,35 +82,35 @@ export function RiskCalculator() {
   const compositeScore = Math.min(1.0, Math.max(0.0, rawScore));
 
   const verdict = useMemo(() => {
-    if (compositeScore >= 0.85) {
+    if (compositeScore >= 0.80) {
       return {
         tier: "CRITICAL",
         badgeClass: "bg-rose-50 text-rose-800 border-rose-300",
         barClass: "bg-rose-600",
         dialColor: "#e11d48",
-        statusText: "CRITICAL THREAT (≥ 0.85)",
+        statusText: "CRITICAL THREAT (≥ 0.80)",
         action: "Immediate Section 91/102 CrPC asset freeze warrant, FIU-IND STR transmission, and sovereign exchange seizure alert.",
         icon: Flame,
       };
     }
-    if (compositeScore >= 0.65) {
+    if (compositeScore >= 0.60) {
       return {
         tier: "HIGH",
         badgeClass: "bg-amber-50 text-amber-800 border-amber-300",
         barClass: "bg-amber-500",
         dialColor: "#f59e0b",
-        statusText: "HIGH RISK (≥ 0.65)",
+        statusText: "HIGH RISK (≥ 0.60)",
         action: "Enhanced CDD monitoring, live mempool intercept trigger, and 2-hop entity cluster subpoena preparation.",
         icon: AlertTriangle,
       };
     }
-    if (compositeScore >= 0.35) {
+    if (compositeScore >= 0.40) {
       return {
         tier: "MEDIUM",
         badgeClass: "bg-sky-50 text-sky-800 border-sky-300",
         barClass: "bg-sky-500",
         dialColor: "#0284c7",
-        statusText: "MEDIUM SUSPICION (≥ 0.35)",
+        statusText: "MEDIUM SUSPICION (≥ 0.40)",
         action: "Watchlist cataloging, passive topological surveillance, and periodic batch re-clustering.",
         icon: ShieldAlert,
       };
@@ -129,7 +120,7 @@ export function RiskCalculator() {
       badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-300",
       barClass: "bg-emerald-600",
       dialColor: "#059669",
-      statusText: "LOW / NOMINAL (< 0.35)",
+      statusText: "LOW / NOMINAL (< 0.40)",
       action: "Standard audit log retention; no investigative intervention warranted under current telemetry.",
       icon: ShieldCheck,
     };

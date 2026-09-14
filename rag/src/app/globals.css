@@ -147,6 +147,81 @@ body {
 }
 
 /* =========================================================================
+   3D TACTICAL COCKPIT TOKENS (Counters & Status LEDs)
+   ========================================================================= */
+
+/* 3D Recessed Digit Pills */
+.counter-3d-unselected {
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  box-shadow: 
+    inset 0 1.5px 2px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.counter-3d-critical {
+  background: linear-gradient(180deg, #fee2e2 0%, #fca5a5 100%);
+  color: #7f1d1d;
+  border: 1px solid #f87171;
+  box-shadow: 
+    inset 0 1.5px 2px rgba(185, 28, 28, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.counter-3d-high {
+  background: linear-gradient(180deg, #ffedd5 0%, #fdba74 100%);
+  color: #7c2d12;
+  border: 1px solid #fb923c;
+  box-shadow: 
+    inset 0 1.5px 2px rgba(194, 65, 12, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.counter-3d-medium {
+  background: linear-gradient(180deg, #fef9c3 0%, #fde047 100%);
+  color: #713f12;
+  border: 1px solid #facc15;
+  box-shadow: 
+    inset 0 1.5px 2px rgba(161, 98, 7, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.counter-3d-low {
+  background: linear-gradient(180deg, #dcfce7 0%, #86efac 100%);
+  color: #14532d;
+  border: 1px solid #4ade80;
+  box-shadow: 
+    inset 0 1.5px 2px rgba(21, 128, 61, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* 3D LED Bulbs (Realistic Spherical Lenses) */
+.led-3d-critical {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ef4444 35%, #dc2626 70%, #991b1b 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 6px rgba(239, 68, 68, 0.6);
+  border: 1px solid rgba(153, 27, 27, 0.4);
+}
+
+.led-3d-high {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f97316 35%, #ea580c 70%, #9a3412 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 6px rgba(249, 115, 22, 0.6);
+  border: 1px solid rgba(154, 52, 18, 0.4);
+}
+
+.led-3d-medium {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #eab308 35%, #ca8a04 70%, #854d0e 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 6px rgba(234, 179, 8, 0.6);
+  border: 1px solid rgba(133, 77, 14, 0.4);
+}
+
+.led-3d-low {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #22c55e 35%, #16a34a 70%, #166534 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 6px rgba(34, 197, 94, 0.6);
+  border: 1px solid rgba(22, 101, 52, 0.4);
+}
+
+/* =========================================================================
    SCALED DOCUMENTATION VIEWPORT (1.25x Proportional Scale)
    ========================================================================= */
 .docs-main-container h1 {

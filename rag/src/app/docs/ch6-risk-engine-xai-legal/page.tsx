@@ -1,35 +1,18 @@
 import React from "react";
 import Link from "next/link";
 import {
-  Scale,
-  ShieldCheck,
-  ShieldAlert,
-  ArrowRight,
   ArrowLeft,
-  Lock,
+  ArrowRight,
+  BarChart3,
   FileCheck2,
   FileCode,
-  Layers,
-  Cpu,
   Network,
-  Gavel,
-  CheckCircle2,
-  Fingerprint,
-  HardDrive,
-  Clock,
-  Sparkles,
-  Zap,
-  BarChart3,
-  Sliders,
-  AlertOctagon,
-  Download,
   Printer,
-  HelpCircle,
+  Sliders,
 } from "lucide-react";
 import { RiskCalculator } from "./risk-calculator";
 import { ShapWaterfall } from "./shap-waterfall";
 import { LegalCertificateViewer } from "./legal-certificate-viewer";
-import { RiskFaq } from "./risk-faq";
 
 export const metadata = {
   title: "Chapter 6: Multi-Factor Risk Scoring, XAI & Section 65B Legal Dossier — NTRO KB",
@@ -82,7 +65,7 @@ export default function Chapter6Page() {
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Verdict Classification Bands</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">CRITICAL &ge; 0.85</div>
+            <div className="text-sm font-bold text-slate-900 mt-0.5">CRITICAL &ge; 0.80</div>
             <div className="text-[10px] text-rose-600 font-semibold">Immediate Section 91/102 Freeze</div>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
@@ -149,7 +132,7 @@ export default function Chapter6Page() {
               <div>
                 <span className="text-amber-700 font-bold">0.15 &bull; R_rules</span>
                 <div className="text-[11px] text-slate-500 font-sans mt-0.5">
-                  Additive heuristic penalty bonus for discrete policy infractions (darknet ASN hops, mempool fee surging, burst velocity).
+                  Rule bonus formula: <code className="font-mono text-[10px] bg-slate-200/80 px-1 py-0.5 rounded font-semibold">R_rules = min(|Rules|, 5) / 5</code> (0.20 per rule, capped at 1.0) for discrete policy infractions (darknet ASN hops, mempool fee surging, burst velocity).
                 </div>
               </div>
               <div>
@@ -178,7 +161,7 @@ export default function Chapter6Page() {
                 <span className="px-2 py-0.5 rounded font-mono text-xs font-bold bg-rose-600 text-white">
                   CRITICAL
                 </span>
-                <span className="font-mono text-xs font-bold text-rose-900">&ge; 0.85</span>
+                <span className="font-mono text-xs font-bold text-rose-900">&ge; 0.80</span>
               </div>
               <h4 className="text-xs font-bold text-slate-900">Immediate Warrant &amp; Seizure</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -191,7 +174,7 @@ export default function Chapter6Page() {
                 <span className="px-2 py-0.5 rounded font-mono text-xs font-bold bg-amber-600 text-white">
                   HIGH
                 </span>
-                <span className="font-mono text-xs font-bold text-amber-900">&ge; 0.65</span>
+                <span className="font-mono text-xs font-bold text-amber-900">&ge; 0.60</span>
               </div>
               <h4 className="text-xs font-bold text-slate-900">Enhanced Due Diligence (EDD)</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -204,7 +187,7 @@ export default function Chapter6Page() {
                 <span className="px-2 py-0.5 rounded font-mono text-xs font-bold bg-sky-600 text-white">
                   MEDIUM
                 </span>
-                <span className="font-mono text-xs font-bold text-sky-900">&ge; 0.35</span>
+                <span className="font-mono text-xs font-bold text-sky-900">&ge; 0.40</span>
               </div>
               <h4 className="text-xs font-bold text-slate-900">Passive Surveillance Watchlist</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -217,7 +200,7 @@ export default function Chapter6Page() {
                 <span className="px-2 py-0.5 rounded font-mono text-xs font-bold bg-emerald-600 text-white">
                   LOW
                 </span>
-                <span className="font-mono text-xs font-bold text-emerald-900">&lt; 0.35</span>
+                <span className="font-mono text-xs font-bold text-emerald-900">&lt; 0.40</span>
               </div>
               <h4 className="text-xs font-bold text-slate-900">Nominal Commerce Flow</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -269,19 +252,17 @@ export default function Chapter6Page() {
               </div>
             </div>
 
-            {/* Pillar 2: GNNExplainer */}
+            {/* Pillar 2: GNNExplainer & Native Transformer Attention */}
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-3">
               <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
                 <Network className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-slate-900">2. GNNExplainer Subgraph Masking</h4>
+              <h4 className="text-xs font-bold text-slate-900">2. Graph Attention &amp; GNNExplainer</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Isolates the minimal 2-hop computational subgraph G_s &sube; G that maximizes mutual information MI(Y, G_s).
-                Filters out thousands of irrelevant benign co-spenders, extracting the concise 6 to 10 transaction edges and intermediary
-                mules that mathematically induced the Relational Graph Transformer&rsquo;s risk verdict.
+                The Relational Graph Transformer natively produces multi-head attention weights (<code className="font-mono text-[10px] bg-slate-200 px-1 py-0.5 rounded">top_attention_links</code>) directly from TransformerConv layers (0.0120 ms/node). For baseline comparison, post-hoc GNNExplainer was evaluated on legacy baseline GraphSAGE (12.2s baseline) to isolate minimal 2-hop computational subgraphs $G_s \subseteq G$ maximizing mutual information $MI(Y, G_s)$ across 6 to 10 key transaction edges.
               </p>
               <div className="text-[10px] font-mono text-sky-700 font-bold bg-sky-50 p-1.5 rounded border border-sky-200">
-                PyG 2.6.1 Explainer API &bull; 2-Hop Pruning
+                Native Multi-Head Attention &bull; GraphSAGE Benchmark
               </div>
             </div>
 
@@ -479,26 +460,6 @@ export default function Chapter6Page() {
           </div>
           <LegalCertificateViewer />
         </div>
-      </section>
-
-      {/* SECTION 6: Teammate FAQ Accordion */}
-      <section className="space-y-6 pt-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
-            06
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Teammate Technical Defense &amp; Statutory FAQ
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">
-              Rigorous judicial and technical justifications addressing cross-examination, model weights, and evidence act standards
-            </p>
-          </div>
-        </div>
-
-        {/* FAQ Component */}
-        <RiskFaq />
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}

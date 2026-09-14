@@ -7,23 +7,14 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  Lock,
-  Layers,
-  ShieldAlert,
   Zap,
   Terminal,
   Cpu,
   Binary,
-  Flame,
   AlertTriangle,
-  Server,
-  Share2,
-  FileCode,
-  HardDrive,
 } from "lucide-react";
 import { SchemaInspector } from "./schema-inspector";
 import { ClusteringSimulator } from "./clustering-simulator";
-import { GraphFaq } from "./graph-faq";
 
 export const metadata = {
   title: "Chapter 3: Graph Topology & Entity Clustering (Neo4j GDS) — NTRO KB",
@@ -64,7 +55,7 @@ export default function Chapter3Page() {
         </h1>
 
         <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
-          Complete engineering specification for Tier 2 graph data science: projection of 100,000 multi-input transactions from PostgreSQL to Neo4j 5.26, 
+          Complete engineering specification for Tier 2 graph data science: projection of 100,000 verified transactions generating 45,516 canonical <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">:CO_SPEND</code> edges across multi-input transactions from PostgreSQL to Neo4j 5.26, 
           mathematical formulation of the <strong>Common-Input Ownership Heuristic (CIOH)</strong> with anti-explosion constraints, 
           in-memory <strong>Neo4j GDS Louvain modularity optimization</strong> yielding 9,794 distinct entity clusters (Q = 0.4613), 
           PostgreSQL relational sync in 3.43s, and critical <strong>Graph Router hardening</strong> against neighborhood explosion vulnerabilities.
@@ -102,7 +93,8 @@ export default function Chapter3Page() {
             01
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <Database className="w-5 h-5 text-sky-600" />
               Neo4j Graph Topology &amp; Relational Schema
             </h2>
             <p className="text-xs text-slate-500 font-mono">
@@ -145,7 +137,7 @@ export default function Chapter3Page() {
                 <span className="text-[10px] font-mono text-slate-500 font-bold">100,000 NODES</span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Represents an immutable ledger state transition. Stores <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">txid</code>, <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">ts</code>, <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">total_in</code>, <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">total_out</code>, <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">fee</code>, and reconstruction MSE.
+                Represents an immutable ledger state transition. Stores <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">txid</code>, <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">ts</code>, <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">total_in</code>, <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">total_out</code>, <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">fee</code>, and FT-Transformer tabular anomaly score.
               </p>
             </div>
 
@@ -288,6 +280,188 @@ LIMIT 50;`}
             When GDS executes Louvain clustering, it projects <code className="text-slate-800 bg-slate-100 px-1 py-0.5 rounded font-mono font-semibold">:CO_SPEND</code> as <strong>UNDIRECTED</strong> in memory. 
             Storing single directed canonical edges saves exactly 50% disk storage and transaction log volume while providing 100% mathematical equivalence during modularity optimization.
           </p>
+
+          {/* Sub-section: WCC vs. Louvain Modularity */}
+          <h3 className="text-base font-bold text-slate-900 pt-3 flex items-center gap-2">
+            <GitMerge className="w-4 h-4 text-sky-600" />
+            Super-Cluster Explosion Armor: WCC vs. Louvain Modularity (Q = 0.4613)
+          </h3>
+          <p>
+            A classical failure mode in blockchain entity resolution is <strong>Super-Cluster Explosion (Giant Component Collapse)</strong>. 
+            Naive forensic engines employ <strong>Weakly Connected Components (WCC)</strong> to compute the transitive closure of multi-input linkages: 
+            if Address A co-spends with Address B, and B co-spends with C, then &#123;A, B, C&#125; are merged into the same entity component.
+          </p>
+          <p>
+            However, on the Bitcoin ledger, third-party mixing protocols (e.g. Wasabi and Whirlpool CoinJoins) as well as exchange omnibus sweeps create 
+            accidental or adversarial <em>bridge transactions</em> that bind disparate users into a single multi-party transaction. Under naive WCC, even a single 
+            shared multi-input transaction causes the entire graph to catastrophically collapse into a single giant connected component containing tens of thousands of unrelated wallets, 
+            completely destroying analytical resolution.
+          </p>
+
+          {/* WCC vs Louvain Comparison Table */}
+          <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-100 text-slate-700 font-mono uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-3">Clustering Paradigm</th>
+                  <th className="py-2.5 px-3">Mathematical Criterion</th>
+                  <th className="py-2.5 px-3">CoinJoin / Bridge Handling</th>
+                  <th className="py-2.5 px-3">Cluster Resolution</th>
+                  <th className="py-2.5 px-3">Explosion Risk</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-600">
+                <tr className="bg-rose-50/50">
+                  <td className="py-2.5 px-3 font-mono font-bold text-rose-800">
+                    Naive WCC (Transitive Closure)
+                  </td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">
+                    Binary reachability: path(u, v) exists
+                  </td>
+                  <td className="py-2.5 px-3 text-rose-700 font-medium">
+                    Bridge collapses all communities together
+                  </td>
+                  <td className="py-2.5 px-3 font-mono text-rose-700 font-semibold">
+                    1 Giant Component (&gt;82% of nodes)
+                  </td>
+                  <td className="py-2.5 px-3 text-rose-700 font-bold">
+                    Catastrophic False-Positive Merging
+                  </td>
+                </tr>
+                <tr className="bg-emerald-50/50">
+                  <td className="py-2.5 px-3 font-mono font-bold text-emerald-800">
+                    Neo4j GDS Louvain Optimization
+                  </td>
+                  <td className="py-2.5 px-3 font-mono text-[11px] text-emerald-800 font-semibold">
+                    Modularity maximization: max Q = 0.4613
+                  </td>
+                  <td className="py-2.5 px-3 text-emerald-700 font-medium">
+                    Bridge cut: &Delta;Q &lt; 0 penalizes merge across sparse links
+                  </td>
+                  <td className="py-2.5 px-3 font-mono text-emerald-700 font-bold">
+                    9,794 Discrete Sovereign Entities
+                  </td>
+                  <td className="py-2.5 px-3 text-emerald-700 font-bold">
+                    Zero Giant-Component Collapse
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            Louvain modularity optimization protects entity resolution by evaluating the edge density inside candidate communities relative to an expected 
+            degree-matched random null model. Because CoinJoin and consolidation transactions create sparse, low-weight bridges between otherwise dense 
+            internal co-spend clusters, moving a node across the bridge yields a net negative modularity gain (&Delta;Q &lt; 0). The greedy optimizer strictly rejects the merge, isolating 
+            the bridge and preventing giant component collapse.
+          </p>
+
+          {/* Sub-section: Change Address Heuristic (Heuristic 2 / Meiklejohn) */}
+          <h3 className="text-base font-bold text-slate-900 pt-3 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            Change Address Heuristic (Heuristic 2 / Meiklejohn et al.)
+          </h3>
+          <p>
+            While the Common-Input Ownership Heuristic (Heuristic 1) clusters input addresses, <strong>Heuristic 2</strong> (Meiklejohn et al., 2013) 
+            links the change output of a transaction back to the input spending entity. In standard Bitcoin transactions with multiple outputs 
+            (most commonly 1-in-2-out or multi-in-2-out), one output delivers payment to the merchant or counterparty, while the second output 
+            returns unspent excess value back to the sender as change.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+              <div className="font-bold text-slate-900 font-mono text-xs flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                1. Script Type Uniformity
+              </div>
+              <p className="text-slate-600 text-xs leading-relaxed">
+                Modern Bitcoin HD wallets generate change addresses using the same derivation scheme and script format as the spend inputs. 
+                If all inputs are Native SegWit (<code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[10px]">p2wpkh</code>) 
+                and Output 1 is Legacy (<code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[10px]">p2pkh</code>) 
+                while Output 2 is Native SegWit, Output 2 is attributed as the change address with &gt;99% confidence.
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+              <div className="font-bold text-slate-900 font-mono text-xs flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                2. Address Freshness &amp; Zero-History
+              </div>
+              <p className="text-slate-600 text-xs leading-relaxed">
+                HD wallet standards (BIP-32 / BIP-44) generate a brand-new cryptographic address for every change output. 
+                If an output address has exactly zero prior ledger transactions (first-seen timestamp matches current transaction) 
+                while the counterparty address has pre-existing history, the fresh address is flagged as the internal change address.
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+              <div className="font-bold text-slate-900 font-mono text-xs flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                3. Round-Value Payment Filter
+              </div>
+              <p className="text-slate-600 text-xs leading-relaxed">
+                Human transactions and fiat-pegged invoices typically manifest as round numbers (e.g. 0.50000000 BTC or exact integer fiat equivalents). 
+                When one output is round to 2–4 decimal places and the other is an uneven fraction minus mining fees (e.g. 0.28471920 BTC), 
+                the uneven output is mathematically classified as the change remainder.
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+              <div className="font-bold text-slate-900 font-mono text-xs flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                4. Peeling Chain Trajectory Link
+              </div>
+              <p className="text-slate-600 text-xs leading-relaxed">
+                In automated laundering operations, peel chains disburse small amounts (&le; 20% or fixed ransom increments) while routing 
+                the remaining &ge; 80% forward through consecutive 1-in-2-out hops. Change addresses detected along the peeling trajectory 
+                are automatically clustered with the sender, feeding directly into Phase 6 peeling detection.
+              </p>
+            </div>
+          </div>
+
+          {/* Sub-section: Personalized PageRank Seed Proximity Propagation */}
+          <h3 className="text-base font-bold text-slate-900 pt-3 flex items-center gap-2">
+            <Network className="w-4 h-4 text-indigo-600" />
+            Personalized PageRank (PPR) Seed Proximity Propagation
+          </h3>
+          <p>
+            To supply downstream graph neural networks with global risk context without relying solely on local 1-hop edges, the engine computes 
+            <strong>Personalized PageRank (PPR)</strong> random walks with restart rooted at verified malicious entities. 
+            The seed set S comprises <strong>11,186 curated Ransomwhere seed addresses</strong> spanning Conti, LockBit, BlackCat/ALPHV, 
+            and prominent darknet laundering syndicates.
+          </p>
+
+          <div className="p-4 bg-slate-900 text-white rounded-lg space-y-3 font-mono">
+            <div className="text-xs text-indigo-400 font-bold flex items-center justify-between border-b border-slate-800 pb-2">
+              <span className="flex items-center gap-1.5">
+                <Binary className="w-3.5 h-3.5 text-sky-400" />
+                PPR RANDOM WALK WITH RESTART (POWER ITERATION)
+              </span>
+              <span className="text-slate-400 text-[10px]">d = 0.85 // 20 ITERATIONS // 11,186 SEEDS</span>
+            </div>
+            <div className="text-sm text-sky-300 overflow-x-auto py-1">
+              {"\\mathbf{p}^{(t+1)} = (1 - d) \\mathbf{p}_0 + d \\cdot \\mathbf{P}^T \\mathbf{p}^{(t)}"}
+            </div>
+            <div className="text-[11px] text-slate-300 font-sans space-y-1">
+              <p>
+                Where <span className="font-mono text-amber-300">d = 0.85</span> is the damping factor (85% probability of walking along a <code className="font-mono text-sky-300">:CO_SPEND</code> or transaction edge; 15% restart probability teleporting back to seed set), 
+                <span className="font-mono text-amber-300">\mathbf&#123;p&#125;_0</span> is the uniform teleportation vector over the 11,186 seeds (\mathbf&#123;p&#125;_0(v) = 1/|S| for v &isin; S, 0 otherwise), 
+                and <span className="font-mono text-amber-300">\mathbf&#123;P&#125; = \mathbf&#123;D&#125;^&#123;-1&#125; \mathbf&#123;A&#125;</span> is the row-stochastic transition probability matrix.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 font-mono text-xs space-y-1.5">
+            <div className="text-slate-900 font-bold flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              Downstream GNN Inductive Bias Integration:
+            </div>
+            <p className="text-slate-600 font-sans text-xs leading-relaxed">
+              After 20 power iterations, the converged stationary vector assigns every wallet an invariant <code className="text-slate-800 bg-white px-1 py-0.5 rounded border border-slate-200 font-mono text-[11px]">seed_proximity</code> score [0.0, 1.0]. 
+              This continuous proximity metric is mapped directly into the <strong>Relational Graph Transformer</strong> (PyG <code className="font-mono text-[11px]">TransformerConv</code>; 34,865 params, 145.42 KB) as an edge attention channel (<code className="font-mono text-[11px]">head_3_seed_prox</code>), 
+              empowering the network to detect distant multi-hop laundering chains and achieve <strong>F1 = 0.9209</strong> and <strong>94.8% peeling recall</strong>.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -367,7 +541,10 @@ LIMIT 50;`}
           </p>
 
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 font-mono text-xs space-y-1">
-            <div className="text-slate-900 font-bold">Measured Louvain Execution Performance:</div>
+            <div className="text-slate-900 font-bold flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+              Measured Louvain Execution Performance:
+            </div>
             <div className="text-slate-600">&bull; In-Memory Graph Projection (24,673 nodes, 79,240 relationships): <strong>0.11s</strong></div>
             <div className="text-slate-600">&bull; Louvain Convergence (5 levels executed, Q = 0.461314, 9,794 communities): <strong>6.95s</strong></div>
             <div className="text-slate-600">&bull; PostgreSQL Relational Sync (100,000 transactions updated via temp table COPY): <strong>3.43s</strong></div>
@@ -495,26 +672,6 @@ LIMIT 50;`}
           </div>
           <ClusteringSimulator />
         </div>
-      </section>
-
-      {/* SECTION 6: Teammate FAQ Accordion */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
-            06
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Teammate FAQ &amp; Forensic Engineering Defense
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">
-              Direct technical rationales addressing storage decoupling, CIOH edge ordering, and offline air-gapped GDS
-            </p>
-          </div>
-        </div>
-
-        {/* EMBEDDED FAQ ACCORDION */}
-        <GraphFaq />
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}

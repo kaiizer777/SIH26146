@@ -1,10 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import {
-  ShieldAlert,
   Server,
-  Zap,
-  HardDrive,
   Database,
   ArrowRight,
   ArrowLeft,
@@ -12,18 +9,13 @@ import {
   Lock,
   Globe,
   FileCheck2,
-  FileCode,
-  Layers,
-  AlertTriangle,
-  Flame,
-  Binary,
   Cpu,
   RefreshCw,
   Terminal,
+  Zap,
 } from "lucide-react";
 import { BenchmarkCard } from "./benchmark-card";
 import { DupFlowVisualizer } from "./dup-flow-visualizer";
-import { IngestFaq } from "./ingest-faq";
 
 export const metadata = {
   title: "Chapter 2: High-Throughput Ingestion, GeoIP & Anti-Duplicate Armor — NTRO KB",
@@ -216,19 +208,19 @@ export default function Chapter2Page() {
                   <td className="py-2.5 px-3 font-bold text-slate-900">input / output_amounts</td>
                   <td className="py-2.5 px-3 text-indigo-700">list[Decimal]</td>
                   <td className="py-2.5 px-3 text-slate-600 font-sans">Precision decimal BTC values; satoshis converted via <code className="font-mono">sats / 1e8</code></td>
-                  <td className="py-2.5 px-3 text-slate-800">NUMERIC(18,8)[]</td>
+                  <td className="py-2.5 px-3 text-slate-800">NUMERIC(20,8)[]</td>
                 </tr>
                 <tr className="hover:bg-slate-50/50">
                   <td className="py-2.5 px-3 font-bold text-slate-900">fee</td>
                   <td className="py-2.5 px-3 text-indigo-700">Decimal</td>
                   <td className="py-2.5 px-3 text-slate-600 font-sans">Transaction mining fee in BTC (<code className="font-mono">&Sigma;inputs - &Sigma;outputs</code>); must be &ge; 0</td>
-                  <td className="py-2.5 px-3 text-slate-800">NUMERIC(18,8)</td>
+                  <td className="py-2.5 px-3 text-slate-800">NUMERIC(20,8)</td>
                 </tr>
                 <tr className="hover:bg-slate-50/50">
                   <td className="py-2.5 px-3 font-bold text-slate-900">script_type</td>
                   <td className="py-2.5 px-3 text-indigo-700">str</td>
                   <td className="py-2.5 px-3 text-slate-600 font-sans">Must match enum: <code className="font-mono">P2PK</code>, <code className="font-mono">P2PKH</code>, <code className="font-mono">P2SH</code>, <code className="font-mono">P2WPKH</code>, <code className="font-mono">P2TR</code></td>
-                  <td className="py-2.5 px-3 text-slate-800">VARCHAR(16)</td>
+                  <td className="py-2.5 px-3 text-slate-800">VARCHAR(10)</td>
                 </tr>
                 <tr className="hover:bg-slate-50/50">
                   <td className="py-2.5 px-3 font-bold text-slate-900">geo_country / asn</td>
@@ -444,9 +436,24 @@ export default function Chapter2Page() {
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-emerald-50/60 border border-emerald-200 text-xs text-emerald-900 leading-relaxed">
-            <strong>Role in Graph Intelligence:</strong> Seed addresses receive an initial flag (<code className="font-mono text-[11px]">seed_proximity = 1.0</code>).
-            During Phase 4 Louvain clustering and Phase 7 GraphSAGE GNN inference, PageRank proximity radiates outward from these 11,186 anchors across <code className="font-mono text-[11px]">:CO_SPEND</code> and <code className="font-mono text-[11px]">:SENDS</code> edges, assigning elevated risk scores to multi-hop intermediary nodes that attempt to peel off funds.
+          <div className="p-4 rounded-lg bg-emerald-50/60 border border-emerald-200 text-xs text-emerald-900 space-y-3 leading-relaxed">
+            <div>
+              <strong>Role in Graph Intelligence:</strong> Seed addresses receive an initial flag (<code className="font-mono text-[11px]">seed_proximity = 1.0</code>).
+              During Phase 4 Louvain modularity clustering and Phase 7 SOTA Relational Graph Transformer inference (PyG <code className="font-mono text-[11px]">TransformerConv</code>, F1=0.9209, peeling recall = 94.8%; legacy GraphSAGE strictly designated as baseline), Personalized PageRank proximity radiates outward from these 11,186 anchors across <code className="font-mono text-[11px]">CO_SPEND</code>, <code className="font-mono text-[11px]">TX_FLOW</code>, and <code className="font-mono text-[11px]">PEELING_FLOW</code> relational edges, assigning elevated risk scores to multi-hop intermediary nodes that attempt to peel off funds.
+            </div>
+
+            <div className="p-3 bg-white/95 rounded-lg border border-emerald-300 font-mono text-[11px] text-slate-900 space-y-1.5 shadow-xs">
+              <div className="text-[10px] text-emerald-800 uppercase font-bold tracking-wider flex items-center justify-between">
+                <span>Personalized PageRank (PPR) Formulation</span>
+                <span className="text-[10px] text-slate-500 font-normal">Neo4j GDS Seed Biasing</span>
+              </div>
+              <div className="text-xs font-bold text-slate-900 bg-slate-50 p-2 rounded border border-slate-200">
+                <code>{"p = (1 - \u03B3)s + \u03B3 P\u1D40 p"}</code>
+              </div>
+              <p className="text-[11px] text-slate-600 font-sans leading-relaxed">
+                Where damping factor <strong>&gamma; = 0.85</strong>, power iteration limit = <strong>20 iterations</strong>, transition probability matrix <strong>P</strong> is column-stochastic across <code className="font-mono text-[10px]">CO_SPEND</code>, <code className="font-mono text-[10px]">TX_FLOW</code>, and <code className="font-mono text-[10px]">PEELING_FLOW</code> edges, and restart vector <strong>s</strong> is non-uniformly biased exclusively on the <strong>11,186 Ransomwhere seeds</strong> (<code className="font-mono text-[10px]">s_i = 1/|S|</code> for <em>i</em> &in; <em>S</em>, 0 otherwise).
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -519,7 +526,7 @@ export default function Chapter2Page() {
         <DupFlowVisualizer />
       </section>
 
-      {/* SECTION 6: Teammate FAQ Accordion */}
+      {/* SECTION 6: Post-Ingest Online Inference & REST Lifecycle (POST /ingest/sync) */}
       <section className="space-y-6">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
@@ -527,16 +534,264 @@ export default function Chapter2Page() {
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Teammate FAQ &amp; Forensic Engineering Defense
+              Post-Ingest Online Inference &amp; REST Lifecycle (POST /ingest/sync)
             </h2>
             <p className="text-xs text-slate-500 font-mono">
-              Direct technical rationales addressing HTTP 409 conflict codes, lock expiration, and MaxMind lookup speeds
+              FastAPI &harr; Celery two-step polling sync handshake, Redis sync_done idempotency locks, and sub-15ms FT-Transformer inline scoring
             </p>
           </div>
         </div>
 
-        {/* EMBEDDED FAQ ACCORDION */}
-        <IngestFaq />
+        <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
+          <p>
+            When transaction batches are ingested into PostgreSQL via bulk <code className="bg-slate-100 text-slate-900 px-1 py-0.5 rounded font-mono text-xs font-semibold">COPY</code>,
+            they reside in the relational database but remain absent from the in-memory Explainable AI (XAI) store held in FastAPI&apos;s virtual memory heap.
+            Because background Celery workers run in separate OS processes from the FastAPI/Uvicorn server, worker execution cannot directly mutate FastAPI&apos;s private memory heap.
+            To eliminate operator-facing 404 errors on analytical endpoints (e.g. <code className="font-mono text-xs text-indigo-700">/api/v1/entity/&#123;address&#125;/explain</code>),
+            the platform orchestrates a robust <strong>2-Step Polling &amp; Sync Handshake</strong> backed by Redis idempotency locks and lightweight PyTorch FT-Transformer CPU inference.
+          </p>
+
+          {/* 3 REST Endpoints Grid */}
+          <div className="space-y-3 pt-1">
+            <h3 className="text-xs font-bold text-slate-900 uppercase font-mono flex items-center gap-2">
+              <Zap className="w-4 h-4 text-sky-600" />
+              The 3-Tier Ingest REST API Lifecycle
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Endpoint 1 */}
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                      POST /ingest
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-semibold">
+                      HTTP 202 ACCEPTED
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900 font-mono">
+                    Async File Streaming &amp; Dispatch
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Accepts multipart upload (CSV, JSON, XML). The gateway sniffs the first 512 bytes via <code className="font-mono text-[11px]">parser.detect_format</code>,
+                    computes an inline SHA-256 hash to enforce <strong>DUP-1 Redis rejection</strong> (<code className="font-mono text-[11px]">file_hash:&#123;sha256&#125;</code>, 24h TTL),
+                    and enqueues <code className="font-mono text-[11px]">process_ingest_file.delay(...)</code> into Celery. Returns immediately with <code className="font-mono text-[11px]">task_id</code>.
+                  </p>
+                </div>
+                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                  <span className="text-slate-400">Response:</span> {`{"task_id": "9b1deb4d...", "status": "PENDING"}`}
+                </div>
+              </div>
+
+              {/* Endpoint 2 */}
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-bold">
+                      GET /ingest/status/&#123;id&#125;
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-semibold">
+                      POLLING LIFECYCLE
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900 font-mono">
+                    Worker State Machine Tracking
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Probes Celery <code className="font-mono text-[11px]">AsyncResult(task_id)</code> through 5 deterministic states:
+                    <span className="block mt-1 font-mono text-[10px] text-slate-700">
+                      &bull; <strong>PENDING</strong>: Task queued in Redis broker.<br />
+                      &bull; <strong>STARTED</strong>: Worker initialized file read.<br />
+                      &bull; <strong>PROGRESS</strong>: Streaming COPY (<code className="text-indigo-600 font-semibold">inserted_rows</code> count).<br />
+                      &bull; <strong>SUCCESS</strong>: Completed; yields <code className="text-emerald-600 font-semibold">txids</code> array.<br />
+                      &bull; <strong>FAILURE</strong>: Worker exception caught.
+                    </span>
+                  </p>
+                </div>
+                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                  <span className="text-slate-400">Payload:</span> {`{"status": "SUCCESS", "result": {"total_inserted": 100000}}`}
+                </div>
+              </div>
+
+              {/* Endpoint 3 */}
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold">
+                      POST /ingest/sync/&#123;id&#125;
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-semibold">
+                      HTTP 200 OK • 409 GUARD
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900 font-mono">
+                    Online Inference &amp; Dossier Sync
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Triggered once the client receives <code className="font-mono text-[11px]">SUCCESS</code>.
+                    Verifies status, enforces atomic Redis idempotency lock <code className="font-mono text-[11px]">sync_done:&#123;id&#125;</code> (TTL=3600s; HTTP 409 if locked),
+                    retrieves task-scoped rows from PostgreSQL (<code className="font-mono text-[11px]">txid = ANY(:txids)</code>), executes FT-Transformer CPU scoring, and atomically registers dossiers in RAM.
+                  </p>
+                </div>
+                <div className="p-2 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                  <span className="text-slate-400">Response:</span> {`{"scored": 240, "upserted": 240, "skipped_existing": 0}`}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FT-Transformer Inline Scoring Formula Card */}
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <div className="text-xs font-mono font-bold text-slate-900 uppercase flex items-center gap-1.5">
+                <Cpu className="w-4 h-4 text-sky-600" />
+                FT-Transformer Inline Reconstruction &amp; Provisional Scoring Formulation
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-bold">
+                18,930 PARAMS • 85.54 KB • 0.0222 MS/SAMPLE
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              When <code className="font-mono text-[11px]">POST /ingest/sync/&#123;id&#125;</code> executes,
+              FastAPI calls <a href="file:///c:/Users/bari2/Desktop/SIH26146/backend/app/services/inline_scorer.py" className="font-mono text-sky-600 hover:underline"><code>inline_scorer.score_batch(rows)</code></a>.
+              The pipeline extracts 18 continuous tabular features (<code className="font-mono text-[11px]">FEATURE_DIM = 18</code>) normalized with <code className="font-mono text-[11px]">StandardScaler</code>,
+              and feeds them through the SOTA Feature Tokenizer Transformer (<code className="font-mono text-[11px]">FTTransformerAnomaly</code>; legacy Autoencoder threshold &theta;=0.034618 designated as fallback).
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Formula 1: Reconstruction MSE */}
+              <div className="p-3.5 bg-white rounded-lg border border-slate-200 space-y-2">
+                <div className="text-[11px] font-bold text-slate-900 font-mono">
+                  1. Tabular Reconstruction MSE &amp; Normalization
+                </div>
+                <div className="p-2 bg-slate-50 rounded border border-slate-200 font-mono text-xs text-slate-900">
+                  <code>{"MSE = (1 / 18) * \u2211(x_i - \u0177_i)\u00B2"}</code>
+                </div>
+                <div className="p-2 bg-slate-50 rounded border border-slate-200 font-mono text-xs text-slate-900">
+                  <code>{"norm_anomaly = min(MSE / \u03B8, 1.0)   (\u03B8 = 0.036354)"}</code>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Reconstruction error is normalized by the empirical 95th-percentile threshold <strong>&theta; = 0.036354</strong>, calibrated on benign mempool baselines.
+                </p>
+              </div>
+
+              {/* Formula 2: Provisional Composite Scoring */}
+              <div className="p-3.5 bg-white rounded-lg border border-slate-200 space-y-2">
+                <div className="text-[11px] font-bold text-slate-900 font-mono">
+                  2. Provisional Composite Risk Scoring
+                </div>
+                <div className="p-2 bg-slate-50 rounded border border-slate-200 font-mono text-xs text-slate-900">
+                  <code>{"raw_prov = 0.35 * norm_anomaly + 0.15 * rule_factor"}</code>
+                </div>
+                <div className="p-2 bg-slate-50 rounded border border-slate-200 font-mono text-xs text-slate-900">
+                  <code>{"provisional_score = min(max(raw_prov / 0.50, 0.0), 1.0)"}</code>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Where <code className="font-mono text-[10px]">rule_factor = 1.0</code> if the address triggers heuristic rules (<code className="font-mono text-[10px]">RANSOMWHERE_SEED_INPUT/OUTPUT</code>, <code className="font-mono text-[10px]">RANSOMWHERE_SEED_RECIPIENT</code>, or <code className="font-mono text-[10px]">PEELING_CHAIN_CANDIDATE</code>), and 0.0 otherwise.
+                </p>
+              </div>
+            </div>
+
+            {/* Verdict thresholds comparison table */}
+            <div className="overflow-x-auto border border-slate-200 rounded-lg bg-white">
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="bg-slate-50 text-[10px] text-slate-500 border-b border-slate-200">
+                  <tr>
+                    <th className="py-2 px-3">Verdict Classification</th>
+                    <th className="py-2 px-3">Online Provisional Verdict (Phase 11.2)</th>
+                    <th className="py-2 px-3">Full Offline Batch Verdict (Phase 8 Production)</th>
+                    <th className="py-2 px-3 font-sans">Operational Response</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-[11px]">
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2 px-3 font-bold text-rose-700">CRITICAL</td>
+                    <td className="py-2 px-3 font-bold text-slate-900">&ge; 0.70</td>
+                    <td className="py-2 px-3 text-slate-600">&ge; 0.80</td>
+                    <td className="py-2 px-3 font-sans text-rose-800">Immediate FIU/NTRO freeze order; live graph peel tracking</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2 px-3 font-bold text-amber-700">HIGH</td>
+                    <td className="py-2 px-3 font-bold text-slate-900">&ge; 0.50</td>
+                    <td className="py-2 px-3 text-slate-600">&ge; 0.60</td>
+                    <td className="py-2 px-3 font-sans text-amber-800">Automated sub-graph expansion; seed proximity hop analysis</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2 px-3 font-bold text-sky-700">MEDIUM</td>
+                    <td className="py-2 px-3 font-bold text-slate-900">&ge; 0.30</td>
+                    <td className="py-2 px-3 text-slate-600">&ge; 0.40</td>
+                    <td className="py-2 px-3 font-sans text-sky-800">Flagged for next offline Graph Transformer retraining batch</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2 px-3 font-bold text-slate-600">LOW</td>
+                    <td className="py-2 px-3 font-bold text-slate-900">&lt; 0.30</td>
+                    <td className="py-2 px-3 text-slate-600">&lt; 0.40</td>
+                    <td className="py-2 px-3 font-sans text-slate-500">Nominal peer-to-peer / exchange settlement</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Atomic Registration into xai_store.py */}
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold font-mono text-slate-900 uppercase flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-indigo-600" />
+                Atomic In-Memory Registration in <a href="file:///c:/Users/bari2/Desktop/SIH26146/backend/app/services/xai_store.py" className="text-indigo-600 hover:underline"><code>xai_store.py</code></a>
+              </h4>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold flex items-center gap-1">
+                <Lock className="w-3 h-3" />
+                threading.RLock Protected
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Once online scoring completes, <code className="font-mono text-[11px]">xai_store.upsert_batch(scored_records)</code> atomically commits the provisional records to FastAPI&apos;s live heap.
+              To guarantee data consistency without compromising concurrent read throughput on <code className="font-mono text-[11px]">/api/v1/entity/&#123;address&#125;/explain</code>,
+              the store applies strict concurrency and overwrite guards:
+            </p>
+
+            <div className="p-3.5 bg-slate-900 text-slate-200 rounded-lg font-mono text-xs overflow-x-auto space-y-1">
+              <div className="text-slate-400 text-[10px]"># backend/app/services/xai_store.py — upsert_batch()</div>
+              <div>with _store_lock:</div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;for item in scored_items:</div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;addr = item[&quot;address&quot;]</div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;existing = _composite.get(addr)</div>
+              <div className="text-amber-400">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Never overwrite deep-indexed offline dossiers with provisional scores</div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if existing is not None and not existing.get(&quot;provisional&quot;, False):</div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;skipped += 1</div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else:</div>
+              <div className="text-emerald-400">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_composite[addr] = item[&quot;composite_record&quot;]</div>
+              <div className="text-emerald-400">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_evidence[addr] = item[&quot;evidence_record&quot;]</div>
+              <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;upserted += 1</div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
+              <div className="p-3 bg-white rounded border border-slate-200 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5 font-mono text-[11px]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Zero 404 Analytical Availability
+                </div>
+                <p className="text-slate-600 text-[11px] leading-relaxed">
+                  Immediately following sync, any newly ingested address resolves in <strong className="text-slate-900">&lt;15ms</strong> via <code className="font-mono text-[10px]">/api/v1/entity/&#123;address&#125;/explain</code> with <code className="font-mono text-[10px]">provisional: true</code>, returning complete anomaly MSE and heuristic rule flags.
+                </p>
+              </div>
+
+              <div className="p-3 bg-white rounded border border-slate-200 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5 font-mono text-[11px]">
+                  <Lock className="w-3.5 h-3.5 text-sky-600" />
+                  Deep-Index Sovereign Protection
+                </div>
+                <p className="text-slate-600 text-[11px] leading-relaxed">
+                  Pre-indexed addresses backed by full Dual Transformer inference (PyG <code className="font-mono text-[10px]">TransformerConv</code> F1=0.9209 + FT-Transformer F1=0.6972) are strictly protected from overwrite by transient provisional updates.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}

@@ -10,17 +10,8 @@ import {
   Database,
   Lock,
   ArrowRight,
-  CheckCircle2,
-  FileCheck2,
-  Layers,
-  Sparkles,
-  AlertTriangle,
-  GitFork,
-  Binary,
-  Compass,
 } from "lucide-react";
 import { TopologyDiagram } from "./topology-diagram";
-import { FaqAccordion } from "./faq-accordion";
 
 export const metadata = {
   title: "Chapter 1: The NTRO Mission, Tech Stack & System Topology — NTRO KB",
@@ -72,8 +63,8 @@ export default function Chapter1Page() {
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Inference Engine</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">25.4ms CPU</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">24,673 Nodes GNN</div>
+            <div className="text-sm font-bold text-slate-900 mt-0.5">4.8ms CPU</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">Dual Transformer (F1: 0.921)</div>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Air-Gap Integrity</div>
@@ -253,18 +244,19 @@ export default function Chapter1Page() {
                 </span>
               </div>
               <span className="text-[10px] font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 font-semibold">
-                211.7s AUTOENCODER • 12.2s SAGE
+                4.8ms DUAL TRANSFORMER • F1: 0.9209
               </span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Two complementary PyTorch models evaluate risk in parallel on CPU:
+              Two sovereign PyTorch models evaluate risk concurrently in 4.8ms CPU composite latency:
               <br />
-              <strong>1. Unsupervised 18-Feature Autoencoder (F2):</strong> Extracts reconstruction Mean Squared Error (MSE)
-              to pinpoint unusual transaction topologies, flagging values above the 95th percentile.
+              <strong>1. FT-Transformer Tabular Anomaly Engine (F2):</strong> Projects 18 tabular features into 32d embeddings processed through 2 Multi-Head Self-Attention (MHSA) layers (18,930 parameters, 85.54 KB, 0.0222 ms/sample) to yield a calibrated continuous anomaly score (F1=0.6972, calibrated threshold &theta;=0.0364).
               <br />
-              <strong>2. 3-Layer GraphSAGE GNN (F4):</strong> Implements mean aggregation over 8 topological features
-              (<code className="font-mono text-[11px]">[cluster_id, anomaly_score, is_mixing, fee_log, inputs, outputs, entropy, asn_risk]</code>)
-              trained with Focal Loss (<code className="font-mono text-[11px]">γ=2.0, α=6.20</code>) to conquer class imbalance.
+              <strong>2. Relational Graph Transformer (F4):</strong> PyG <code className="font-mono text-[11px]">TransformerConv</code> with 4 attention heads and 16-dim relation embeddings across <code className="font-mono text-[11px]">:CO_SPEND</code>, <code className="font-mono text-[11px]">:TX_FLOW</code>, and <code className="font-mono text-[11px]">:PEELING_FLOW</code> (34,865 parameters, 145.42 KB, 0.0120 ms/node), achieving F1=0.9209 and 94.8% peeling recall.
+              <br />
+              <span className="text-[11px] text-slate-500 italic">
+                * Note: The earlier 7-layer MLP Autoencoder (211.7s baseline, MSE threshold 0.034618) and GraphSAGE (12.2s baseline, F1=0.8696 multi-rel) serve strictly as superseded legacy baselines.
+              </span>
             </p>
           </div>
 
@@ -285,12 +277,59 @@ export default function Chapter1Page() {
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
               Transforms opaque mathematical scores into court-admissible evidence.
-              <strong> SHAP Waterfall</strong> attributes the 18 Autoencoder feature contributions;
-              <strong> GNNExplainer</strong> extracts critical subgraphs and edge importance masks;
+              <strong> SHAP Waterfall</strong> attributes the 18 FT-Transformer tabular feature contributions;
+              <strong> native attention weights + GNNExplainer</strong> extract critical subgraphs and relational edge importance masks for the Graph Transformer;
               and the <strong>Evidence Trail Compiler</strong> builds a deterministic English narrative detailing
               triggered laundering rules, cluster memberships, and seed proximity. Output reports comply with
               <strong> Section 65B of the Indian Evidence Act</strong> for judicial submission.
             </p>
+          </div>
+        </div>
+
+        {/* Canonical Phase 8 Composite Risk Formulation Callout */}
+        <div className="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-3 font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 font-bold uppercase tracking-wider">
+            <span>Canonical Phase 8 Composite Risk Formulation</span>
+            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              PROVABLY BOUNDED [0.0, 1.0]
+            </span>
+          </div>
+          <div className="text-sm sm:text-base font-bold text-slate-900 overflow-x-auto py-1">
+            {"Risk = clip(0.35 * S_anom + 0.45 * P_gnn + 0.15 * R_rules + 0.05 * M_mix, 0.0, 1.0)"}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 text-xs border-t border-slate-200/80">
+            <div>
+              <span className="text-indigo-700 font-bold">0.35 &bull; S_anom</span>
+              <div className="text-[11px] text-slate-500 font-sans mt-0.5">
+                FT-Transformer tabular anomaly score (calibrated threshold &theta; = 0.0364).
+              </div>
+            </div>
+            <div>
+              <span className="text-sky-700 font-bold">0.45 &bull; P_gnn</span>
+              <div className="text-[11px] text-slate-500 font-sans mt-0.5">
+                Relational Graph Transformer illicit proximity probability (F1 = 0.9209).
+              </div>
+            </div>
+            <div>
+              <span className="text-amber-700 font-bold">0.15 &bull; R_rules</span>
+              <div className="text-[11px] text-slate-500 font-sans mt-0.5">
+                Deterministic rule penalty bonus (high-risk ASN hops, fee surges, velocity).
+              </div>
+            </div>
+            <div>
+              <span className="text-purple-700 font-bold">0.05 &bull; M_mix</span>
+              <div className="text-[11px] text-slate-500 font-sans mt-0.5">
+                Binary mixing indicator (&ge;5-hop peeling chains or CoinJoin pools).
+              </div>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-slate-500">
+            <div>
+              <strong className="text-slate-700">Batch Verdicts:</strong> CRITICAL &ge; 0.80 &bull; HIGH &ge; 0.60 &bull; MEDIUM &ge; 0.40 &bull; LOW &lt; 0.40
+            </div>
+            <div>
+              <strong className="text-slate-700">Online Provisional:</strong> CRITICAL &ge; 0.70 &bull; HIGH &ge; 0.50 &bull; MEDIUM &ge; 0.30 &bull; LOW &lt; 0.30
+            </div>
           </div>
         </div>
       </section>
@@ -375,7 +414,7 @@ export default function Chapter1Page() {
                 <td className="py-3 px-4 font-mono font-semibold text-slate-900">Torch 2.4.1+cpu / PyG 2.6.1</td>
                 <td className="py-3 px-4">Deep Learning Inference Runtime</td>
                 <td className="py-3 px-4 text-slate-600 leading-relaxed">
-                  CPU-optimized inference eliminates GPU driver and CUDA compatibility risks in air-gapped field hardware. Runs Autoencoder MSE and GraphSAGE in 25.4ms.
+                  CPU-optimized sovereign Dual Transformer pipeline (FT-Transformer + PyG TransformerConv) running in 4.8ms composite CPU latency with 231 KB weights (fitting in CPU L3 cache), eliminating GPU driver and CUDA compatibility risks in air-gapped field hardware.
                 </td>
               </tr>
               <tr className="hover:bg-slate-50/50 transition-colors">
@@ -494,26 +533,6 @@ export default function Chapter1Page() {
             </tbody>
           </table>
         </div>
-      </section>
-
-      {/* SECTION 5: Teammate FAQ Accordion */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
-            06
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Architectural FAQ & Engineering Defense
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">
-              Direct technical rationales addressing dual-storage, CPU-only ML, address hashing, and idempotency
-            </p>
-          </div>
-        </div>
-
-        {/* Embedded FAQ Accordion */}
-        <FaqAccordion />
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}

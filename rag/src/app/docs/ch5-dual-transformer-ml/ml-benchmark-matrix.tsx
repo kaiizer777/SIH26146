@@ -4,16 +4,8 @@ import React, { useState } from "react";
 import {
   Trophy,
   CheckCircle2,
-  Cpu,
-  Zap,
   TrendingUp,
-  HardDrive,
-  Clock,
-  ShieldCheck,
-  Binary,
-  Layers,
   Sparkles,
-  ArrowUpRight,
   Fingerprint,
 } from "lucide-react";
 
@@ -48,13 +40,13 @@ const BENCHMARK_DATA: ModelBenchmark[] = [
     isSota: true,
     architectureType: "2-Layer Multi-Head Relational Graph Attention Network (4 Heads)",
     f1: "0.9209",
-    precision: "0.8940 / 0.9341*",
-    recall: "0.9495 / 0.9081*",
+    precision: "0.8940",
+    recall: "0.9495",
     rocAuc: "0.9956",
     peelingRecall: "94.8%",
     paramCount: "34,865",
-    modelSizeKb: "145.42 KB (~1.2 MB full pt)",
-    cpuLatency: "0.0120 ms/node (295.5 ms / 24,673 nodes; 4.8 ms ego-net)",
+    modelSizeKb: "145.42 KB",
+    cpuLatency: "0.0120 ms/node (295.53 ms / 24,673 nodes; 4.8 ms composite)",
     edgeRelations: "3 Discrete Relations (CO_SPEND, TX_FLOW, PEELING_FLOW)",
     lossFunction: "Focal Loss (γ=2.0, α=6.20 class-balanced)",
     xaiMechanism: "Native Multi-Head Relational Attention Edge Weights (α ∈ [0, 1])",
@@ -68,19 +60,19 @@ const BENCHMARK_DATA: ModelBenchmark[] = [
     status: "Legacy Baseline Reference",
     isSota: false,
     architectureType: "3-Layer SAGEConv Mean-Neighborhood Aggregator (64→32→16)",
-    f1: "0.8696 (Multi-Rel) / 0.8312 (Strict)",
-    precision: "0.8640",
-    recall: "0.8750",
-    rocAuc: "0.9820",
+    f1: "0.9711 (co-spend) / 0.8696 (multi-rel)",
+    precision: "0.9637",
+    recall: "0.9786",
+    rocAuc: "0.9988",
     peelingRecall: "81.2%",
     paramCount: "6,465",
     modelSizeKb: "30.93 KB",
-    cpuLatency: "0.0010 ms/node (25.4 ms / 24,673 nodes)",
+    cpuLatency: "0.0010 ms/node (25.4 ms full graph; 12.2s training)",
     edgeRelations: "Single Homogeneous Adjacency (:CO_SPEND only)",
     lossFunction: "Standard Binary Cross Entropy / Focal Loss Baseline",
     xaiMechanism: "Post-hoc GNNExplainer edge masking (150ms per entity)",
     checkpointFilename: "graphsage_20260908.pt",
-    gateStatus: "BASELINE",
+    gateStatus: "PASS",
   },
   {
     modelName: "FT-Transformer (Feature Tokenizer Transformer)",
@@ -95,8 +87,8 @@ const BENCHMARK_DATA: ModelBenchmark[] = [
     rocAuc: "0.9739",
     peelingRecall: "N/A (Tabular Anomaly)",
     paramCount: "18,930",
-    modelSizeKb: "85.54 KB (~350 KB full pt)",
-    cpuLatency: "0.0222 ms/sample (3.2 ms batch slice, <5ms SLA)",
+    modelSizeKb: "85.54 KB",
+    cpuLatency: "0.0222 ms/sample (333.14 ms / 15,000 batch)",
     edgeRelations: "N/A (18 Tabular Features)",
     lossFunction: "Normalized Reconstruction MSE Error",
     xaiMechanism: "Free Native 18×18 Cross-Feature & [CLS] Attention Extraction (0.0ms)",
@@ -117,12 +109,12 @@ const BENCHMARK_DATA: ModelBenchmark[] = [
     peelingRecall: "N/A (Tabular Anomaly)",
     paramCount: "7,650",
     modelSizeKb: "34.44 KB",
-    cpuLatency: "0.0100 ms/sample (1.0 s / 100,000 scored)",
+    cpuLatency: "0.0100 ms/sample (1.0s / 100k scored; 211.7s training)",
     edgeRelations: "N/A (18 Tabular Features)",
     lossFunction: "Bottleneck Reconstruction MSE (Val 95th %ile threshold: 0.034618)",
     xaiMechanism: "GradientExplainer / KernelSHAP Perturbation (~250ms per entity)",
     checkpointFilename: "autoencoder_20260907.pt",
-    gateStatus: "BASELINE",
+    gateStatus: "PASS",
   },
 ];
 
@@ -426,12 +418,12 @@ export function MlBenchmarkMatrix() {
           </table>
 
           {/* Table Footnote */}
-          <div className="mt-3 pt-3 border-t border-slate-200 text-[10px] font-mono text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="mt-3 pt-3 border-t border-slate-200 text-[10px] font-mono text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              *Promotion test split values evaluated on held-out test split (Precision: 0.9341, Recall: 0.9081) at calibrated threshold 0.70.
+              Section 65B Certified Production Weights: Graph Transformer (<code className="text-slate-700 font-bold">0ada0cda...</code>) &bull; FT-Transformer (<code className="text-slate-700 font-bold">fe110848...</code>)
             </div>
-            <div className="flex items-center gap-1.5 text-slate-500 font-semibold">
-              <Fingerprint className="w-3 h-3 text-sky-600" />
+            <div className="flex items-center gap-1.5 text-slate-600 font-semibold">
+              <Fingerprint className="w-3.5 h-3.5 text-sky-600" />
               Cryptographic Checksum: SHA-256 Verified
             </div>
           </div>

@@ -11,15 +11,9 @@ import {
   Download,
   Printer,
   FileCode,
-  HardDrive,
   Clock,
-  Fingerprint,
   RefreshCw,
   AlertOctagon,
-  Scale,
-  Sparkles,
-  Layers,
-  Award,
 } from "lucide-react";
 
 interface CertificateEntity {
@@ -126,7 +120,7 @@ export function LegalCertificateViewer() {
     return {
       certificate_id: `NTRO-65B-2026-${addrSlice}-E4F1`,
       statutory_standard: "Section 65B Indian Evidence Act, 1872 & Section 63 Bharatiya Sakshya Adhiniyam, 2023",
-      jurisdiction: "Republic of India (Supreme Court Arjuna Panditrao Khotkar v. Kailash Kushanrao Gorantyal Benchmark)",
+      jurisdiction: "Republic of India (Supreme Court Arjun Panditrao Khotkar v. Kailash Kushanrao Gorantyal (2020) 7 SCC 1 Benchmark)",
       timestamp_utc: "2026-09-13T14:34:22.841Z",
       timestamp_ist: "13 September 2026, 8:04:22 pm (IST)",
       air_gap_attestation: {
@@ -352,6 +346,16 @@ export function LegalCertificateViewer() {
           >
             <AlertOctagon className={`w-3.5 h-3.5 ${isTampered ? "text-rose-600" : "text-slate-400"}`} />
             {isTampered ? "Tamper Injected (1 Byte Mod)" : "Simulate Tampering"}
+          </button>
+
+          {/* Print Dossier */}
+          <button
+            onClick={simulatePrint}
+            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-mono font-medium transition-colors flex items-center gap-1 cursor-pointer"
+            title="Print Court Dossier"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
+            Print Dossier
           </button>
 
           {/* JSON Export */}
@@ -611,7 +615,7 @@ export function LegalCertificateViewer() {
               <div className="text-xs font-mono font-bold text-slate-900">Stage 2: Deterministic Dual Transformer Inference</div>
               <div className="text-[11px] font-mono text-slate-500 mt-0.5">2026-09-13T14:34:21.418Z &bull; Runtime: Pure CPU PyTorch 2.4.1</div>
               <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                FT-Transformer computed continuous tabular reconstruction error (3.2ms). PyG Relational Graph Transformer propagated 4-head attention weights (18.4ms) under seeded weights.
+                Dual Transformer runs in 4.8ms combined CPU latency (0.022ms/tx FT, 0.012ms/node Graph) under deterministic seeded weights.
               </p>
             </div>
 

@@ -2,18 +2,12 @@
 
 import React, { useState } from "react";
 import {
-  Database,
   Network,
   Copy,
   Check,
-  Code2,
   Terminal,
   Layers,
-  ArrowRight,
   ShieldCheck,
-  Cpu,
-  Info,
-  ExternalLink,
 } from "lucide-react";
 
 type SchemaCategory = "nodes" | "edges";
@@ -56,7 +50,7 @@ const SCHEMA_ENTITIES: Record<string, SchemaEntity> = {
     cardinality: "24,673 Nodes",
     cardinalitySub: "100% Clustered via Louvain",
     summary:
-      "Represents a discrete cryptographic Bitcoin address (Base58 P2PKH/P2SH, Bech32 SegWit, or Bech32m Taproot). Serves as the atomic building block for entity clustering, anomaly evaluation, and GraphSAGE risk inference.",
+      "Represents a discrete cryptographic Bitcoin address (Base58 P2PKH/P2SH, Bech32 SegWit, or Bech32m Taproot). Serves as the atomic building block for entity clustering, anomaly evaluation, and Relational Graph Transformer risk inference.",
     properties: [
       {
         name: "address",
@@ -76,14 +70,14 @@ const SCHEMA_ENTITIES: Record<string, SchemaEntity> = {
         name: "risk_score",
         type: "FLOAT",
         constraint: "INDEXED (range)",
-        description: "Composite GNN risk probability computed by 3-layer GraphSAGE [0.0, 1.0]",
+        description: "Composite GNN risk probability computed by Relational Graph Transformer (PyG TransformerConv, F1=0.9209; legacy baseline GraphSAGE F1=0.8696/0.9711) [0.0, 1.0]",
         example: "0.8924",
       },
       {
         name: "anomaly_score",
         type: "FLOAT",
         constraint: "OPTIONAL",
-        description: "Reconstruction Mean Squared Error (MSE) from 18-feature deep autoencoder",
+        description: "Tabular anomaly score computed by FT-Transformer (calibrated threshold θ = 0.036354; legacy baseline Autoencoder MSE 0.034618)",
         example: "0.0481",
       },
       {
@@ -175,7 +169,7 @@ LIMIT 10;`,
         name: "anomaly_score",
         type: "FLOAT",
         constraint: "OPTIONAL",
-        description: "Autoencoder reconstruction error flagging abnormal fee/entropy ratios",
+        description: "FT-Transformer tabular anomaly score flagging abnormal fee/entropy ratios (calibrated threshold θ = 0.036354; legacy baseline Autoencoder MSE 0.034618)",
         example: "0.0892",
       },
     ],
@@ -264,8 +258,8 @@ LIMIT 10;`,
     badgeColor: "text-indigo-700",
     badgeBorder: "border-indigo-200",
     badgeBg: "bg-indigo-50",
-    cardinality: "79,240 Edges",
-    cardinalitySub: "Canonical addr1 < addr2",
+    cardinality: "45,516 Stored Edges",
+    cardinalitySub: "79,240 GDS Projected (Undirected)",
     summary:
       "Direct peer relationship between two :Wallet nodes established by the Common-Input Ownership Heuristic (CIOH). If Address A and Address B sign inputs to the same transaction, they are proven to belong to the same spending entity.",
     properties: [
@@ -289,6 +283,27 @@ LIMIT 10;`,
         constraint: "IMPLICIT / 1.0",
         description: "Co-occurrence frequency across multi-input transactions",
         example: "1.0",
+      },
+      {
+        name: "attention_score",
+        type: "FLOAT",
+        constraint: "DYNAMIC GNN EDGE",
+        description: "Multi-head attention coefficient from Relational Graph Transformer (alpha_mean = 0.88)",
+        example: "0.8841",
+      },
+      {
+        name: "head_attentions",
+        type: "MAP / JSON",
+        constraint: "DYNAMIC GNN EDGE",
+        description: "Per-head attention weights {head_1_co_spend, head_2_multihop, head_3_seed_prox, head_4_peeling}",
+        example: '{"head_1_co_spend": 0.91, "head_2_multihop": 0.84, "head_3_seed_prox": 0.89, "head_4_peeling": 0.88}',
+      },
+      {
+        name: "is_explanatory",
+        type: "BOOLEAN",
+        constraint: "GNN EXPLAINER",
+        description: "True if attention weight exceeds explanatory subgraph pruning threshold",
+        example: "true",
       },
     ],
     cypherQuery: `// Projection of Pairwise CO_SPEND with Anti-Explosion Guard

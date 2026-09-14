@@ -115,23 +115,16 @@ export function DocsHeader() {
       ? CHAPTER_ORDER[currentIndex + 1]
       : null;
 
-  const Icon = current.icon;
-
   return (
     <header className="h-[64px] border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-5 sm:px-8 flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.03)] select-none">
-      {/* Left: Icon, Category & Chapter No in 1 line -> Vertical Divider -> Title */}
+      {/* Left: Category & Chapter No in 1 line -> Vertical Divider -> Title */}
       <div className="flex-1 flex items-center space-x-3.5 min-w-0 mr-4 sm:mr-6">
-        {/* Chapter Icon */}
-        <div className="w-[32px] h-[32px] rounded-[8px] bg-gradient-to-b from-blue-500 to-blue-600 border-t border-t-blue-300/70 border-b border-b-blue-800 text-white flex items-center justify-center flex-shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_5px_rgba(37,99,235,0.2)]">
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-
         {/* Category & Chapter Badge in 1 line */}
         <div className="flex items-center space-x-2 flex-shrink-0 font-mono text-[11.5px]">
           <span className="font-semibold text-slate-600 tracking-wide uppercase">
             {current.category}
           </span>
-          <span className="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-[4px] border border-blue-200/80">
+          <span className="font-bold text-slate-950 bg-slate-100 px-1.5 py-0.5 rounded-[4px] border border-slate-300/90 shadow-2xs">
             {current.num === "AI" ? "AI ASSISTANT" : `CH ${current.num}`}
           </span>
         </div>

@@ -7,27 +7,13 @@ import {
   ArrowLeft,
   Sparkles,
   Layers,
-  ShieldCheck,
   CheckCircle2,
-  TrendingUp,
-  HardDrive,
-  Clock,
-  Fingerprint,
-  Zap,
   Flame,
-  FileCode,
-  Sliders,
-  Braces,
   Hash,
-  Database,
-  BarChart3,
-  GitFork,
-  HelpCircle,
 } from "lucide-react";
 import { AttentionMatrix } from "./attention-matrix";
 import { TransformerPipeline } from "./transformer-pipeline";
 import { MlBenchmarkMatrix } from "./ml-benchmark-matrix";
-import { MlFaq } from "./ml-faq";
 
 export const metadata = {
   title: "Chapter 5: Dual Transformer ML Engine (FT-Transformer & Graph Transformer) — NTRO KB",
@@ -77,17 +63,17 @@ export default function Chapter5Page() {
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Graph Transformer Test F1</div>
             <div className="text-sm font-bold text-slate-900 mt-0.5">0.9209</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">vs GraphSAGE baseline 0.8312</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">vs GraphSAGE baseline 0.8696 (+5.9% lift)</div>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
-            <div className="text-[10px] text-slate-400 uppercase font-bold">FT-Transformer Anomaly Latency</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">3.2 ms on CPU</div>
-            <div className="text-[10px] text-emerald-600 font-semibold">&lt; 5ms Post-Ingest SLA</div>
+            <div className="text-[10px] text-slate-400 uppercase font-bold">Composite Latency</div>
+            <div className="text-sm font-bold text-slate-900 mt-0.5">4.8 ms on CPU</div>
+            <div className="text-[10px] text-emerald-600 font-semibold">-44% vs 8.6ms legacy baseline</div>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Model Weight Footprint</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">~350 KB (FT) / ~1.2 MB (Graph)</div>
-            <div className="text-[10px] text-sky-600 font-semibold">Fits in CPU L3 Cache</div>
+            <div className="text-sm font-bold text-slate-900 mt-0.5">85.5 KB (FT) / 145.4 KB (Graph)</div>
+            <div className="text-[10px] text-sky-600 font-semibold">231 KB Total &bull; Pure CPU Sovereign</div>
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Edge Relations Modeled</div>
@@ -240,7 +226,7 @@ export default function Chapter5Page() {
                 1. Vectorized Linear Feature Tokenization
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Given an input vector <em>x</em> &in; &reals;<sup>B &times; 18</sup> normalized via <code className="font-mono text-slate-800 text-[11px]">RobustScaler</code>, 
+                Given an input vector <em>x</em> &in; &reals;<sup>B &times; 18</sup> normalized via <code className="font-mono text-slate-800 text-[11px]">StandardScaler</code>, 
                 each scalar feature <em>x<sub>i</sub></em> is mapped independently into continuous latent space &reals;<sup>32</sup> via dedicated weight vectors and biases:
               </p>
               <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900">
@@ -386,7 +372,7 @@ export default function Chapter5Page() {
                 Focal Loss Formulation for Severe Class Imbalance
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                With only 11,186 known ransomware seed addresses amidst 200,000+ organic wallets (&lt;5% positive class), standard binary cross-entropy 
+                With 24,673 graph wallets comprising 3,426 positive seeds and 21,247 non-illicit nodes (21,247 / 3,426 = 6.20 class imbalance, dynamic focal weight &alpha;<sub>t</sub> = 6.20), standard binary cross-entropy 
                 is saturated by easy benign examples. The Relational Graph Transformer applies Lin et al. (ICCV 2017) Focal Loss:
               </p>
               <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-xs text-slate-900">
@@ -454,26 +440,6 @@ export default function Chapter5Page() {
           </div>
           <TransformerPipeline />
         </div>
-      </section>
-
-      {/* SECTION 6: Teammate FAQ Accordion */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
-            06
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Teammate Technical Defense &amp; Architectural Rationale
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">
-              Engineering rationales defending model choice, zero-latency attribution, and cold-start resilience
-            </p>
-          </div>
-        </div>
-
-        {/* EMBEDDED FAQ COMPONENT */}
-        <MlFaq />
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}

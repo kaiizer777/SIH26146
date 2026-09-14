@@ -7,31 +7,19 @@ import {
   Cpu,
   ArrowRight,
   ArrowLeft,
-  Lock,
   Layers,
-  AlertTriangle,
   CheckCircle2,
-  Zap,
   Activity,
-  GitFork,
   FileCode,
   ShieldAlert,
   ShieldCheck,
-  Clock,
   HardDrive,
   Network,
-  ExternalLink,
-  Search,
-  Check,
-  Copy,
   Bug,
-  HelpCircle,
   Eye,
-  Sliders,
 } from "lucide-react";
 import { CliCommandGenerator } from "./cli-generator";
 import { TroubleshootingGuide } from "./troubleshooting-guide";
-import { OpsFaq } from "./ops-faq";
 import { ForensicCockpitPreview } from "./forensic-cockpit-preview";
 
 export const metadata = {
@@ -60,7 +48,7 @@ export default function Chapter8Page() {
           </span>
           <span className="text-slate-300">•</span>
           <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 font-bold font-mono">
-            196/196 PASSING TESTS
+            198/198 PASSING TESTS
           </span>
         </div>
 
@@ -69,7 +57,7 @@ export default function Chapter8Page() {
         </h1>
 
         <div className="font-mono text-xs text-slate-500 font-semibold tracking-wide uppercase">
-          OPERATOR RUNBOOK • 38PX FORENSIC DENSITY • DEV-SERVER.MD • 196/196 TESTS
+          OPERATOR RUNBOOK • 38PX FORENSIC DENSITY • DEV-SERVER.MD • 198/198 PASSING TESTS
         </div>
 
         <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
@@ -97,7 +85,7 @@ export default function Chapter8Page() {
           </div>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 font-mono">
             <div className="text-[10px] text-slate-400 uppercase font-bold">Test Suite Health</div>
-            <div className="text-sm font-bold text-slate-900 mt-0.5">196/196 Verified</div>
+            <div className="text-sm font-bold text-slate-900 mt-0.5">198/198 PASSING TESTS</div>
             <div className="text-[10px] text-emerald-600 font-semibold">0 Failures • 0 Warnings</div>
           </div>
         </div>
@@ -228,7 +216,7 @@ export default function Chapter8Page() {
                 <strong>The Solution:</strong> Rather than relying on individual developers to remember masking functions in every router,
                 the engine registers <code>_AddressPseudonymFilter</code> on the <strong>Python root logger</strong> in <code>backend/app/main.py</code>.
                 Any log message matching Bitcoin address regular expressions is automatically transformed into an 8-character cryptographic token
-                (&lt;addr:sha256_token&gt;) prior to output stream dispatch.
+                [addr:&lt;sha8&gt;] prior to output stream dispatch.
               </p>
             </div>
           </div>
@@ -259,7 +247,7 @@ class _AddressPseudonymFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         msg = record.getMessage()  # fully interpolated
         if _ADDR_RE.search(msg):
-            record.msg = _ADDR_RE.sub(lambda m: f"[addr_{_sha8(m.group())}]", msg)
+            record.msg = _ADDR_RE.sub(lambda m: f"[addr:{_sha8(m.group())}]", msg)
             record.args = ()  # baked into record.msg
         return True
 
@@ -387,6 +375,188 @@ _root_logger.addFilter(_AddressPseudonymFilter())`}
               </div>
             </div>
           </div>
+
+          {/* Subsection 3.1: Production Deployment Modes: Bare-Metal vs Docker Compose */}
+          <div className="pt-4 space-y-3">
+            <div className="text-xs font-mono font-bold uppercase text-slate-700 flex items-center gap-2">
+              <Server className="w-4 h-4 text-sky-600" />
+              Production Deployment Modes: Bare-Metal vs Docker Compose
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              The SIH26146 surveillance architecture supports two deterministic deployment topologies depending on host operating constraints.
+              Bare-metal execution provides zero-overhead direct memory bus access for maximal tensor throughput, while Docker Compose
+              encapsulates the complete microservice mesh behind container boundaries with isolated port forwarding to prevent host daemon collisions.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+              {/* Bare Metal Mode */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2.5">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                  <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <Terminal className="w-3.5 h-3.5 text-sky-600" />
+                    Mode A: Bare-Metal Local Runbook
+                  </span>
+                  <span className="text-[10px] text-sky-700 bg-sky-100 px-2 py-0.5 rounded font-bold">
+                    PRIMARY DEV / LOW LATENCY
+                  </span>
+                </div>
+                <div className="text-slate-600 space-y-1.5 text-[11px]">
+                  <div>• <strong>PostgreSQL 16:</strong> Port <code>5432</code> (Native localhost binding)</div>
+                  <div>• <strong>Redis 7:</strong> Port <code>6379</code> (Native redis://localhost:6379/0)</div>
+                  <div>• <strong>Neo4j 5.x:</strong> Ports <code>7687</code> (Bolt) / <code>7474</code> (HTTP Browser)</div>
+                  <div>• <strong>FastAPI Backend:</strong> Port <code>8000</code> (uvicorn --reload)</div>
+                  <div>• <strong>Next.js UI:</strong> Port <code>3000</code> | <strong>RAG Portal:</strong> Port <code>3001</code></div>
+                </div>
+                <div className="pt-1 text-[10px] text-slate-500 border-t border-slate-200">
+                  Optimal for active development, rapid hot-reloading, and zero hypervisor memory-copy latency.
+                </div>
+              </div>
+
+              {/* Docker Compose Mode */}
+              <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/30 space-y-2.5">
+                <div className="flex items-center justify-between pb-2 border-b border-indigo-200">
+                  <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                    Mode B: Containerized Sovereign (docker-compose.yml)
+                  </span>
+                  <span className="text-[10px] text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded font-bold">
+                    SOVEREIGN ISOLATION
+                  </span>
+                </div>
+                <div className="text-slate-600 space-y-1.5 text-[11px]">
+                  <div>• <strong>PostgreSQL 16:</strong> Host port <code>5433:5432</code> (Avoids host 5432 collision)</div>
+                  <div>• <strong>Redis 7:</strong> Host port <code>6380:6379</code> (Avoids host 6379 collision)</div>
+                  <div>• <strong>Neo4j GDS:</strong> Host ports <code>7687:7687</code> / <code>7474:7474</code></div>
+                  <div>• <strong>FastAPI Service:</strong> Host port <code>8000:8000</code> (Container internal net)</div>
+                  <div>• <strong>Healthchecks:</strong> <code>pg_isready</code>, <code>redis-cli ping</code>, GDS startup probe</div>
+                </div>
+                <div className="pt-1 text-[10px] text-indigo-700 font-semibold border-t border-indigo-200">
+                  <code>docker compose up -d</code> orchestrates persistent volumes: <code>postgres_data</code>, <code>neo4j_data</code>, <code>redis_data</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Subsection 3.2: Air-Gapped Sizing & Hardware Budget */}
+          <div className="pt-4 space-y-3">
+            <div className="text-xs font-mono font-bold uppercase text-slate-700 flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-emerald-600" />
+              Air-Gapped Sizing &amp; Hardware Budget (Pure CPU L3 Cache Residency)
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              In sovereign intelligence installations, surveillance nodes operate in strictly air-gapped server environments
+              without access to cloud APIs or discrete data-center GPUs. The Dual Transformer architecture was engineered to fit
+              entirely within the L3 CPU cache of standard sovereign workstations, avoiding RAM bus bandwidth throttling.
+            </p>
+
+            {/* Sizing Matrix Card */}
+            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between font-mono text-xs font-bold text-slate-700">
+                <span>Dual Transformer Hardware Footprint &amp; Latency Budget</span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                  230.96 KB COMBINED &bull; L3 RESIDENT
+                </span>
+              </div>
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-1">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">FT-Transformer (Tabular)</div>
+                  <div className="text-base font-bold text-slate-900">18,930 params</div>
+                  <div className="text-[11px] text-slate-600">85.54 KB &bull; F1 = 0.6972</div>
+                  <div className="text-[10px] text-sky-700 font-bold">&theta; = 0.036354 &bull; 0.0222 ms/sample</div>
+                </div>
+                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-1">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Relational Graph Transformer</div>
+                  <div className="text-base font-bold text-slate-900">34,865 params</div>
+                  <div className="text-[11px] text-slate-600">145.42 KB &bull; F1 = 0.9209</div>
+                  <div className="text-[10px] text-indigo-700 font-bold">Peeling Recall: 94.8% &bull; 0.0120 ms/node</div>
+                </div>
+                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-1">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Composite Inference SLA</div>
+                  <div className="text-base font-bold text-emerald-700">4.8 ms CPU Latency</div>
+                  <div className="text-[11px] text-slate-600">Total Size: 230.96 KB</div>
+                  <div className="text-[10px] text-emerald-600 font-bold">Fits 100% in 24MB-36MB L3 Cache</div>
+                </div>
+              </div>
+              <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-200 text-[11px] font-mono text-slate-500 space-y-1">
+                <div>
+                  <strong>Legacy Fallback Baselines:</strong> Legacy Autoencoder (211.7s baseline runtime, MSE threshold 0.034618) and legacy GraphSAGE (12.2s baseline, F1 = 0.8696 multi-rel / 0.9711 co-spend) strictly designated as fallback baselines.
+                </div>
+                <div className="flex flex-wrap items-center gap-3 pt-0.5">
+                  <span><strong>Batch Risk Thresholds:</strong> CRITICAL &ge; 0.80, HIGH &ge; 0.60, MEDIUM &ge; 0.40, LOW &lt; 0.40</span>
+                  <span>&bull;</span>
+                  <span><strong>Online Provisional:</strong> CRITICAL &ge; 0.70, HIGH &ge; 0.50, MEDIUM &ge; 0.30, LOW &lt; 0.30</span>
+                  <span>&bull;</span>
+                  <span><strong>Endpoints:</strong> Mounted strictly at <code>/api/v1/...</code></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Subsection 3.3: Disaster Recovery Protocols */}
+          <div className="pt-4 space-y-3">
+            <div className="text-xs font-mono font-bold uppercase text-slate-700 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-sky-600" />
+              Disaster Recovery Protocols (Snapshotting &amp; Atomic Rollback)
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Forensic continuity mandates rapid state recovery in case of system corruption or erroneous ingest runs.
+              The operator runbook defines standard snapshot and restoration routines across both primary persistence engines
+              alongside atomic model rollbacks:
+            </p>
+
+            <div className="space-y-2.5 font-mono text-xs">
+              {/* PostgreSQL Recovery */}
+              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5">
+                <div className="flex items-center justify-between text-slate-900 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <Database className="w-3.5 h-3.5 text-sky-600" />
+                    1. PostgreSQL Relational Snapshot (pg_dump / pg_restore)
+                  </span>
+                  <span className="text-[10px] text-slate-500">FORMAT: CUSTOM COMPRESSED (-F c)</span>
+                </div>
+                <div className="bg-slate-950 p-2.5 rounded text-slate-300 space-y-1 text-[11px] overflow-x-auto">
+                  <div className="text-slate-500"># Backup schema, indexes, heuristics, and alerts:</div>
+                  <div>pg_dump -U sih_user -h localhost -p 5432 -d sih_bitcoin -F c -b -v -f C:\backups\pg_sih_bitcoin_$(Get-Date -Format &apos;yyyyMMdd_HHmmss&apos;).dump</div>
+                  <div className="text-slate-500 pt-1"># Atomic restoration:</div>
+                  <div>pg_restore -U sih_user -h localhost -p 5432 -d sih_bitcoin -c -v C:\backups\latest.dump</div>
+                </div>
+              </div>
+
+              {/* Neo4j Recovery */}
+              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5">
+                <div className="flex items-center justify-between text-slate-900 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <Network className="w-3.5 h-3.5 text-indigo-600" />
+                    2. Neo4j Graph Topology Snapshot (neo4j-admin database dump)
+                  </span>
+                  <span className="text-[10px] text-slate-500">OFFLINE CONSISTENT GRAPH DUMP</span>
+                </div>
+                <div className="bg-slate-950 p-2.5 rounded text-slate-300 space-y-1 text-[11px] overflow-x-auto">
+                  <div className="text-slate-500"># Dump graph nodes, Louvain clusters, and multi-relational edges:</div>
+                  <div>neo4j-admin database dump neo4j --to-path=C:\backups\neo4j\neo4j_$(Get-Date -Format &apos;yyyyMMdd&apos;).dump</div>
+                  <div className="text-slate-500 pt-1"># Restore graph database:</div>
+                  <div>neo4j-admin database load neo4j --from-path=C:\backups\neo4j\neo4j.dump --overwrite-destination=true</div>
+                </div>
+              </div>
+
+              {/* Atomic Model Rollback */}
+              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5">
+                <div className="flex items-center justify-between text-slate-900 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5 text-amber-600" />
+                    3. Atomic Score &amp; Model Rollback Protocol
+                  </span>
+                  <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded font-bold">&lt; 150 MS ZERO DOWNTIME</span>
+                </div>
+                <div className="bg-slate-950 p-2.5 rounded text-slate-300 space-y-1 text-[11px] overflow-x-auto">
+                  <div className="text-slate-500"># Roll back active checkpoints to previous verified state:</div>
+                  <div className="text-amber-300">python backend/scripts/promote_models.py --rollback</div>
+                  <div className="text-slate-500 pt-1"># Flush sync idempotency guards and reset in-memory XAI store under RLock:</div>
+                  <div>redis-cli --eval &quot;for _,k in ipairs(redis.call(&apos;keys&apos;, &apos;sync_done:*&apos;)) do redis.call(&apos;del&apos;, k) end&quot;</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -401,7 +571,7 @@ _root_logger.addFilter(_AddressPseudonymFilter())`}
               Automated Verification &amp; CI/CD Health
             </h2>
             <p className="text-xs text-slate-500 font-mono">
-              Pytest comprehensive verification suite (196/196 passing) and strict TypeScript typechecking
+              Pytest comprehensive verification suite (198/198 PASSING TESTS) and strict TypeScript typechecking
             </p>
           </div>
         </div>
@@ -444,7 +614,7 @@ _root_logger.addFilter(_AddressPseudonymFilter())`}
                 Deterministic Verification Commands
               </span>
               <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-bold text-[10px]">
-                PASSING: 196+ ASSERTIONS
+                PASSING: 198/198 TESTS
               </span>
             </div>
             <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-slate-300 space-y-1 overflow-x-auto">
@@ -492,25 +662,6 @@ _root_logger.addFilter(_AddressPseudonymFilter())`}
           </div>
           <TroubleshootingGuide />
         </div>
-      </section>
-
-      {/* SECTION 6: Teammate FAQ Accordion */}
-      <section className="space-y-6 pt-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-sm shadow-xs">
-            06
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Teammate Technical Defense &amp; Operations FAQ
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">
-              Engineering justifications covering Windows solo pool, offline air-gap, targeted pytest execution, and log sanitization
-            </p>
-          </div>
-        </div>
-
-        <OpsFaq />
       </section>
 
       {/* CHAPTER FOOTER NAVIGATION */}

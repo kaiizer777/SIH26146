@@ -12,12 +12,7 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  Lock,
   Terminal,
-  Layers,
-  AlertTriangle,
-  FileSpreadsheet,
-  Zap,
   Activity,
   ShieldCheck,
 } from "lucide-react";
@@ -145,16 +140,16 @@ const STEPS: StepDetail[] = [
     action: "HTTP 200 OK -> onSuccess() Alert Grid Auto-Refresh",
     protocol: "JSON Response -> React SWR Revalidation",
     description:
-      "FastAPI responds with HTTP 200 {scored: 1000, upserted: 42}. Frontend closes IngestModal, triggers onSuccess(), and revalidates the AlertTable. When an analyst clicks any newly ingested wallet, GET /entity/{addr}/explain hits the updated xai_store immediately: zero 404s, returning a live Provisional Dossier!",
+      "FastAPI responds with HTTP 200 {scored: 1000, upserted: 42}. Frontend closes IngestModal, triggers onSuccess(), and revalidates the AlertTable. When an analyst clicks any newly ingested wallet, GET /api/v1/entity/{addr}/explain hits the updated xai_store immediately: zero 404s, returning a live Provisional Dossier!",
     frontendState: "MODAL CLOSED. AlertTable auto-refreshed. Operator clicks new wallet -> 200 OK!",
     redisState: "sync_done key persists for 1 hour to reject redundant duplicate sync calls",
     celeryState: "IDLE (Ready for next bulk archive)",
-    fastapiState: "Serving GET /entity/{address}/explain in 1.2ms from synchronized in-memory index",
+    fastapiState: "Serving GET /api/v1/entity/{address}/explain in 1.2ms from synchronized in-memory index",
     terminalLogs: [
       "[FASTAPI 20:11:04] HTTP/1.1 200 OK -> {scored: 1000, upserted: 42, skipped_existing: 0}",
       "[NEXTJS  20:11:04] IngestModal onSuccess() called. Revalidating /api/alerts...",
-      "[NEXTJS  20:11:05] Analyst clicks bc1q98x... -> GET /entity/bc1q98x.../explain",
-      "[FASTAPI 20:11:05] GET /entity/bc1q98x/explain HTTP/1.1 200 OK (Provisional Dossier served in 1.4ms)",
+      "[NEXTJS  20:11:05] Analyst clicks bc1q98x... -> GET /api/v1/entity/bc1q98x.../explain",
+      "[FASTAPI 20:11:05] GET /api/v1/entity/bc1q98x/explain HTTP/1.1 200 OK (Provisional Dossier served in 1.4ms)",
     ],
   },
 ];

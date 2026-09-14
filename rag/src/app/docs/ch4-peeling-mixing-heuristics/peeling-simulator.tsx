@@ -34,12 +34,16 @@ interface HopData {
 
 export function PeelingSimulator() {
   // Simulator Controls
+  const [thresholdMode, setThresholdMode] = useState<"strict" | "investigative">("strict");
   const [initialBtc, setInitialBtc] = useState<number>(100.0);
-  const [peelPercent, setPeelPercent] = useState<number>(5.0); // e.g. 5%
+  const [peelPercent, setPeelPercent] = useState<number>(5.0); // Default 5.0% for strict production
   const [chainLength, setChainLength] = useState<number>(6); // 5 to 10 hops
   const [currentHopIndex, setCurrentHopIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"topology" | "cypher" | "metrics">("topology");
+
+  // Threshold bounds: Strict production default = 5%, wide investigative = 20%
+  const maxPeelAllowed = thresholdMode === "strict" ? 5.0 : 20.0;
 
   // Fixed network fee per hop in BTC
   const feePerHop = 0.0002;
@@ -57,8 +61,8 @@ export function PeelingSimulator() {
       const pPercent = currentBalance > 0 ? (peeled / currentBalance) * 100 : 0;
       const fPercent = currentBalance > 0 ? (forward / currentBalance) * 100 : 0;
 
-      // Criteria: 1-in-2-out, peel <= 20%, forward >= 80%
-      const isQualifying = pPercent <= 20.0 && fPercent >= 79.5;
+      // Criteria: 1-in-2-out, peel <= maxPeelAllowed (5% strict or 20% wide), forward >= 80%
+      const isQualifying = Math.round(pPercent * 100) / 100 <= maxPeelAllowed && fPercent >= 79.5;
 
       list.push({
         hopNumber: i,
@@ -78,7 +82,7 @@ export function PeelingSimulator() {
       currentBalance = forward;
     }
     return list;
-  }, [initialBtc, peelPercent, chainLength]);
+  }, [initialBtc, peelPercent, chainLength, maxPeelAllowed]);
 
   // Overall detection verdict
   const isChainDetected = useMemo(() => {
@@ -155,6 +159,51 @@ export function PeelingSimulator() {
         </div>
       </div>
 
+      {/* Policy Mode Selector Bar */}
+      <div className="px-4 py-2.5 sm:px-5 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            Detection Policy:
+          </span>
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 font-mono text-[11px]">
+            <button
+              onClick={() => {
+                setThresholdMode("strict");
+              }}
+              className={`px-3 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                thresholdMode === "strict"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Strict Production (5% Max)
+            </button>
+            <button
+              onClick={() => {
+                setThresholdMode("investigative");
+              }}
+              className={`px-3 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                thresholdMode === "investigative"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Wide Investigative (20% Max)
+            </button>
+          </div>
+        </div>
+        <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1.5">
+          <span className="text-slate-400">CLI:</span>
+          <code className="text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 font-bold">
+            {thresholdMode === "strict" ? "--peel-ratio-max = 0.05" : "--peel-ratio-max = 0.20"}
+          </code>
+          <span className="text-slate-300">&bull;</span>
+          <code className="text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 font-semibold">
+            --change-ratio-min = 0.80
+          </code>
+        </div>
+      </div>
+
       {/* Simulator Control Sliders Grid */}
       <div className="p-4 sm:p-5 border-b border-slate-200 bg-white grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Slider 1: Initial Amount */}
@@ -198,12 +247,12 @@ export function PeelingSimulator() {
             </label>
             <span
               className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
-                peelPercent <= 20
+                peelPercent <= maxPeelAllowed
                   ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                   : "bg-rose-50 text-rose-800 border border-rose-200"
               }`}
             >
-              {peelPercent.toFixed(1)}% (Threshold: &le; 20%)
+              {peelPercent.toFixed(1)}% (Threshold: &le; {maxPeelAllowed.toFixed(1)}%)
             </span>
           </div>
           <input
@@ -222,7 +271,12 @@ export function PeelingSimulator() {
           />
           <div className="flex justify-between text-[10px] font-mono text-slate-400">
             <span>1% (Stealth)</span>
-            <span className="font-semibold text-amber-600">20% (Cutoff)</span>
+            <span className={thresholdMode === "strict" ? "font-bold text-emerald-700 underline decoration-emerald-500" : "text-slate-500"}>
+              5% (Strict Prod)
+            </span>
+            <span className={thresholdMode === "investigative" ? "font-bold text-amber-700 underline decoration-amber-500" : "text-slate-500"}>
+              20% (Wide Net)
+            </span>
             <span>35% (Non-peeling)</span>
           </div>
         </div>
@@ -526,18 +580,24 @@ export function PeelingSimulator() {
               </div>
 
               <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">3. Peel Ratio Max</div>
+                <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+                  3. Peel Ratio Max ({thresholdMode === "strict" ? "5% Strict" : "20% Wide"})
+                </div>
                 <div className="flex items-center gap-1.5 text-xs font-bold">
-                  {activeHop.peeledPercent <= 20.0 ? (
+                  {activeHop.peeledPercent <= maxPeelAllowed ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   ) : (
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
                   )}
-                  <span className={activeHop.peeledPercent <= 20.0 ? "text-slate-900" : "text-rose-700"}>
-                    {activeHop.peeledPercent}% (&le; 20.0%)
+                  <span className={activeHop.peeledPercent <= maxPeelAllowed ? "text-slate-900" : "text-rose-700"}>
+                    {activeHop.peeledPercent}% (&le; {maxPeelAllowed.toFixed(1)}%)
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500">Peeled amount represents small liquidation slice.</p>
+                <p className="text-[10px] text-slate-500">
+                  {thresholdMode === "strict"
+                    ? "Strict production default (--peel-ratio-max = 0.05)."
+                    : "Wide investigative setting (--peel-ratio-max = 0.20)."}
+                </p>
               </div>
 
               <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-1">
@@ -562,6 +622,7 @@ export function PeelingSimulator() {
           <div className="space-y-4">
             <div className="bg-slate-950 text-slate-100 p-4 rounded-xl font-mono text-xs leading-relaxed overflow-x-auto border border-slate-800">
               <div className="text-slate-400">// Cypher Phase B Traversal: Follow next hop from change wallet &apos;{activeHop.inputWallet}&apos;</div>
+              <div className="text-slate-400">// Policy Threshold: $peel_ratio_max = { (maxPeelAllowed / 100).toFixed(2) } ({thresholdMode === "strict" ? "Strict Production Default" : "Wide Investigative Net"})</div>
               <div className="text-emerald-400 mt-2">MATCH (w:Wallet &#123;address: &apos;{activeHop.inputWallet}&apos;&#125;)-[:SENDS]-&gt;(tx:Transaction)</div>
               <div className="text-sky-300">WITH tx, count&#123; (tx)&lt;-[:SENDS]-(:Wallet) &#125; AS n_in</div>
               <div className="text-sky-300">WHERE n_in = 1</div>
@@ -573,8 +634,8 @@ export function PeelingSimulator() {
               <div className="text-slate-300">WITH tx, total_in,</div>
               <div className="text-slate-300 pl-4">CASE WHEN out0.amount &lt;= out1.amount THEN out0 ELSE out1 END AS small_out,</div>
               <div className="text-slate-300 pl-4">CASE WHEN out0.amount &lt;= out1.amount THEN out1 ELSE out0 END AS large_out</div>
-              <div className="text-rose-300">WHERE small_out.amount &lt;= total_in * { (peelPercent / 100).toFixed(2) }</div>
-              <div className="text-rose-300">  AND large_out.amount &gt;= total_in * 0.80</div>
+              <div className="text-rose-300">WHERE small_out.amount &lt;= total_in * { (maxPeelAllowed / 100).toFixed(2) }  // $peel_ratio_max = { (maxPeelAllowed / 100).toFixed(2) }</div>
+              <div className="text-rose-300">  AND large_out.amount &gt;= total_in * 0.80  // $change_ratio_min = 0.80</div>
               <div className="text-emerald-400 mt-2">RETURN tx.txid AS txid, large_out.addr AS change_wallet LIMIT 1;</div>
             </div>
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 space-y-1">
@@ -592,14 +653,14 @@ export function PeelingSimulator() {
 
         {activeTab === "metrics" && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 font-mono">
-                <div className="text-[10px] text-slate-400 uppercase font-bold">Total Liquidated so far</div>
+                <div className="text-[10px] text-slate-400 uppercase font-bold">Total Liquidated</div>
                 <div className="text-lg font-bold text-amber-700 mt-0.5">
                   {totalPeeledSum.toFixed(4)} BTC
                 </div>
                 <div className="text-[10px] text-slate-500 font-sans">
-                  Across Hops 1 through {activeHop.hopNumber}
+                  Across Hops 1&ndash;{activeHop.hopNumber}
                 </div>
               </div>
 
@@ -609,17 +670,27 @@ export function PeelingSimulator() {
                   {activeHop.forwardAmount.toFixed(4)} BTC
                 </div>
                 <div className="text-[10px] text-slate-500 font-sans">
-                  {((activeHop.forwardAmount / initialBtc) * 100).toFixed(1)}% of original principal
+                  {((activeHop.forwardAmount / initialBtc) * 100).toFixed(1)}% of initial
                 </div>
               </div>
 
               <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 font-mono">
-                <div className="text-[10px] text-slate-400 uppercase font-bold">Total Mining Fees Paid</div>
+                <div className="text-[10px] text-slate-400 uppercase font-bold">Cumulative Pass-Through</div>
+                <div className="text-lg font-bold text-sky-700 mt-0.5">
+                  {((activeHop.forwardAmount / initialBtc) * 100).toFixed(2)}%
+                </div>
+                <div className="text-[10px] text-slate-500 font-sans">
+                  &Pi;_pass = {(activeHop.forwardAmount / initialBtc).toFixed(4)}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 font-mono">
+                <div className="text-[10px] text-slate-400 uppercase font-bold">Mining Fees Paid</div>
                 <div className="text-lg font-bold text-slate-800 mt-0.5">
                   {(feePerHop * activeHop.hopNumber).toFixed(4)} BTC
                 </div>
                 <div className="text-[10px] text-slate-500 font-sans">
-                  Accumulated across {activeHop.hopNumber} mempool spends
+                  {activeHop.hopNumber} mempool spends
                 </div>
               </div>
             </div>

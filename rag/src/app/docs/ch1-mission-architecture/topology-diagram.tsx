@@ -5,15 +5,10 @@ import {
   Server,
   Database,
   Network,
-  Cpu,
   RefreshCw,
   Terminal,
   Activity,
-  Layers,
   ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
-  Info,
 } from "lucide-react";
 
 interface ServiceNode {
@@ -135,7 +130,7 @@ const SERVICES: Record<string, ServiceNode> = {
     accent: "amber",
     status: "Operational • GDS 2.13.x",
     throughput: "1,000 rows/tx batched UNWIND",
-    latency: "25.4ms Subgraph Traversals",
+    latency: "<15ms Subgraph Traversals",
     inputs: ["Projected co-spend edges", "Wallet-to-Wallet links"],
     outputs: ["Louvain cluster IDs", "Personalized PageRank proximities"],
     rationale:

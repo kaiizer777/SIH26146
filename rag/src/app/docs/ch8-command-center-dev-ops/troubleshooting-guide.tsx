@@ -239,7 +239,7 @@ export function TroubleshootingGuide() {
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-slate-200 text-slate-700">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase bg-slate-200 text-slate-700">
                         {item.category}
                       </span>
                       <span className="text-xs font-bold text-slate-900 leading-snug">

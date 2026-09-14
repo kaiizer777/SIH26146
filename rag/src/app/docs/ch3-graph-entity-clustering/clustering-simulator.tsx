@@ -10,14 +10,8 @@ import {
   ChevronLeft,
   CheckCircle2,
   Database,
-  Network,
   Zap,
-  ShieldAlert,
-  ArrowRight,
   Binary,
-  Layers,
-  HelpCircle,
-  FileCode,
 } from "lucide-react";
 
 interface StepData {
@@ -547,7 +541,7 @@ export function ClusteringSimulator() {
 
             <div className="pt-2 border-t border-slate-800 space-y-1.5 text-[11px] text-slate-400">
               <div className="text-slate-200 font-bold flex items-center gap-1 font-mono text-xs">
-                <Layers className="w-3 h-3 text-emerald-400" />
+                <GitMerge className="w-3 h-3 text-emerald-400" />
                 Greedy Phase 1 Gain Formula (ΔQ):
               </div>
               <div className="bg-slate-950 p-2 rounded font-mono text-[10px] text-emerald-300 overflow-x-auto">

@@ -6,17 +6,9 @@ import {
   Network,
   Layers,
   ArrowRight,
-  Sparkles,
-  GitFork,
   CheckCircle2,
-  Sliders,
-  Maximize2,
-  Info,
-  ShieldAlert,
   Braces,
   Hash,
-  Database,
-  Binary,
 } from "lucide-react";
 
 interface PipelineStep {
@@ -36,9 +28,9 @@ const FT_TRANSFORMER_STEPS: PipelineStep[] = [
     name: "Heterogeneous Feature Ingestion",
     shortDesc: "Extract and normalize 18 tabular features across transaction, structural, network, and temporal domains.",
     tensorShape: "x ∈ ℝ^(B × 18)",
-    mathFormula: "x = [f_0, f_1, ..., f_17] normalized via RobustScaler",
+    mathFormula: "x = [f_0, f_1, ..., f_17] normalized via StandardScaler",
     hardwareRuntime: "0.12 ms (NumPy / CPU)",
-    engineeringRationale: "Replaces naive integer scaling with robust interquartile feature scaling to prevent outlier fee spikes from saturating latent space.",
+    engineeringRationale: "Replaces naive integer scaling with fitted StandardScaler z-score normalization across all 18 tabular topological and transaction features.",
     sourceFile: "backend/app/services/feature_extractor.py#L9-L28",
   },
   {

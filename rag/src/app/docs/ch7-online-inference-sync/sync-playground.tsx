@@ -3,37 +3,25 @@
 import React, { useState } from "react";
 import {
   ShieldAlert,
-  ShieldCheck,
   RefreshCw,
   XCircle,
   CheckCircle2,
   AlertTriangle,
   Play,
-  RotateCcw,
-  Terminal,
-  FileCode,
-  Layers,
-  ArrowRight,
   Database,
-  Cpu,
-  Clock,
-  ExternalLink,
-  Zap,
 } from "lucide-react";
 
-type SyncMode = "with_phase11" | "without_phase11";
+type SyncMode = "with_phase11";
 
 export function SyncPlayground() {
-  const [mode, setMode] = useState<SyncMode>("with_phase11");
+  const [mode, setMode] = useState<"with_phase11" | "without_phase11">("with_phase11");
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
-  const [hasRun, setHasRun] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<"preview" | "json" | "headers">("preview");
 
   const runSimulation = () => {
     setIsSimulating(true);
     setTimeout(() => {
       setIsSimulating(false);
-      setHasRun(true);
     }, 600);
   };
 
@@ -42,7 +30,7 @@ export function SyncPlayground() {
   const successJson = {
     address: sampleWallet,
     provisional: true,
-    composite_score: 0.764,
+    composite_score: 0.642,
     verdict: "HIGH",
     anomaly_score: 0.048215,
     anomaly_percentile: 96.4,
@@ -89,7 +77,6 @@ export function SyncPlayground() {
           <button
             onClick={() => {
               setMode("without_phase11");
-              setHasRun(true);
             }}
             className={`px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
               mode === "without_phase11"
@@ -102,7 +89,6 @@ export function SyncPlayground() {
           <button
             onClick={() => {
               setMode("with_phase11");
-              setHasRun(true);
             }}
             className={`px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
               mode === "with_phase11"
@@ -155,7 +141,7 @@ export function SyncPlayground() {
         <div className="flex items-center gap-2 truncate">
           <span className="px-2 py-0.5 rounded bg-sky-600 font-bold text-[10px]">GET</span>
           <span className="text-slate-300 truncate">
-            /entity/{sampleWallet}/explain
+            /api/v1/entity/{sampleWallet}/explain
           </span>
         </div>
         <div className="flex items-center gap-3 text-[11px]">
@@ -237,7 +223,7 @@ export function SyncPlayground() {
                   <div className="text-[10px] text-slate-400 uppercase font-bold">Verdict</div>
                   <div className="text-sm font-bold text-rose-600 mt-1 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4" />
-                    HIGH RISK (0.764)
+                    HIGH RISK (0.642)
                   </div>
                   <div className="text-[10px] text-slate-500 mt-0.5">Composite Score</div>
                 </div>

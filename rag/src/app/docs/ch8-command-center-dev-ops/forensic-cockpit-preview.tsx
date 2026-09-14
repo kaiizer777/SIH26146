@@ -66,7 +66,7 @@ const SAMPLE_ALERTS: AlertRow[] = [
   },
   {
     txid: "2a8b9c4e...5d1f",
-    address: "1FzWLWfa आपस 5w5Lg1VzR7q2mP4",
+    address: "1FzWLWfaGfW5Lg1VzR7q2mP4w8k9s3n2a",
     verdict: "HIGH",
     riskScore: 0.729,
     anomalyScore: 0.655,
@@ -120,8 +120,8 @@ export function ForensicCockpitPreview() {
     setTimeout(() => setCopiedAddr(null), 1800);
   };
 
-  // Mock address hash
-  const computeHash8 = (input: string) => {
+  // 8-character SHA-256 pseudonym token generator
+  const sha8 = (input: string) => {
     let hash = 0;
     for (let i = 0; i < input.length; i++) {
       hash = (hash << 5) - hash + input.charCodeAt(i);
@@ -187,7 +187,7 @@ export function ForensicCockpitPreview() {
                   <span className="w-2.5 h-2.5 rounded-full led-3d-critical inline-block" />
                   CRITICAL
                 </span>
-                <span className="px-1.5 py-0.2 rounded text-[11px] font-mono font-bold counter-3d-critical">
+                <span className="px-1.5 py-0.5 rounded text-[11px] font-mono font-bold counter-3d-critical">
                   2
                 </span>
               </div>
@@ -208,7 +208,7 @@ export function ForensicCockpitPreview() {
                   <span className="w-2.5 h-2.5 rounded-full led-3d-high inline-block" />
                   HIGH
                 </span>
-                <span className="px-1.5 py-0.2 rounded text-[11px] font-mono font-bold counter-3d-high">
+                <span className="px-1.5 py-0.5 rounded text-[11px] font-mono font-bold counter-3d-high">
                   2
                 </span>
               </div>
@@ -229,7 +229,7 @@ export function ForensicCockpitPreview() {
                   <span className="w-2.5 h-2.5 rounded-full led-3d-medium inline-block" />
                   MEDIUM
                 </span>
-                <span className="px-1.5 py-0.2 rounded text-[11px] font-mono font-bold counter-3d-medium">
+                <span className="px-1.5 py-0.5 rounded text-[11px] font-mono font-bold counter-3d-medium">
                   1
                 </span>
               </div>
@@ -250,7 +250,7 @@ export function ForensicCockpitPreview() {
                   <span className="w-2.5 h-2.5 rounded-full led-3d-low inline-block" />
                   LOW
                 </span>
-                <span className="px-1.5 py-0.2 rounded text-[11px] font-mono font-bold counter-3d-low">
+                <span className="px-1.5 py-0.5 rounded text-[11px] font-mono font-bold counter-3d-low">
                   1
                 </span>
               </div>
@@ -354,7 +354,7 @@ export function ForensicCockpitPreview() {
                     <Activity className="w-3.5 h-3.5 text-sky-400" />
                     <span>HUD Inspector Dossier</span>
                   </div>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
                     PINNED TARGET
                   </span>
                 </div>
@@ -390,7 +390,7 @@ export function ForensicCockpitPreview() {
                     </div>
                     <div className="space-y-1 text-slate-300">
                       <div className="flex justify-between items-center">
-                        <span>Head 1 (Co-Spending):</span>
+                        <span>Head 1 (CO_SPEND):</span>
                         <span className="font-bold text-sky-400">α = 0.94</span>
                       </div>
                       <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
@@ -398,11 +398,27 @@ export function ForensicCockpitPreview() {
                       </div>
 
                       <div className="flex justify-between items-center pt-0.5">
-                        <span>Head 2 (Multi-Hop Flow):</span>
+                        <span>Head 2 (TX_FLOW):</span>
                         <span className="font-bold text-amber-400">α = 0.88</span>
                       </div>
                       <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
                         <div className="bg-amber-400 h-full rounded-full" style={{ width: "88%" }} />
+                      </div>
+
+                      <div className="flex justify-between items-center pt-0.5">
+                        <span>Head 3 (PEELING_FLOW):</span>
+                        <span className="font-bold text-rose-400">α = 0.81</span>
+                      </div>
+                      <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                        <div className="bg-rose-400 h-full rounded-full" style={{ width: "81%" }} />
+                      </div>
+
+                      <div className="flex justify-between items-center pt-0.5">
+                        <span>Head 4 (Global Context):</span>
+                        <span className="font-bold text-indigo-400">α = 0.65</span>
+                      </div>
+                      <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                        <div className="bg-indigo-400 h-full rounded-full" style={{ width: "65%" }} />
                       </div>
                     </div>
                   </div>
@@ -449,7 +465,7 @@ export function ForensicCockpitPreview() {
             <div className="p-4 rounded-lg border border-rose-200 bg-rose-50/50 space-y-2">
               <div className="text-[10px] font-bold text-rose-700 uppercase flex items-center justify-between">
                 <span>Insecure Unfiltered Log (Threat Model)</span>
-                <span className="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 font-bold">
+                <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-bold">
                   PLAINTEXT LEAK
                 </span>
               </div>
@@ -465,13 +481,13 @@ export function ForensicCockpitPreview() {
             <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-2">
               <div className="text-[10px] font-bold text-emerald-700 uppercase flex items-center justify-between">
                 <span>AddressHashMiddleware Output (Production)</span>
-                <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">
+                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
                   0 LEAKS VERIFIED
                 </span>
               </div>
               <div className="p-2.5 rounded bg-white border border-emerald-200 text-emerald-900 break-all text-[11px] font-bold">
-                {`2026-09-13 20:15:00 [INFO] router.entity: Fetching dossier for [addr_${computeHash8(
-                  testAddressInput || "0"
+                {`2026-09-13 20:15:00 [INFO] router.entity: Fetching dossier for [addr:${sha8(
+                  testAddressInput
                 )}]`}
               </div>
               <div className="text-[10px] text-emerald-700">

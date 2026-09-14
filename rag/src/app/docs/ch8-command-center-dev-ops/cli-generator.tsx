@@ -258,22 +258,26 @@ npm run dev -- -p ${port}`;
 platform win32 -- Python 3.12.3, pytest-8.3.2, pluggy-1.5.0
 collected 198 items
 
-backend/tests/test_alerts_endpoint.py ......................... [ 12%]
-backend/tests/test_dup_ingest.py ..........                     [ 17%]
-backend/tests/test_entity_subgraph.py ........                  [ 21%]
-backend/tests/test_ft_transformer.py ..............             [ 28%]
-backend/tests/test_graph_router.py .................            [ 37%]
-backend/tests/test_graph_transformer.py .....................   [ 48%]
-backend/tests/test_ingest_sync.py ...............               [ 56%]
-backend/tests/test_inline_scorer.py ...                         [ 57%]
-backend/tests/test_naming_parity.py ........                    [ 61%]
+backend/tests/test_alerts_endpoint.py ....                      [  2%]
+backend/tests/test_dup_ingest.py ......                         [  5%]
+backend/tests/test_entity_subgraph.py ..                        [  6%]
+backend/tests/test_fallback_config.py .....                     [  9%]
+backend/tests/test_feature_extractor.py .......................................... [ 30%]
+backend/tests/test_ft_transformer.py .......                    [ 33%]
+backend/tests/test_graph_build.py .....                         [ 36%]
+backend/tests/test_graph_router.py .......                      [ 39%]
+backend/tests/test_graph_transformer.py .........               [ 44%]
+backend/tests/test_ingest.py ................                   [ 52%]
+backend/tests/test_ingest_sync.py ........                      [ 56%]
+backend/tests/test_inline_scorer.py ...                         [ 58%]
+backend/tests/test_naming_parity.py ........                    [ 62%]
 backend/tests/test_phase4_clustering.py .....                   [ 64%]
 backend/tests/test_phase5_autoencoder.py .....                  [ 67%]
-backend/tests/test_phase6_detectors.py .........                [ 71%]
-backend/tests/test_phase7_graphsage.py ......................   [ 82%]
-backend/tests/test_phase8_xai.py ......................         [ 93%]
-backend/tests/test_promote_models.py .....                      [ 96%]
-backend/tests/test_synthetic_generator.py ........              [100%]
+backend/tests/test_phase6_detectors.py ........                 [ 71%]
+backend/tests/test_phase7_graphsage.py .....................    [ 81%]
+backend/tests/test_phase8_xai.py ......................         [ 92%]
+backend/tests/test_promote_models.py .....                      [ 95%]
+backend/tests/test_synthetic_generator.py .........             [100%]
 
 ============================= 198 passed in 14.82s =============================`,
     prerequisites: [
@@ -288,7 +292,7 @@ backend/tests/test_synthetic_generator.py ........              [100%]
         type: "select",
         default: "all",
         choices: [
-          { value: "all", label: "Full Suite (All 196+ Tests)" },
+          { value: "all", label: "Full Suite (All 198 Passing Tests)" },
           { value: "sync", label: "Phase 11 Online Sync & Scorer" },
           { value: "ml", label: "Dual Transformer ML & Promotion" },
           { value: "security", label: "Security & Address Redaction" },
@@ -433,7 +437,7 @@ export function CliCommandGenerator() {
           <div>
             <div className="text-xs font-mono font-bold tracking-wide uppercase text-slate-900 flex items-center gap-2">
               Operator Runbook Generator
-              <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.2 rounded border border-sky-200 font-bold">
+              <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded border border-sky-200 font-bold">
                 WINDOWS POWERSHELL
               </span>
             </div>
@@ -494,7 +498,7 @@ export function CliCommandGenerator() {
           <div>
             <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
               <span>{currentTask.name}</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200 text-slate-700">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
                 {currentTask.category}
               </span>
             </div>
