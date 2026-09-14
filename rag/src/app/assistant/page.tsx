@@ -350,8 +350,8 @@ export default function AssistantPage() {
                 }
 
                 return (
-                  <div key={message.id} className="flex justify-start">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs max-w-3xl w-full text-sm leading-relaxed text-slate-800 space-y-4">
+                  <div key={message.id} className="flex justify-start min-w-0">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs max-w-3xl w-full min-w-0 text-sm leading-relaxed text-slate-800 space-y-4">
                       {/* Assistant Card Header */}
                       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div className="flex items-center gap-2.5">

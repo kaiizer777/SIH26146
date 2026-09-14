@@ -438,8 +438,8 @@ export function FloatingAssistant() {
                     }
 
                     return (
-                      <div key={message.id} className="flex justify-start">
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_8px_16px_-4px_rgba(15,23,42,0.03)] max-w-[95%] w-full text-xs sm:text-sm leading-relaxed text-slate-800 space-y-3">
+                      <div key={message.id} className="flex justify-start min-w-0">
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_8px_16px_-4px_rgba(15,23,42,0.03)] max-w-[95%] w-full min-w-0 text-xs sm:text-sm leading-relaxed text-slate-800 space-y-3">
                           {/* Assistant Message Header */}
                           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                             <div className="flex items-center gap-1.5">

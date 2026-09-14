@@ -14,7 +14,9 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  Lock,
 } from "lucide-react";
+import { lockSession } from "@/components/AuthGate";
 
 interface ChapterMeta {
   href: string;
@@ -185,6 +187,16 @@ export function DocsHeader() {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-semibold text-slate-800">Air-Gapped Enclave</span>
         </div>
+
+        {/* Lock Session Button */}
+        <button
+          onClick={lockSession}
+          title="Lock Portal Session"
+          className="btn-tactical-secondary inline-flex items-center space-x-1.5 px-2.5 py-[6px] rounded-[7px] text-[11.5px] font-mono font-semibold text-slate-700 hover:text-red-600 cursor-pointer ml-1"
+        >
+          <Lock className="w-3.5 h-3.5 text-slate-500 hover:text-red-500 transition-colors" />
+          <span className="hidden md:inline">Lock</span>
+        </button>
       </div>
     </header>
   );

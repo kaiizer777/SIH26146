@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Offline Sovereign Intelligence Platform for Monitoring Bitcoin Transaction Traffic & Illicit Flow De-anonymization",
 };
 
+import { AuthGate } from "@/components/AuthGate";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +30,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-slate-900 selection:bg-slate-900 selection:text-white">
-        {children}
+        <AuthGate>{children}</AuthGate>
       </body>
     </html>
   );
