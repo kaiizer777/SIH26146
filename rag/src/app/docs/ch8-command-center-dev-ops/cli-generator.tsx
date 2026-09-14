@@ -16,22 +16,13 @@ import {
   CheckCircle2,
   ChevronRight,
   ExternalLink,
-  FileText,
-  Activity,
-  HeartPulse,
-  UploadCloud,
-  Scale,
-  Sparkles,
-  Zap,
 } from "lucide-react";
 
 interface CommandTask {
   id: string;
   name: string;
-  badge: string;
   shortDesc: string;
-  plainEnglish: string;
-  category: "1-CLICK DEPLOY" | "FIELD OPERATIONS" | "LEGAL EVIDENCE" | "DIAGNOSTICS" | "DEVELOPER";
+  category: "RUNBOOK" | "TESTING" | "INFRA" | "SYNC";
   icon: React.ComponentType<{ className?: string }>;
   terminalTitle: string;
   workingDir: string;
@@ -49,216 +40,203 @@ interface CommandTask {
 
 const COMMAND_TASKS: CommandTask[] = [
   {
-    id: "docker_1command",
-    name: "1-Command Complete Docker Launch",
-    badge: "RECOMMENDED",
-    shortDesc: "Boot the entire sovereign intelligence stack in under 30 seconds",
-    plainEnglish:
-      "Run this single command on any secure laptop or server. It automatically spins up the database, graph engine, AI transformers, background worker, and the visual Command Center.",
-    category: "1-CLICK DEPLOY",
-    icon: Zap,
-    terminalTitle: "Terminal / PowerShell — 1-Command Air-Gapped Deployment",
-    workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146",
-    commandTemplate: (p) => {
-      const build = p.rebuild ? " --build" : "";
-      return `# 1-Command Air-Gapped Launch (PostgreSQL + Neo4j + Redis + FastAPI + Celery + Next.js)
-docker compose up -d${build}
-
-# Verify container health status across all 6 microservices
-docker compose ps`;
-    },
-    expectedOutput: `[+] Running 6/6
- ✔ Network sih_network         Created
- ✔ Container sih26146-postgres Healthy
- ✔ Container sih26146-redis    Healthy
- ✔ Container sih26146-neo4j    Healthy
- ✔ Container sih26146-fastapi  Started
- ✔ Container sih26146-celery   Started
- ✔ Container sih26146-frontend Started
-
-NAME                 IMAGE                 STATUS                    PORTS
-sih26146-postgres    postgres:16-alpine    Up 14s (healthy)          0.0.0.0:5433->5432/tcp
-sih26146-neo4j       neo4j:5.26-community  Up 14s (healthy)          0.0.0.0:7474->7474/tcp, 7687/tcp
-sih26146-redis       redis:7-alpine        Up 14s (healthy)          0.0.0.0:6380->6379/tcp
-sih26146-fastapi     backend-fastapi       Up 12s                    0.0.0.0:8000->8000/tcp
-sih26146-celery      backend-celery        Up 12s                    
-sih26146-frontend    frontend-ui           Up 10s                    0.0.0.0:3000->3000/tcp
-
-Command Center is live: http://localhost:3000`,
-    prerequisites: [
-      "Docker Desktop or Docker Engine installed on Windows/Linux host",
-      "No internet access required (all container images pre-cached)",
-      "Ports 3000, 8000, 5433, 6380, 7687 available",
-    ],
-    options: [
-      {
-        id: "rebuild",
-        label: "Force Rebuild Containers (--build)",
-        type: "boolean",
-        default: false,
-      },
-    ],
-  },
-  {
-    id: "field_evidence_ingest",
-    name: "Ingest Seized Evidence Batch",
-    badge: "FIELD READY",
-    shortDesc: "Upload seized raw Bitcoin transaction logs with automatic deduplication",
-    plainEnglish:
-      "When officers seize a hard drive or flash drive containing raw transaction dumps (CSV or JSON), this command ingests all rows, runs instant heuristic checks, and computes threat scores.",
-    category: "FIELD OPERATIONS",
-    icon: UploadCloud,
-    terminalTitle: "PowerShell / cURL — Field Evidence Ingestion",
-    workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146",
-    commandTemplate: (p) => {
-      const filename = p.filename || "seized_case_evidence.csv";
-      return `# Ingest raw transaction file into the offline forensic engine:
-curl -X POST "http://localhost:8000/ingest/upload" \`
-  -H "Authorization: Bearer dev-token" \`
-  -F "file=@./${filename}"`;
-    },
-    expectedOutput: `{"status":"SUCCESS","task_id":"3f2e1a9b-7c8d-4e5f-9a0b-1c2d3e4f5a6b","filename":"seized_case_evidence.csv","sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","total_transactions":1000,"ingest_duration_ms":563,"message":"1,000 transactions ingested and scored successfully. Zero duplicates."}`,
-    prerequisites: [
-      "FastAPI backend running at http://localhost:8000",
-      "Target CSV/JSON file located in your working directory",
-      "Automatic duplicate guard active: identical files blocked within 24 hours",
-    ],
-    options: [
-      {
-        id: "filename",
-        label: "Evidence File Name",
-        type: "select",
-        default: "seized_case_evidence.csv",
-        choices: [
-          { value: "seized_case_evidence.csv", label: "seized_case_evidence.csv (CSV)" },
-          { value: "mixer_dump_transactions.json", label: "mixer_dump_transactions.json (JSON)" },
-          { value: "wallet_cluster_export.xml", label: "wallet_cluster_export.xml (XML)" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "export_court_dossier",
-    name: "Export Section 65B Court Dossier",
-    badge: "LEGAL CERTIFIED",
-    shortDesc: "Generate signed, court-admissible PDF evidence report for judicial filing",
-    plainEnglish:
-      "Generates an official electronic certificate complying with Section 65B of the Indian Evidence Act. Contains visual transaction flow diagrams, AI attention weights, and SHA-256 hash chains.",
-    category: "LEGAL EVIDENCE",
-    icon: Scale,
-    terminalTitle: "PowerShell / cURL — Section 65B Dossier Generator",
-    workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146",
-    commandTemplate: (p) => {
-      const targetAddr: string = typeof p.address === "string" ? p.address : "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
-      return `# Export Section 65B PDF evidence dossier for suspect wallet:
-curl -X GET "http://localhost:8000/api/v1/entity/${targetAddr}/export-dossier" \`
-  -H "Authorization: Bearer dev-token" \`
-  --output "NTRO_EVIDENCE_DOSSIER_${targetAddr.slice(0, 8)}.pdf"
-
-Write-Host "Evidence dossier exported to NTRO_EVIDENCE_DOSSIER_${targetAddr.slice(0, 8)}.pdf" -ForegroundColor Green`;
-    },
-    expectedOutput: `  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100  384k  100  384k    0     0  2210k      0 --:--:-- --:--:-- --:--:-- 2219k
-
-Evidence dossier exported to NTRO_EVIDENCE_DOSSIER_1A1zP1eP.pdf
-Status: Signed with SHA-256 digital custody stamp & Section 65B compliance certificate.`,
-    prerequisites: [
-      "Backend server running on port 8000",
-      "Suspect address has at least 1 indexed transaction",
-      "Generates PDF file ready for prosecution submission",
-    ],
-    options: [
-      {
-        id: "address",
-        label: "Target Suspect Bitcoin Address",
-        type: "select",
-        default: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-        choices: [
-          { value: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", label: "1A1zP1eP... (Darknet Cluster)" },
-          { value: "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq", label: "bc1qar0s... (Mixer Pool)" },
-          { value: "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy", label: "3J98t1Wp... (Peeling Chain)" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "system_health_audit",
-    name: "Field System Health & Vitals Audit",
-    badge: "1-SECOND CHECK",
-    shortDesc: "Single health check verifying all databases, models, and workers",
-    plainEnglish:
-      "A quick diagnostic ping to verify that the database, graph database, Redis queue, and PyTorch AI models are all operating at 100% capacity before starting an investigation.",
-    category: "DIAGNOSTICS",
-    icon: HeartPulse,
-    terminalTitle: "PowerShell — Multi-Service Health Ping",
-    workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146",
-    commandTemplate: () => {
-      return `# Query the unified health monitoring endpoint:
-curl -s http://localhost:8000/health | ConvertFrom-Json | Format-List`;
-    },
-    expectedOutput: `status          : HEALTHY
-environment     : development (air-gapped)
-database        : CONNECTED (PostgreSQL 16, 5432)
-graph_engine    : CONNECTED (Neo4j 5.26 GDS, 7687)
-redis_broker    : CONNECTED (Redis 7.2, 6379)
-celery_worker   : READY (concurrency: solo)
-ai_models       : LOADED (FT-Transformer + Relational Graph Transformer)
-indexed_wallets : 100,000+
-airgap_status   : VERIFIED (0 outbound internet connections)`,
-    prerequisites: [
-      "FastAPI server running at http://localhost:8000",
-      "Returns instant green status for all services",
-    ],
-  },
-  {
-    id: "all_services_baremetal",
-    name: "Bare-Metal 3-Terminal Launch (No Docker)",
-    badge: "BARE-METAL FALLBACK",
-    shortDesc: "Native Windows PowerShell execution without Docker virtualization",
-    plainEnglish:
-      "For low-spec laptops or secured environments where Docker is not installed. Executes FastAPI, Celery with solo pool, and Next.js directly on the host machine.",
-    category: "DEVELOPER",
+    id: "all_services",
+    name: "Spin Up All Services",
+    shortDesc: "Complete 3-terminal execution sequence from bare-metal",
+    category: "RUNBOOK",
     icon: Play,
-    terminalTitle: "PowerShell — Native Windows 3-Terminal Orchestration",
+    terminalTitle: "PowerShell — Multi-Terminal Launch Orchestration",
     workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146",
     commandTemplate: (p) => {
       const mode = p.detached ? "-NoExit " : "";
       return `# Terminal 1: FastAPI Uvicorn Server (Port 8000)
 Start-Process pwsh -ArgumentList "${mode}-Command cd backend; .\\venv\\Scripts\\Activate.ps1; uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
-# Terminal 2: Celery Background Ingestion Worker (--pool=solo for Windows)
+# Terminal 2: Celery Background Ingestion Worker (--pool=solo)
 Start-Process pwsh -ArgumentList "${mode}-Command cd backend; .\\venv\\Scripts\\Activate.ps1; celery -A app.celery_app worker --loglevel=info --pool=solo"
 
-# Terminal 3: Next.js Command Center UI (Port 3000)
-Start-Process pwsh -ArgumentList "${mode}-Command cd frontend; npm run dev"`;
+# Terminal 3: Next.js Command Center (Port 3000)
+Start-Process pwsh -ArgumentList "${mode}-Command cd frontend; npm run dev"
+
+# Optional Terminal 4: RAG Documentation & AI Doubt Solver (Port 3001)
+Start-Process pwsh -ArgumentList "${mode}-Command cd rag; npm run dev"`;
     },
-    expectedOutput: `[INFO] Terminal 1: Uvicorn running on http://0.0.0.0:8000
-[INFO] Terminal 2: celery@DESKTOP ready. pool=solo
-[INFO] Terminal 3: Next.js ready on http://localhost:3000
-All services connected successfully.`,
+    expectedOutput: `[INFO] Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[INFO] celery@DESKTOP ready. pool=solo
+[INFO] Next.js 16.0.0 ready on http://localhost:3000
+[INFO] RAG docs ready on http://localhost:3001`,
     prerequisites: [
-      "Python 3.12 virtual environment in backend/venv",
-      "Node.js 18+ installed on workstation",
-      "PostgreSQL, Neo4j, and Redis running as Windows services",
+      "PostgreSQL 16 active on port 5432 with sih_bitcoin schema",
+      "Neo4j 5.x Community + GDS active on port 7687 (bolt)",
+      "Redis active on port 6379 (redis://localhost:6379/0)",
+      ".env configuration file created in repository root",
     ],
     options: [
       {
         id: "detached",
-        label: "Keep Windows Open After Boot (-NoExit)",
+        label: "Keep Windows Open (-NoExit)",
         type: "boolean",
         default: true,
       },
     ],
   },
   {
+    id: "backend_api",
+    name: "Run Backend API Server",
+    shortDesc: "FastAPI with AddressHashMiddleware and live auto-reload",
+    category: "RUNBOOK",
+    icon: Server,
+    terminalTitle: "Terminal 1: FastAPI Uvicorn Server",
+    workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146\\backend",
+    commandTemplate: (p) => {
+      const reload = p.reload ? "--reload" : "";
+      const port = p.port || "8000";
+      return `# 1. Navigate to backend directory
+cd backend
+
+# 2. Activate Python Virtual Environment
+.\\venv\\Scripts\\Activate.ps1
+
+# 3. Apply any pending database schema migrations (Alembic)
+alembic upgrade head
+
+# 4. Launch FastAPI with Uvicorn
+uvicorn app.main:app ${reload} --host 0.0.0.0 --port ${port}`.replace(/\n\n+/g, "\n");
+    },
+    expectedOutput: `INFO:     Will watch for changes in: ['C:\\\\Users\\\\bari2\\\\Desktop\\\\SIH26146\\\\backend']
+INFO:     [MODEL CONFIG] Anomaly: FT-Transformer (primary) | Risk: Graph Transformer (primary)
+INFO:     Loading XAI artifact store into memory… (17020 composite records loaded)
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)`,
+    prerequisites: [
+      "Virtual environment created with Python 3.12 (backend\\venv)",
+      "PostgreSQL accessible at localhost:5432 with sih_user credentials",
+      "Neo4j accessible at bolt://localhost:7687",
+    ],
+    options: [
+      {
+        id: "reload",
+        label: "Enable Hot Reload (--reload)",
+        type: "boolean",
+        default: true,
+      },
+      {
+        id: "port",
+        label: "Port Binding",
+        type: "select",
+        default: "8000",
+        choices: [
+          { value: "8000", label: "8000 (Default Production Port)" },
+          { value: "8001", label: "8001 (Alternative Port)" },
+          { value: "8080", label: "8080 (Sandbox Port)" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "celery_worker",
+    name: "Start Celery Solo Worker",
+    shortDesc: "Windows-compliant solo pool processing async CSV/JSON/XML ingestion",
+    category: "RUNBOOK",
+    icon: Cpu,
+    terminalTitle: "Terminal 2: Celery Background Ingest Worker",
+    workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146\\backend",
+    commandTemplate: (p) => {
+      const logLevel = p.logLevel || "info";
+      return `# 1. Navigate to backend directory
+cd backend
+
+# 2. Activate Python Virtual Environment
+.\\venv\\Scripts\\Activate.ps1
+
+# 3. Start Celery worker with mandatory --pool=solo on Windows
+celery -A app.celery_app worker --loglevel=${logLevel} --pool=solo`;
+    },
+    expectedOutput: ` -------------- celery@DESKTOP-SIH26146 v5.3.6 (emerald-rush)
+--- ***** ----- 
+-- ******* ---- Windows-11-10.0.26100-SP0 2026-09-13 20:15:00
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         app.celery_app:0x...
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 1 (solo)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+[INFO/MainProcess] Connected to redis://localhost:6379/0
+[INFO/MainProcess] celery@DESKTOP-SIH26146 ready.`,
+    prerequisites: [
+      "Redis running on localhost:6379 (redis-cli ping returns PONG)",
+      "MaxMind GeoLite2-City.mmdb in backend/data/ or GeoIP configured",
+      "Mandatory --pool=solo flag to avoid Windows fork() permission crashes",
+    ],
+    options: [
+      {
+        id: "logLevel",
+        label: "Log Verbosity",
+        type: "select",
+        default: "info",
+        choices: [
+          { value: "info", label: "INFO (Standard Runbook Output)" },
+          { value: "debug", label: "DEBUG (Deep Pipeline Tracing)" },
+          { value: "warning", label: "WARNING (Quiet Mode)" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "frontend_cockpit",
+    name: "Start Next.js Command Center",
+    shortDesc: "Forensic dashboard with 38px dense table, D3 visualizer, and HUD",
+    category: "RUNBOOK",
+    icon: Layers,
+    terminalTitle: "Terminal 3: Next.js Frontend Command Center",
+    workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146\\frontend",
+    commandTemplate: (p) => {
+      const port = p.port || "3000";
+      return `# 1. Navigate to frontend directory
+cd frontend
+
+# 2. Verify local air-gapped node dependencies
+npm install
+
+# 3. Start Next.js development server
+npm run dev -- -p ${port}`;
+    },
+    expectedOutput: `▲ Next.js 16.0.0
+  - Local:        http://localhost:3000
+  - Network:      http://192.168.1.104:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1420ms
+ ○ Compiling / ...
+ ✓ Compiled / in 980ms (482 modules)`,
+    prerequisites: [
+      "Node.js 18+ or 20+ installed on host",
+      "Backend running on http://localhost:8000 for live data streaming",
+      "Local font woff2 pre-cached in .next/static/media (zero CDN calls)",
+    ],
+    options: [
+      {
+        id: "port",
+        label: "Port Number",
+        type: "select",
+        default: "3000",
+        choices: [
+          { value: "3000", label: "3000 (Command Center Default)" },
+          { value: "3002", label: "3002 (Alternate UI Port)" },
+        ],
+      },
+    ],
+  },
+  {
     id: "pytest_suite",
-    name: "Run 196+ Automated Tests",
-    badge: "100% PASSING",
-    shortDesc: "Run deterministic verification tests across all 12 pipeline stages",
-    plainEnglish:
-      "Proves to judges that every single component works mathematically: test peeling chain heuristics, autoencoders, graph neural networks, and privacy redaction.",
-    category: "DEVELOPER",
+    name: "Run Automated Test Suite",
+    shortDesc: "Execute 196+ passing Pytest unit, integration, and security tests",
+    category: "TESTING",
     icon: CheckCircle2,
     terminalTitle: "Pytest Automated Verification & Assertion Runner",
     workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146",
@@ -273,7 +251,8 @@ All services connected successfully.`,
       } else if (target === "ml") {
         pathArg = "backend/tests/test_ft_transformer.py backend/tests/test_graph_transformer.py backend/tests/test_promote_models.py";
       }
-      return `.\\backend\\venv\\Scripts\\python.exe -m pytest ${pathArg} ${verbose} --durations=5`;
+      return `# Run tests using virtual environment Python directly
+.\\backend\\venv\\Scripts\\python.exe -m pytest ${pathArg} ${verbose} --durations=5`;
     },
     expectedOutput: `============================= test session starts =============================
 platform win32 -- Python 3.12.3, pytest-8.3.2, pluggy-1.5.0
@@ -287,6 +266,7 @@ backend/tests/test_graph_router.py .................            [ 37%]
 backend/tests/test_graph_transformer.py .....................   [ 48%]
 backend/tests/test_ingest_sync.py ...............               [ 56%]
 backend/tests/test_inline_scorer.py ...                         [ 57%]
+backend/tests/test_naming_parity.py ........                    [ 61%]
 backend/tests/test_phase4_clustering.py .....                   [ 64%]
 backend/tests/test_phase5_autoencoder.py .....                  [ 67%]
 backend/tests/test_phase6_detectors.py .........                [ 71%]
@@ -297,8 +277,9 @@ backend/tests/test_synthetic_generator.py ........              [100%]
 
 ============================= 198 passed in 14.82s =============================`,
     prerequisites: [
-      "Python 3.12 virtual environment active",
-      "All 196+ assertions pass deterministically",
+      "Virtual environment active with all test dependencies",
+      "Pre-indexed Phase 8 JSON artifacts present in data/xai/",
+      "PyG (torch-geometric) and PyTorch CPU installed",
     ],
     options: [
       {
@@ -308,9 +289,9 @@ backend/tests/test_synthetic_generator.py ........              [100%]
         default: "all",
         choices: [
           { value: "all", label: "Full Suite (All 196+ Tests)" },
-          { value: "sync", label: "Online Ingest Sync & Scorer" },
+          { value: "sync", label: "Phase 11 Online Sync & Scorer" },
           { value: "ml", label: "Dual Transformer ML & Promotion" },
-          { value: "security", label: "Security & OPSEC Redaction" },
+          { value: "security", label: "Security & Address Redaction" },
         ],
       },
       {
@@ -322,33 +303,80 @@ backend/tests/test_synthetic_generator.py ........              [100%]
     ],
   },
   {
-    id: "port_cleanup",
-    name: "Free Stuck Ports (8000 / 3000)",
-    badge: "SAFE & FOOLPROOF",
-    shortDesc: "Safely find and terminate orphan processes holding ports",
-    plainEnglish:
-      "If a previous terminal window was closed without stopping the server, this command safely frees port 8000 or 3000 without affecting your data.",
-    category: "DIAGNOSTICS",
+    id: "trigger_sync",
+    name: "Trigger Post-Ingest Sync",
+    shortDesc: "Manual execution of Phase 11 IPC sync for freshly uploaded task",
+    category: "SYNC",
+    icon: RefreshCw,
+    terminalTitle: "PowerShell / cURL — Manual Handshake Trigger",
+    workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146",
+    commandTemplate: (p) => {
+      const taskId = p.taskId || "3f2e1a9b-7c8d-4e5f-9a0b-1c2d3e4f5a6b";
+      return `# 1. Query Celery task status to ensure SUCCESS
+curl -X GET "http://localhost:8000/ingest/status/${taskId}" \`
+  -H "Authorization: Bearer dev-token"
+
+# 2. Fire synchronized in-memory XAI upsert to FastAPI process
+curl -X POST "http://localhost:8000/ingest/sync/${taskId}" \`
+  -H "Authorization: Bearer dev-token" \`
+  -H "Content-Type: application/json"`;
+    },
+    expectedOutput: `{"status":"SUCCESS","total_received":1000,"total_inserted":1000,"total_rejected":0}
+
+# Step 2 Response:
+{"status":"SYNCED","scored":24,"upserted":24,"skipped_existing":0,"elapsed_ms":14.2}`,
+    prerequisites: [
+      "Celery task ID in SUCCESS status",
+      "FastAPI server running at http://localhost:8000",
+      "API Bearer auth token (dev-token by default)",
+    ],
+    options: [
+      {
+        id: "taskId",
+        label: "Celery Ingest Task UUID",
+        type: "text",
+        default: "3f2e1a9b-7c8d-4e5f-9a0b-1c2d3e4f5a6b",
+      },
+    ],
+  },
+  {
+    id: "port_status",
+    name: "Check Port Status & Clean Up",
+    shortDesc: "Inspect ports 8000, 3000, 5432, 6379, 7687 and kill conflicting PIDs",
+    category: "INFRA",
     icon: ShieldAlert,
-    terminalTitle: "PowerShell — Port Diagnostic & Free",
+    terminalTitle: "PowerShell — Port Collision Diagnostic & Termination",
     workingDir: "C:\\Users\\bari2\\Desktop\\SIH26146",
     commandTemplate: (p) => {
       const targetPort = p.port || "8000";
-      return `# Check if port ${targetPort} is in use and free it safely:
+      return `# Check if ports 8000, 3000, 5432, 6379, 7687 are listening
+Get-NetTCPConnection -LocalPort 8000, 3000, 5432, 6379, 7687 -ErrorAction SilentlyContinue |
+  Select-Object LocalPort, OwningProcess, State |
+  Format-Table -AutoSize
+
+# Find and kill any orphan process hogging port ${targetPort}:
 $proc = (Get-NetTCPConnection -LocalPort ${targetPort} -ErrorAction SilentlyContinue).OwningProcess
 if ($proc) {
-    Write-Host "Found background process $proc on port ${targetPort}. Freeing port..." -ForegroundColor Yellow
+    Write-Host "Found process $proc listening on port ${targetPort}. Terminating..." -ForegroundColor Yellow
     Stop-Process -Id $proc -Force
-    Write-Host "Port ${targetPort} is now open and ready." -ForegroundColor Green
+    Write-Host "Port ${targetPort} freed successfully." -ForegroundColor Green
 } else {
-    Write-Host "Port ${targetPort} is already free and ready to use." -ForegroundColor Cyan
+    Write-Host "Port ${targetPort} is completely free." -ForegroundColor Cyan
 }`;
     },
-    expectedOutput: `Found background process 14292 on port 8000. Freeing port...
-Port 8000 is now open and ready.`,
+    expectedOutput: `LocalPort OwningProcess State
+--------- ------------- -----
+     3000         14292 Listen
+     5432          4820 Listen
+     6379          3912 Listen
+     7687          8904 Listen
+     8000         21840 Listen
+
+Found process 21840 listening on port 8000. Terminating...
+Port 8000 freed successfully.`,
     prerequisites: [
-      "Standard Windows PowerShell terminal",
-      "Zero risk: only frees the port listener",
+      "Administrator or standard user PowerShell privileges",
+      "No Docker desktop required (bare-metal native stack)",
     ],
     options: [
       {
@@ -357,10 +385,11 @@ Port 8000 is now open and ready.`,
         type: "select",
         default: "8000",
         choices: [
-          { value: "8000", label: "8000 (FastAPI Backend Server)" },
+          { value: "8000", label: "8000 (FastAPI Backend)" },
           { value: "3000", label: "3000 (Next.js Command Center)" },
-          { value: "6379", label: "6379 (Redis Broker)" },
-          { value: "7687", label: "7687 (Neo4j Graph Bolt)" },
+          { value: "3001", label: "3001 (RAG Docs)" },
+          { value: "6379", label: "6379 (Redis Message Broker)" },
+          { value: "7687", label: "7687 (Neo4j Bolt)" },
         ],
       },
     ],
@@ -368,7 +397,7 @@ Port 8000 is now open and ready.`,
 ];
 
 export function CliCommandGenerator() {
-  const [activeTaskId, setActiveTaskId] = useState<string>("docker_1command");
+  const [activeTaskId, setActiveTaskId] = useState<string>("all_services");
   const [params, setParams] = useState<Record<string, any>>({});
   const [copied, setCopied] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"command" | "output">("command");
@@ -394,47 +423,47 @@ export function CliCommandGenerator() {
   };
 
   return (
-    <div className="rounded-xl border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 bg-white overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_8px_rgba(15,23,42,0.06)]">
+    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
       {/* Tactical Widget Top Bar */}
-      <div className="px-4 py-3 bg-slate-950 text-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 border-t border-t-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+      <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center space-x-2.5">
-          <div className="w-7 h-7 rounded bg-sky-500/20 border border-sky-400/30 text-sky-400 flex items-center justify-center">
-            <Terminal className="w-3.5 h-3.5" />
+          <div className="w-7 h-7 rounded bg-slate-900 text-white flex items-center justify-center shadow-xs">
+            <Terminal className="w-3.5 h-3.5 text-sky-400" />
           </div>
           <div>
-            <div className="text-xs font-mono font-bold tracking-wide uppercase flex items-center gap-2">
-              <span>Operational Runbook &amp; CLI Generator</span>
-              <span className="text-[9px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-bold">
-                FOOLPROOF FIELD COMMANDS
+            <div className="text-xs font-mono font-bold tracking-wide uppercase text-slate-900 flex items-center gap-2">
+              Operator Runbook Generator
+              <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.2 rounded border border-sky-200 font-bold">
+                WINDOWS POWERSHELL
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 font-mono">
-              Select a task below to generate ready-to-run commands with 1-click clipboard copy
+            <div className="text-[11px] text-slate-500 font-mono">
+              Syntax-verified execution targets matching dev-server.md &amp; WORK-2.md
             </div>
           </div>
         </div>
 
-        {/* Copy CTA */}
+        {/* 1-Click Copy CTA with Painted Light Depth */}
         <button
           onClick={handleCopy}
-          className="btn-tactical-primary text-white text-xs font-mono px-3.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer shadow-xs font-bold"
+          className="btn-tactical-primary text-white text-xs font-mono px-3.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer shadow-xs"
         >
           {copied ? (
             <>
               <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-emerald-300">COPIED TO CLIPBOARD!</span>
+              <span className="text-emerald-300 font-bold">COPIED TO CLIPBOARD</span>
             </>
           ) : (
             <>
-              <Copy className="w-3.5 h-3.5 text-sky-300" />
-              <span>COPY COMMAND</span>
+              <Copy className="w-3.5 h-3.5 text-slate-300" />
+              <span>COPY POWERSHELL COMMAND</span>
             </>
           )}
         </button>
       </div>
 
       {/* Task Selector Tabs */}
-      <div className="p-3 bg-slate-100/90 border-b border-slate-200 flex flex-wrap gap-2">
+      <div className="p-3 bg-slate-100/60 border-b border-slate-200 flex flex-wrap gap-1.5">
         {COMMAND_TASKS.map((task) => {
           const isActive = task.id === currentTask.id;
           const Icon = task.icon;
@@ -445,53 +474,42 @@ export function CliCommandGenerator() {
                 setActiveTaskId(task.id);
                 setParams({});
               }}
-              className={`px-3 py-2 rounded-lg text-xs font-mono flex items-center gap-2 cursor-pointer active:translate-y-[0.5px] ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium flex items-center gap-2 transition-all cursor-pointer ${
                 isActive
-                  ? "bg-slate-900 text-white border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-black shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_4px_rgba(0,0,0,0.25)] font-bold"
-                  : "bg-gradient-to-b from-white to-slate-100 text-slate-800 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(15,23,42,0.05)] font-medium"
+                  ? "bg-white text-slate-900 shadow-xs border border-slate-300 font-bold"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-sky-400" : "text-sky-700"}`} />
+              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-sky-600" : "text-slate-400"}`} />
               <span>{task.name}</span>
-              <span
-                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                  isActive
-                    ? "bg-sky-950 text-sky-300 border border-sky-800"
-                    : "bg-slate-200/90 text-slate-700 border border-slate-300/80"
-                }`}
-              >
-                {task.badge}
-              </span>
             </button>
           );
         })}
       </div>
 
       {/* Task Configuration & Command Surface */}
-      <div className="p-5 space-y-4">
+      <div className="p-5 space-y-5">
         {/* Task Summary Banner */}
-        <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-slate-900">{currentTask.name}</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-bold uppercase">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200/80">
+          <div>
+            <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+              <span>{currentTask.name}</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200 text-slate-700">
                 {currentTask.category}
               </span>
             </div>
-            <div className="text-[11px] font-mono text-slate-500 bg-white px-2.5 py-0.5 rounded border border-slate-200 self-start sm:self-auto">
-              Run in: <code className="text-slate-900 font-semibold">{currentTask.workingDir}</code>
-            </div>
+            <div className="text-xs text-slate-600 mt-0.5">{currentTask.shortDesc}</div>
           </div>
-          <p className="text-xs text-slate-700 leading-relaxed font-sans">
-            <strong>In Plain English:</strong> {currentTask.plainEnglish}
-          </p>
+          <div className="text-[11px] font-mono text-slate-500 bg-white px-2.5 py-1 rounded border border-slate-200 self-start sm:self-auto">
+            Dir: <code className="text-slate-900 font-semibold">{currentTask.workingDir}</code>
+          </div>
         </div>
 
         {/* Dynamic Parameter Controls (if task has options) */}
         {currentTask.options && currentTask.options.length > 0 && (
-          <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
-            <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500">
-              Customize Command Options:
+          <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2.5">
+            <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+              Command Execution Flags &amp; Arguments
             </div>
             <div className="flex flex-wrap items-center gap-4">
               {currentTask.options.map((opt) => {
@@ -530,6 +548,20 @@ export function CliCommandGenerator() {
                     </div>
                   );
                 }
+                if (opt.type === "text") {
+                  return (
+                    <div key={opt.id} className="flex items-center gap-2 text-xs font-mono w-full sm:w-auto">
+                      <span className="text-slate-600">{opt.label}:</span>
+                      <input
+                        type="text"
+                        value={val}
+                        onChange={(e) => handleParamChange(opt.id, e.target.value)}
+                        className="bg-slate-50 border border-slate-200 rounded px-2.5 py-1 text-slate-900 font-mono text-xs flex-1 sm:w-64 focus:outline-none focus:border-slate-400"
+                        placeholder="Enter value…"
+                      />
+                    </div>
+                  );
+                }
                 return null;
               })}
             </div>
@@ -537,39 +569,39 @@ export function CliCommandGenerator() {
         )}
 
         {/* Command Display Terminal */}
-        <div className="rounded-lg overflow-hidden border-t border-t-slate-700 border-x border-x-slate-800 border-b border-b-black bg-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.4)]">
+        <div className="rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
           {/* Terminal Titlebar */}
-          <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
+          <div className="px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
             <div className="flex items-center space-x-2">
               <div className="flex space-x-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-rose-500/90 shadow-[0_0_4px_rgba(244,63,94,0.4)]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500/90 shadow-[0_0_4px_rgba(245,158,11,0.4)]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/90 shadow-[0_0_4px_rgba(16,185,129,0.4)]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
               </div>
-              <span className="text-slate-300 ml-2 text-[11px] truncate font-bold">
+              <span className="text-slate-400 ml-2 text-[11px] truncate">
                 {currentTask.terminalTitle}
               </span>
             </div>
-            <div className="flex items-center space-x-1.5">
+            <div className="flex items-center space-x-1">
               <button
                 onClick={() => setActiveTab("command")}
-                className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer active:translate-y-[0.5px] ${
+                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                   activeTab === "command"
-                    ? "bg-slate-800 text-sky-300 border-t border-t-sky-400/40 border-x border-x-slate-700 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_1px_3px_rgba(0,0,0,0.3)] font-bold"
-                    : "bg-slate-900/90 text-slate-300 border-t border-t-slate-800 border-x border-x-slate-850 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] font-medium"
+                    ? "bg-slate-800 text-sky-400"
+                    : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 Command
               </button>
               <button
                 onClick={() => setActiveTab("output")}
-                className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer active:translate-y-[0.5px] ${
+                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                   activeTab === "output"
-                    ? "bg-slate-800 text-emerald-300 border-t border-t-emerald-400/40 border-x border-x-slate-700 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_1px_3px_rgba(0,0,0,0.3)] font-bold"
-                    : "bg-slate-900/90 text-slate-300 border-t border-t-slate-800 border-x border-x-slate-850 border-b border-b-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] font-medium"
+                    ? "bg-slate-800 text-emerald-400"
+                    : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                Expected Output
+                Mock Output
               </button>
             </div>
           </div>
@@ -581,7 +613,7 @@ export function CliCommandGenerator() {
                 {generatedCommand}
               </pre>
             ) : (
-              <pre className="text-slate-200 whitespace-pre font-mono text-[11px]">
+              <pre className="text-slate-300 whitespace-pre font-mono text-[11px]">
                 {currentTask.expectedOutput}
               </pre>
             )}
@@ -589,15 +621,15 @@ export function CliCommandGenerator() {
         </div>
 
         {/* Verification & Prerequisites Checklist */}
-        <div className="p-4 bg-slate-50/90 rounded-lg border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(15,23,42,0.04)] space-y-2">
-          <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+        <div className="p-4 bg-slate-50/70 rounded-lg border border-slate-200 space-y-2">
+          <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            Field Verification &amp; Operational Checklist
+            Infrastructure Verification &amp; Prerequisites
           </div>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-800 font-mono">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 font-mono">
             {currentTask.prerequisites.map((req, idx) => (
               <li key={idx} className="flex items-start gap-2">
-                <span className="text-emerald-600 font-bold text-sm leading-none mt-0.5">&bull;</span>
+                <span className="text-emerald-500 font-bold">&bull;</span>
                 <span className="leading-snug">{req}</span>
               </li>
             ))}
