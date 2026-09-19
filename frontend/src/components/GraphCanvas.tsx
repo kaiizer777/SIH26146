@@ -667,27 +667,48 @@ export default function GraphCanvas({
       .attr("dy", 0)
       .attr("stdDeviation", 3.5)
       .attr("flood-color", "#ef4444")
-    // Background Canvas Grid Pattern (Light Blueprint Mode)
+    // Background Canvas Grid Pattern (3x Zoomed Tactical Radar Blueprint)
     const gridPattern = defs
       .append("pattern")
       .attr("id", "canvas-blueprint-grid")
-      .attr("width", 40)
-      .attr("height", 40)
+      .attr("width", 120)
+      .attr("height", 120)
       .attr("patternUnits", "userSpaceOnUse");
 
+    // 1. Faint 20px sub-grid lines
     gridPattern
       .append("path")
-      .attr("d", "M 40 0 L 0 0 0 40")
+      .attr(
+        "d",
+        "M 20 0 L 20 120 M 40 0 L 40 120 M 60 0 L 60 120 M 80 0 L 80 120 M 100 0 L 100 120 " +
+        "M 0 20 L 120 20 M 0 40 L 120 40 M 0 60 L 120 60 M 0 80 L 120 80 M 0 100 L 120 100"
+      )
       .attr("fill", "none")
-      .attr("stroke", "rgba(148, 163, 184, 0.16)")
+      .attr("stroke", "rgba(148, 163, 184, 0.08)")
+      .attr("stroke-width", 0.6);
+
+    // 2. Primary 120px major grid border
+    gridPattern
+      .append("path")
+      .attr("d", "M 120 0 L 0 0 0 120")
+      .attr("fill", "none")
+      .attr("stroke", "rgba(148, 163, 184, 0.22)")
+      .attr("stroke-width", 0.9);
+
+    // 3. Tactical crosshair + intersection node at (0, 0)
+    gridPattern
+      .append("path")
+      .attr("d", "M -4 0 L 4 0 M 0 -4 L 0 4")
+      .attr("fill", "none")
+      .attr("stroke", "rgba(100, 116, 139, 0.35)")
       .attr("stroke-width", 0.8);
 
     gridPattern
       .append("circle")
       .attr("cx", 0)
       .attr("cy", 0)
-      .attr("r", 1.2)
-      .attr("fill", "rgba(100, 116, 139, 0.35)");
+      .attr("r", 1.4)
+      .attr("fill", "rgba(100, 116, 139, 0.45)");
 
     // Root Group
     const g = svg.append("g").attr("class", "graph-root");
