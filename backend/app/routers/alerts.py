@@ -145,19 +145,21 @@ async def get_alerts(
     pg_meta: dict[str, dict] = {}
 
     try:
-        # Get the most recent transaction per address (input or output)
+        # Get the most recent transaction per address (input or output).
+        # COALESCE(ts, ingested_at): every PG row has ingested_at (server default),
+        # so wallets that have a PG row but no telemetry ts still show the ingest time.
         result = await db.execute(
             text("""
                 SELECT DISTINCT ON (addr)
                     addr,
                     txid,
-                    ts,
+                    COALESCE(ts, ingested_at) AS ts,
                     src_ip::text,
                     geo_country
                 FROM transactions,
                      LATERAL unnest(input_addresses || output_addresses) AS addr
                 WHERE addr = ANY(:addrs)
-                ORDER BY addr, ts DESC
+                ORDER BY addr, COALESCE(ts, ingested_at) DESC
             """),
             {"addrs": page_addresses},
         )

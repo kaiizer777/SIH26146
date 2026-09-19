@@ -4,8 +4,12 @@ Scores newly ingested transactions in-process using:
 1. PyTorch FT-Transformer tabular reconstruction MSE (anomaly score; legacy Autoencoder fallback)
 2. Scaler normalization (StandardScaler)
 3. Heuristic rule detections (Ransomwhere seed overlap, peeling chain candidate)
-4. Provisional composite scoring: clip(0.35 * min(mse/threshold, 1.0) + 0.15 * rules, 0.0, 1.0)
-5. Generation of provisional composite and evidence records for XAI store upserts.
+4. Provisional composite scoring (smoothed saturation, capped at 0.65 without seed evidence):
+   norm_anomaly = min(mse / (3 * threshold), 1.0)   # smooth: MSE must be 3× threshold to fully saturate
+   raw_prov    = 0.35 * norm_anomaly + 0.15 * rule_factor
+   prov_score  = clamp(raw_prov, 0.0, 0.65) unless addr_prox >= 0.5 (direct seed contact)
+5. Peeling chain candidate: requires 1-in/2-out AND asymmetric 80/20 output value split.
+6. Generation of provisional composite and evidence records for XAI store upserts.
 """
 
 from __future__ import annotations
@@ -343,14 +347,33 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
 
     for i, row in enumerate(rows):
         mse = float(mses[i])
-        norm_anomaly = min(mse / thresh, 1.0)
+        # Smooth saturation: require MSE = 3× threshold to fully saturate norm_anomaly.
+        # Prevents a bare-threshold crossing (e.g. 0.04 vs 0.0346) from instantly hitting 1.0.
+        norm_anomaly = min(mse / (3.0 * thresh), 1.0)
         in_addrs = _parse_addresses(row.get("input_addresses"))
         out_addrs = _parse_addresses(row.get("output_addresses"))
         row_ts = row.get("ts")
 
         # Row-level conditions
-        # Peeling chain candidate check: exactly 2 outputs, exactly 1 input
-        is_candidate = (len(out_addrs) == 2 and len(in_addrs) == 1)
+        # Peeling chain candidate: 1 input, 2 outputs AND asymmetric value split.
+        # Requires the larger output to carry >= 80% of total output value (the change/carry-forward)
+        # while the smaller output is <= 20% (the peel). This excludes standard 50/50 or
+        # moderate-split UTXO payments that are virtually identical to legitimate transfers.
+        out_amounts = row.get("output_amounts") or []
+        if (
+            len(out_addrs) == 2
+            and len(in_addrs) == 1
+            and len(out_amounts) == 2
+        ):
+            a0, a1 = float(out_amounts[0] or 0.0), float(out_amounts[1] or 0.0)
+            total_out = a0 + a1
+            if total_out > 0:
+                larger_frac = max(a0, a1) / total_out
+                is_candidate = larger_frac >= 0.80
+            else:
+                is_candidate = False
+        else:
+            is_candidate = len(out_addrs) == 2 and len(in_addrs) == 1 and not out_amounts
         has_seed_in = any(a in _seeds for a in in_addrs)
 
         # Combine all addresses involved in this transaction
@@ -379,7 +402,12 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
 
             rule_factor = 1.0 if addr_rules else 0.0
             raw_prov = 0.35 * norm_anomaly + 0.15 * rule_factor
-            prov_score = min(max(raw_prov / 0.50, 0.0), 1.0)
+            # Do NOT re-normalize by /0.50 — that inflates all provisional scores to fill [0,1].
+            # Instead keep raw_prov as the actual weighted confidence and cap at 0.65 (HIGH)
+            # unless this address has confirmed direct seed contact (addr_prox >= 0.5), in which
+            # case we trust the score up to the full 1.0 range.
+            _prov_cap = 1.0 if addr_prox >= 0.5 else 0.65
+            prov_score = min(max(raw_prov, 0.0), _prov_cap)
 
             if addr not in address_map:
                 address_map[addr] = {

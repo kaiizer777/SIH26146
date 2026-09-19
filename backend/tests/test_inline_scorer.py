@@ -60,8 +60,10 @@ def test_score_batch_empty():
 def test_score_batch_synthetic_10_tx():
     """Batch of 10 transactions with peeling chain and seed wallet satisfies all spec assertions."""
     # Synthesize 10 transactions
-    # Tx 0: Peeling chain candidate (1 input, 2 outputs)
+    # Tx 0: Peeling chain candidate (1 input, 2 outputs, 80/20 asymmetric value split).
+    # Amounts: [0.08, 0.40] → larger carries 83% of total output → qualifies under refined heuristic.
     tx0 = _make_dummy_tx(0, ["addr_peel_in"], ["addr_peel_out1", "addr_peel_out2"])
+    tx0["output_amounts"] = [0.08, 0.40]  # 16.7% / 83.3% split
 
     # Tx 1: Ransomwhere seed input
     tx1 = _make_dummy_tx(1, [KNOWN_SEED_ADDR], ["addr_seed_out"])
@@ -78,6 +80,13 @@ def test_score_batch_synthetic_10_tx():
 
     all_txs = [tx0, tx1] + other_txs
     assert len(all_txs) == 10
+
+    # tx2-9 have 3 outputs each — never 1-in/2-out — so they should NOT trigger peeling chain.
+    # With smooth saturation (3×thresh ceiling) and no seed proximity, they must score LOW or MEDIUM.
+    benign_addrs: set[str] = set()
+    for i in range(2, 10):
+        benign_addrs.add(f"addr_in_{i}")
+        benign_addrs.update(f"addr_out_{i}_{s}" for s in ("a", "b", "c"))
 
     # Collect all unique addresses across the 10 transactions
     expected_unique_addresses = set()
@@ -141,6 +150,16 @@ def test_score_batch_synthetic_10_tx():
     assert "RANSOMWHERE_SEED_INPUT" not in seed_out_rec["triggered_rules"]
     assert seed_out_rec["composite_record"]["seed_wallet_proximity"] == 0.5
     assert seed_out_rec["evidence_record"]["seed_wallet_proximity"] == 0.5
+
+    # 5. Regression guard: benign txs (3-output, no seed proximity) must not exceed MEDIUM.
+    # This directly guards against the false-alarm CRITICAL that triggered this fix.
+    scored_map = {r["address"]: r for r in scored}
+    for addr in benign_addrs:
+        rec = scored_map[addr]
+        assert rec["verdict"] in {"LOW", "MEDIUM"}, (
+            f"Benign addr {addr!r} got false-alarm {rec['verdict']} "
+            f"(score={rec['composite_score']:.4f}, anomaly={rec['anomaly_score']:.4f})"
+        )
 
 
 def test_map_verdict():

@@ -543,18 +543,19 @@ export default function AlertTable({
           <thead className="sticky top-0 z-20">
             <tr className="table-header-3d select-none">
               {[
-                { name: "Risk Verdict", width: "w-40" },
-                { name: "Entity Address", width: "w-52" },
+                { name: "Risk Verdict", width: "w-40", headerClass: "pl-7 pr-4" },
+                { name: "Entity Address", width: "w-44" },
                 { name: "Anomaly Score", width: "w-40" },
-                { name: "Cluster Partition", width: "w-28" },
+                { name: "Cluster Partition", width: "w-36" },
                 { name: "Laundering Pattern", width: "w-36" },
                 { name: "Intelligence Seed", width: "w-32" },
                 { name: "Telemetry Timestamp", width: "w-44" },
-              ].map(({ name, width }) => (
+              ].map(({ name, width, headerClass }) => (
                 <th
                   key={name}
                   className={clsx(
-                    "py-3 px-4 text-left text-[10.5px] font-extrabold uppercase tracking-wider text-slate-600 whitespace-nowrap border-b border-slate-300/90 border-r border-slate-200/70 last:border-r-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]",
+                    "py-3 text-left text-[10.5px] font-extrabold uppercase tracking-wider text-slate-600 whitespace-nowrap border-b border-slate-300/90 border-r border-slate-200/70 last:border-r-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]",
+                    headerClass ?? "px-4",
                     width,
                   )}
                 >
