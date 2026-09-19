@@ -666,8 +666,9 @@ export default function GraphCanvas({
       .attr("dx", 0)
       .attr("dy", 0)
       .attr("stdDeviation", 3.5)
-      .attr("flood-color", "#ef4444")
-    // Background Canvas Grid Pattern (3x Zoomed Tactical Radar with Darker Grid Lines)
+      .attr("flood-color", "#ef4444");
+
+    // Background Canvas Grid Pattern (Refined Defense Blueprint Matrix)
     const gridPattern = defs
       .append("pattern")
       .attr("id", "canvas-blueprint-grid")
@@ -675,7 +676,7 @@ export default function GraphCanvas({
       .attr("height", 120)
       .attr("patternUnits", "userSpaceOnUse");
 
-    // 1. Crisp 20px sub-grid lines (darker & more visible)
+    // 1. Crisp 20px sub-grid lines (subtle & unobtrusive)
     gridPattern
       .append("path")
       .attr(
@@ -684,31 +685,31 @@ export default function GraphCanvas({
         "M 0 20 L 120 20 M 0 40 L 120 40 M 0 60 L 120 60 M 0 80 L 120 80 M 0 100 L 120 100"
       )
       .attr("fill", "none")
-      .attr("stroke", "rgba(100, 116, 139, 0.22)")
-      .attr("stroke-width", 0.75);
+      .attr("stroke", "rgba(148, 163, 184, 0.12)")
+      .attr("stroke-width", 0.6);
 
-    // 2. Primary 120px major grid border (darker & authoritative)
+    // 2. Primary 120px major grid border
     gridPattern
       .append("path")
       .attr("d", "M 120 0 L 0 0 0 120")
       .attr("fill", "none")
-      .attr("stroke", "rgba(71, 85, 105, 0.42)")
-      .attr("stroke-width", 1.0);
+      .attr("stroke", "rgba(100, 116, 139, 0.22)")
+      .attr("stroke-width", 0.85);
 
     // 3. Tactical crosshair + intersection node at (0, 0)
     gridPattern
       .append("path")
-      .attr("d", "M -5 0 L 5 0 M 0 -5 L 0 5")
+      .attr("d", "M -4 0 L 4 0 M 0 -4 L 0 4")
       .attr("fill", "none")
-      .attr("stroke", "rgba(51, 65, 85, 0.60)")
-      .attr("stroke-width", 1.0);
+      .attr("stroke", "rgba(71, 85, 105, 0.35)")
+      .attr("stroke-width", 0.85);
 
     gridPattern
       .append("circle")
       .attr("cx", 0)
       .attr("cy", 0)
-      .attr("r", 1.6)
-      .attr("fill", "rgba(51, 65, 85, 0.65)");
+      .attr("r", 1.4)
+      .attr("fill", "rgba(71, 85, 105, 0.45)");
 
     // Root Group
     const g = svg.append("g").attr("class", "graph-root");
@@ -1344,21 +1345,22 @@ export default function GraphCanvas({
       className="relative flex-1 flex flex-col overflow-hidden select-none transition-colors duration-200 bg-slate-50 text-slate-900"
     >
       {/* ------------------------------------------------------------------- */}
-      {/* Studio Forensic Command Toolbar (Clean Spacing, Unclipped Controls) */}
+      {/* Studio Forensic Command Toolbar (Tactile 3D Hierarchy & Clean Spacing) */}
       {/* ------------------------------------------------------------------- */}
       <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-3 pointer-events-none">
         {/* Left Cluster Stats & Filter Pills */}
         <div className="pointer-events-auto flex items-center gap-2 flex-wrap max-w-[65vw]">
           {clusterId != null && (
-            <div className="flex items-center gap-2 crypto-mono text-xs px-3 py-1.5 rounded-lg shadow-card border backdrop-blur-md transition-colors bg-white/95 border-slate-200/90 text-slate-800">
-              <Network className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-              <span className="font-extrabold tracking-tight">Cluster #{clusterId}</span>
-              <span className="text-slate-400">|</span>
-              <span className="text-slate-500 font-medium">
+            <div className="flex items-center gap-2 crypto-mono text-xs px-3 py-1.5 rounded-lg border border-slate-300/80 bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.06),inset_0_1px_0_#ffffff]">
+              <Network className="w-3.5 h-3.5 text-sky-600 shrink-0 stroke-[2.2]" />
+              <span className="font-extrabold tracking-tight text-slate-900">Cluster #{clusterId}</span>
+              <span className="text-slate-300">|</span>
+              <span className="text-slate-600 font-medium">
                 {nodes.length} Nodes • {links.length} Edges
               </span>
               {highlightMode && (
-                <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-sky-500/15 text-sky-500 border border-sky-500/30 tracking-wider">
+                <span className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-sky-50 text-sky-700 border border-sky-300 shadow-2xs tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
                   GNN ACTIVE
                 </span>
               )}
@@ -1366,7 +1368,7 @@ export default function GraphCanvas({
           )}
 
           {/* Tactical Entity Filters */}
-          <div className="hidden sm:flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card transition-colors bg-white/95 border-slate-200/90">
+          <div className="hidden sm:flex items-center gap-1 p-0.5 rounded-lg border border-slate-300/70 bg-slate-200/60 shadow-[inset_0_1px_2px_rgba(15,23,42,0.08)]">
             {[
               { id: "all", label: "All", count: nodes.length },
               { id: "high", label: "High Risk", count: counts.high },
@@ -1374,32 +1376,57 @@ export default function GraphCanvas({
               { id: "wallets", label: "Wallets", count: counts.wallets },
               { id: "tx", label: "Txs", count: counts.txs },
               { id: "ip", label: "IPs", count: counts.ips },
-            ].map(({ id, label, count }) => (
-              <button
-                key={id}
-                onClick={() => setNodeFilter(id as typeof nodeFilter)}
-                className={clsx(
-                  "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5",
-                  nodeFilter === id
-                    ? "bg-slate-900 text-white shadow-2xs font-bold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                )}
-              >
-                <span>{label}</span>
-                {count > 0 && id !== "all" && (
-                  <span
-                    className={clsx(
-                      "text-[9.5px] crypto-mono font-bold px-1 rounded",
-                      nodeFilter === id
-                        ? "bg-slate-800 text-slate-200"
-                        : "bg-slate-100 text-slate-500"
-                    )}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            ))}
+            ].map(({ id, label, count }) => {
+              const isSelected = nodeFilter === id;
+              let selectedClass = "bg-gradient-to-b from-slate-800 to-slate-950 text-white border border-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]";
+
+              if (isSelected) {
+                if (id === "high") {
+                  selectedClass = "bg-rose-50 border border-rose-300 text-rose-800 shadow-[0_1px_2px_rgba(225,29,72,0.1),inset_0_1px_0_#ffffff]";
+                } else if (id === "seeds") {
+                  selectedClass = "bg-red-50 border border-red-300 text-red-700 shadow-[0_1px_2px_rgba(220,38,38,0.1),inset_0_1px_0_#ffffff]";
+                } else if (id === "wallets") {
+                  selectedClass = "bg-emerald-50 border border-emerald-300 text-emerald-800 shadow-[0_1px_2px_rgba(5,150,105,0.1),inset_0_1px_0_#ffffff]";
+                } else if (id === "tx") {
+                  selectedClass = "bg-sky-50 border border-sky-300 text-sky-800 shadow-[0_1px_2px_rgba(2,132,199,0.1),inset_0_1px_0_#ffffff]";
+                } else if (id === "ip") {
+                  selectedClass = "bg-cyan-50 border border-cyan-300 text-cyan-800 shadow-[0_1px_2px_rgba(8,145,178,0.1),inset_0_1px_0_#ffffff]";
+                }
+              }
+
+              return (
+                <button
+                  key={id}
+                  onClick={() => setNodeFilter(id as typeof nodeFilter)}
+                  className={clsx(
+                    "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 select-none active:translate-y-[0.5px]",
+                    isSelected
+                      ? selectedClass
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
+                  )}
+                >
+                  {id === "seeds" && isSelected && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                  )}
+                  {id === "wallets" && isSelected && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                  )}
+                  <span>{label}</span>
+                  {count > 0 && id !== "all" && (
+                    <span
+                      className={clsx(
+                        "text-[9.5px] crypto-mono font-bold px-1 rounded",
+                        isSelected
+                          ? "bg-black/10 text-current"
+                          : "bg-slate-300/60 text-slate-600"
+                      )}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -1407,7 +1434,7 @@ export default function GraphCanvas({
         <div className="pointer-events-auto flex items-center gap-2">
           {/* Quick Search */}
           <div className="relative flex items-center group">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 group-focus-within:text-sky-500 transition-colors pointer-events-none" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 group-focus-within:text-sky-600 transition-colors pointer-events-none stroke-[2.2]" />
             <input
               type="text"
               placeholder="Search address / node ID…"
@@ -1418,9 +1445,9 @@ export default function GraphCanvas({
                   zoomToNode(searchMatches[0].id);
                 }
               }}
-              className="h-8 pl-8 pr-7 text-[11px] crypto-mono rounded-lg border transition-all shadow-2xs outline-none w-48 sm:w-56 focus:w-64 bg-white/95 border-slate-200/90 text-slate-800 placeholder:text-slate-400 focus:border-sky-600"
+              className="h-8 pl-8 pr-12 text-[11px] crypto-mono rounded-lg border transition-all shadow-[0_1px_2px_rgba(15,23,42,0.04),inset_0_1px_0_#ffffff] outline-none w-48 sm:w-56 focus:w-64 bg-gradient-to-b from-white to-slate-50 border-slate-300 text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
             />
-            {searchQuery && (
+            {searchQuery ? (
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
@@ -1428,25 +1455,48 @@ export default function GraphCanvas({
               >
                 <X className="w-3 h-3" />
               </button>
+            ) : (
+              <span className="absolute right-2.5 text-[9.5px] crypto-mono font-bold text-slate-400 bg-slate-100 px-1 py-0.5 rounded border border-slate-200 pointer-events-none">
+                ⌘K
+              </span>
             )}
             {searchQuery && searchMatches.length > 0 && (
-              <div className="absolute top-9 left-0 right-0 max-h-48 overflow-y-auto rounded-lg border p-1 shadow-card-elevated z-40 text-[10px] crypto-mono bg-white border-slate-200 text-slate-700">
+              <div className="absolute top-9 left-0 right-0 max-h-48 overflow-y-auto rounded-xl border border-slate-200/90 p-1 shadow-[0_10px_25px_rgba(15,23,42,0.1)] z-40 text-[10px] crypto-mono bg-white text-slate-700">
                 {searchMatches.slice(0, 5).map((m) => (
                   <button
                     key={m.id}
                     onClick={() => zoomToNode(m.id)}
-                    className="w-full text-left px-2 py-1.5 rounded flex items-center justify-between hover:bg-sky-500/15 cursor-pointer truncate hover:text-sky-700"
+                    className="w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between hover:bg-sky-50 cursor-pointer truncate hover:text-sky-700 transition-colors"
                   >
-                    <span className="truncate">{m.label || m.id}</span>
-                    <span className="text-[9px] uppercase px-1 rounded bg-slate-800/20">{m.type}</span>
+                    <span className="truncate font-semibold">{m.label || m.id}</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-bold">{m.type}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
+          {/* Transformer Saliency / Heatmap Toggle */}
+          <div className="flex items-center p-0.5 rounded-lg border border-slate-300/70 bg-slate-200/60 shadow-[inset_0_1px_2px_rgba(15,23,42,0.08)]">
+            <button
+              id="toggle-saliency-mode"
+              onClick={() => setSaliencyMode(!saliencyMode)}
+              aria-label={saliencyMode ? "Disable Attention Saliency" : "Enable Attention Saliency"}
+              title={saliencyMode ? "Multi-Head Attention Flow Active" : "Filter Multi-Head Attention Flow"}
+              className={clsx(
+                "h-7 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer select-none active:translate-y-[0.5px]",
+                saliencyMode
+                  ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white border border-sky-600 shadow-[0_1px_3px_rgba(2,132,199,0.3),inset_0_1px_0_rgba(255,255,255,0.3)]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
+              )}
+            >
+              <Sparkles className={clsx("w-3.5 h-3.5", saliencyMode ? "text-sky-100 animate-pulse" : "text-slate-500")} />
+              <span>Saliency</span>
+            </button>
+          </div>
+
           {/* Layout Mode Switcher */}
-          <div className="flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card bg-white/95 border-slate-200/90">
+          <div className="flex items-center gap-0.5 p-0.5 rounded-lg border border-slate-300/70 bg-slate-200/60 shadow-[inset_0_1px_2px_rgba(15,23,42,0.08)]">
             <ToolBtn
               id="layout-force"
               icon={<Network className="w-3.5 h-3.5" />}
@@ -1480,7 +1530,7 @@ export default function GraphCanvas({
           </div>
 
           {/* Navigation Zoom Tools */}
-          <div className="flex items-center gap-1 p-1 rounded-lg border backdrop-blur-md shadow-card bg-white/95 border-slate-200/90">
+          <div className="flex items-center gap-0.5 p-0.5 rounded-lg border border-slate-300/70 bg-slate-200/60 shadow-[inset_0_1px_2px_rgba(15,23,42,0.08)]">
             <ToolBtn id="graph-zoom-in" icon={<ZoomIn className="w-3.5 h-3.5" />} label="Zoom In (+)" onClick={() => zoomBy(1.3)} />
             <ToolBtn id="graph-zoom-out" icon={<ZoomOut className="w-3.5 h-3.5" />} label="Zoom Out (-)" onClick={() => zoomBy(0.75)} />
             <ToolBtn id="graph-fit" icon={<Maximize2 className="w-3.5 h-3.5" />} label="Fit Graph to Viewport" onClick={fitToScreen} />
@@ -1488,7 +1538,7 @@ export default function GraphCanvas({
             {layoutMode === "force" && (
               <ToolBtn
                 id="graph-freeze"
-                icon={frozen ? <Play className="w-3.5 h-3.5 text-sky-500" /> : <Pause className="w-3.5 h-3.5" />}
+                icon={frozen ? <Play className="w-3.5 h-3.5 text-sky-600 font-bold" /> : <Pause className="w-3.5 h-3.5" />}
                 label={frozen ? "Resume Physics" : "Pause Physics"}
                 onClick={toggleFreeze}
                 active={frozen}
@@ -1510,8 +1560,8 @@ export default function GraphCanvas({
             cx={hoverLeader.x1}
             cy={hoverLeader.y1}
             r="3.5"
-            fill="#0f172a"
-            stroke="#000000"
+            fill="#0284c7"
+            stroke="#ffffff"
             strokeWidth="1.2"
           />
           <circle
@@ -1519,10 +1569,10 @@ export default function GraphCanvas({
             cy={hoverLeader.y1}
             r="8"
             fill="none"
-            stroke="#0f172a"
-            strokeWidth="1"
+            stroke="#0284c7"
+            strokeWidth="1.2"
             strokeDasharray="2,2"
-            opacity="0.75"
+            opacity="0.85"
           />
           {/* Subtle connecting leader line */}
           <line
@@ -1530,17 +1580,17 @@ export default function GraphCanvas({
             y1={hoverLeader.y1}
             x2={hoverLeader.x2}
             y2={hoverLeader.y2}
-            stroke="#0f172a"
-            strokeWidth="1.2"
+            stroke="#0284c7"
+            strokeWidth="1.4"
             strokeDasharray="3,3"
-            opacity="0.75"
+            opacity="0.8"
           />
           {/* Target anchor dot */}
           <circle
             cx={hoverLeader.x2}
             cy={hoverLeader.y2}
-            r="2.5"
-            fill="#0f172a"
+            r="3"
+            fill="#0284c7"
           />
         </svg>
       )}
@@ -1565,7 +1615,7 @@ export default function GraphCanvas({
                 }
           }
           className={clsx(
-            "absolute z-30 w-[360px] max-h-[calc(100%-72px)] flex flex-col overflow-y-auto overscroll-contain rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out scrollbar-thin",
+            "absolute z-30 w-[360px] max-h-[calc(100%-72px)] flex flex-col overflow-y-auto overscroll-contain rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out scrollbar-thin",
             selectedNode ? "pointer-events-auto ring-1 ring-sky-500/50" : "pointer-events-none"
           )}
         >
@@ -1717,11 +1767,11 @@ export default function GraphCanvas({
           {activeDisplayNode.type === "wallet" && onSelectWallet && (
             <button
               onClick={() => onSelectWallet(activeDisplayNode.id)}
-              className="w-full mb-2.5 h-8.5 rounded-lg bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(2,132,199,0.35)] transition-colors cursor-pointer pointer-events-auto"
+              className="w-full mb-2.5 h-8.5 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 active:from-sky-600 active:to-sky-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-[0_2px_8px_rgba(2,132,199,0.35),inset_0_1px_0_rgba(255,255,255,0.25)] border-t border-t-sky-300/40 border-b border-b-sky-800 transition-all cursor-pointer pointer-events-auto active:translate-y-[0.5px]"
             >
-              <Shield className="w-3.5 h-3.5 text-sky-200 stroke-[2.2]" />
+              <Shield className="w-3.5 h-3.5 text-sky-100 stroke-[2.2]" />
               <span>Inspect Full Forensic Dossier</span>
-              <ExternalLink className="w-3 h-3 text-sky-200 ml-0.5" />
+              <ExternalLink className="w-3 h-3 text-sky-100 ml-0.5" />
             </button>
           )}
 
@@ -1762,7 +1812,7 @@ export default function GraphCanvas({
                   maxHeight: "calc(100% - 72px)",
                 }
           }
-          className="absolute z-30 w-[360px] max-h-[calc(100%-72px)] flex flex-col overflow-y-auto overscroll-contain rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out pointer-events-auto ring-1 ring-sky-500/50 scrollbar-thin"
+          className="absolute z-30 w-[360px] max-h-[calc(100%-72px)] flex flex-col overflow-y-auto overscroll-contain rounded-2xl bg-slate-950/95 text-white backdrop-blur-xl border border-slate-700/80 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[left,top] duration-150 ease-out pointer-events-auto ring-1 ring-sky-500/50 scrollbar-thin"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -1838,7 +1888,7 @@ export default function GraphCanvas({
             {(selectedLink.source as SimNode).type === "wallet" && onSelectWallet && (
               <button
                 onClick={() => onSelectWallet((selectedLink.source as SimNode).id)}
-                className="flex-1 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center justify-center gap-1 border border-slate-700 transition-colors cursor-pointer"
+                className="flex-1 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 text-[11px] font-semibold flex items-center justify-center gap-1 border border-slate-700 transition-all cursor-pointer active:translate-y-[0.5px]"
               >
                 <span>Source Wallet</span>
                 <ExternalLink className="w-3 h-3" />
@@ -1847,7 +1897,7 @@ export default function GraphCanvas({
             {(selectedLink.target as SimNode).type === "wallet" && onSelectWallet && (
               <button
                 onClick={() => onSelectWallet((selectedLink.target as SimNode).id)}
-                className="flex-1 h-8 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                className="flex-1 h-8 rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 active:from-sky-600 active:to-sky-700 text-white text-[11px] font-semibold flex items-center justify-center gap-1 shadow-2xs border-t border-t-sky-300/40 border-b border-b-sky-800 transition-all cursor-pointer active:translate-y-[0.5px]"
               >
                 <span>Target Wallet</span>
                 <ExternalLink className="w-3 h-3" />
@@ -1870,8 +1920,8 @@ export default function GraphCanvas({
       {/* Loading Overlay */}
       {/* ------------------------------------------------------------------- */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs z-30">
-          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl border shadow-card-elevated bg-white border-slate-200 text-slate-900">
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/30 backdrop-blur-xs z-30">
+          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl border border-slate-200 shadow-[0_10px_25px_rgba(15,23,42,0.1)] bg-white text-slate-900">
             <div className="w-9 h-9 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
             <div className="text-center">
               <span className="text-xs font-bold crypto-mono block">Optimizing Graph Topology…</span>
@@ -1884,7 +1934,7 @@ export default function GraphCanvas({
       {/* Empty State */}
       {!isLoading && nodes.length === 0 && clusterId != null && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="p-6 rounded-2xl border shadow-card text-center max-w-sm bg-white/95 border-slate-200">
+          <div className="p-6 rounded-2xl border border-slate-200 shadow-card text-center max-w-sm bg-white/95">
             <Network className="w-6 h-6 text-slate-400 mx-auto mb-2" />
             <p className="text-xs font-bold crypto-mono mb-1">No Topology Data</p>
             <p className="text-[11px] text-slate-500">
@@ -1904,68 +1954,68 @@ export default function GraphCanvas({
       {/* ------------------------------------------------------------------- */}
       {/* Canvas Operator Status Footer */}
       {/* ------------------------------------------------------------------- */}
-      <div className="h-11 px-4 border-t flex items-center justify-between shrink-0 select-none text-[11px] z-10 transition-colors gap-4 overflow-x-auto scrollbar-none border-slate-200/90 bg-slate-50 text-slate-600">
+      <div className="h-11 px-4 border-t flex items-center justify-between shrink-0 select-none text-[11px] z-10 transition-colors gap-4 overflow-x-auto scrollbar-none border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 text-slate-600 shadow-[inset_0_1px_0_#ffffff]">
         {/* Left: Tactical Legend Filter + Cluster Metadata */}
         <div className="flex items-center gap-3 shrink-0 whitespace-nowrap">
           {/* Segmented Tactical Legend Pills */}
-          <div className="flex items-center gap-0.5 p-0.5 rounded-lg border text-[11px] transition-all shrink-0 bg-white border-slate-200/90 shadow-2xs text-slate-600">
+          <div className="flex items-center gap-0.5 p-0.5 rounded-lg border border-slate-300/70 bg-slate-200/60 text-[11px] transition-all shrink-0 shadow-[inset_0_1px_2px_rgba(15,23,42,0.08)]">
             <button
               onClick={() => setNodeFilter(nodeFilter === "wallets" ? "all" : "wallets")}
               className={clsx(
-                "flex items-center gap-1.5 transition-all cursor-pointer px-2 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none",
+                "flex items-center gap-1.5 transition-all cursor-pointer px-2.5 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none active:translate-y-[0.5px]",
                 nodeFilter === "wallets"
-                  ? "bg-emerald-50 border border-emerald-300 text-emerald-800 font-bold shadow-2xs"
-                  : "border border-transparent hover:text-emerald-700 hover:bg-slate-100"
+                  ? "bg-emerald-50 border border-emerald-300 text-emerald-800 font-bold shadow-[0_1px_2px_rgba(5,150,105,0.12),inset_0_1px_0_#ffffff]"
+                  : "border border-transparent hover:text-emerald-700 hover:bg-white/60 text-slate-600"
               )}
               title="Toggle wallet filter"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-2xs shrink-0" />
               <span>Wallet</span>
-              <span className="text-[10px] crypto-mono opacity-70">({counts.wallets})</span>
+              <span className="text-[10px] crypto-mono opacity-75 font-semibold">({counts.wallets})</span>
             </button>
 
             <button
               onClick={() => setNodeFilter(nodeFilter === "tx" ? "all" : "tx")}
               className={clsx(
-                "flex items-center gap-1.5 transition-all cursor-pointer px-2 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none",
+                "flex items-center gap-1.5 transition-all cursor-pointer px-2.5 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none active:translate-y-[0.5px]",
                 nodeFilter === "tx"
-                  ? "bg-sky-50 border border-sky-300 text-sky-800 font-bold shadow-2xs"
-                  : "border border-transparent hover:text-sky-700 hover:bg-slate-100"
+                  ? "bg-sky-50 border border-sky-300 text-sky-800 font-bold shadow-[0_1px_2px_rgba(2,132,199,0.12),inset_0_1px_0_#ffffff]"
+                  : "border border-transparent hover:text-sky-700 hover:bg-white/60 text-slate-600"
               )}
               title="Toggle transaction filter"
             >
               <span className="w-2 h-2 rounded-xs bg-slate-300 border border-slate-500 shadow-2xs shrink-0" />
               <span>Tx</span>
-              <span className="text-[10px] crypto-mono opacity-70">({counts.txs})</span>
+              <span className="text-[10px] crypto-mono opacity-75 font-semibold">({counts.txs})</span>
             </button>
 
             <button
               onClick={() => setNodeFilter(nodeFilter === "ip" ? "all" : "ip")}
               className={clsx(
-                "flex items-center gap-1.5 transition-all cursor-pointer px-2 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none",
+                "flex items-center gap-1.5 transition-all cursor-pointer px-2.5 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none active:translate-y-[0.5px]",
                 nodeFilter === "ip"
-                  ? "bg-sky-50 border border-sky-300 text-sky-800 font-bold shadow-2xs"
-                  : "border border-transparent hover:text-sky-700 hover:bg-slate-100"
+                  ? "bg-cyan-50 border border-cyan-300 text-cyan-800 font-bold shadow-[0_1px_2px_rgba(8,145,178,0.12),inset_0_1px_0_#ffffff]"
+                  : "border border-transparent hover:text-cyan-700 hover:bg-white/60 text-slate-600"
               )}
               title="Toggle IP host filter"
             >
               <span className="w-2 h-2 rotate-45 bg-sky-100 border border-sky-500 shadow-2xs shrink-0" />
               <span>IP Host</span>
-              <span className="text-[10px] crypto-mono opacity-70">({counts.ips})</span>
+              <span className="text-[10px] crypto-mono opacity-75 font-semibold">({counts.ips})</span>
             </button>
 
             <button
               onClick={() => setNodeFilter(nodeFilter === "seeds" ? "all" : "seeds")}
               className={clsx(
-                "flex items-center gap-1.5 transition-all cursor-pointer px-2 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none",
+                "flex items-center gap-1.5 transition-all cursor-pointer px-2.5 py-0.5 rounded-md font-medium text-[11px] whitespace-nowrap select-none active:translate-y-[0.5px]",
                 nodeFilter === "seeds"
-                  ? "bg-red-50 border border-red-300 text-red-700 font-bold shadow-2xs"
-                  : "border border-transparent hover:text-red-600 hover:bg-slate-100"
+                  ? "bg-red-50 border border-red-300 text-red-700 font-bold shadow-[0_1px_2px_rgba(220,38,38,0.12),inset_0_1px_0_#ffffff]"
+                  : "border border-transparent hover:text-red-600 hover:bg-white/60 text-slate-600"
               )}
               title="Toggle seed entity filter"
             >
               <span className="w-2 h-2 rounded-full border border-dashed border-red-600 bg-red-500 shadow-2xs animate-pulse shrink-0" />
-              <span className="font-semibold text-red-500">Seed Entity</span>
+              <span className="font-semibold text-red-600">Seed Entity</span>
               <span className="text-[10px] crypto-mono font-bold opacity-80">({counts.seeds})</span>
             </button>
           </div>
@@ -1974,7 +2024,7 @@ export default function GraphCanvas({
 
           {/* Cluster Metadata Badge */}
           <div className="hidden md:flex items-center gap-2 crypto-mono text-[11px] whitespace-nowrap shrink-0">
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border shadow-2xs uppercase bg-white border-slate-200 text-slate-800">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border border-slate-300/80 bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),inset_0_1px_0_#ffffff] uppercase">
               Cluster #{clusterId ?? "—"}
             </span>
             <span className="text-slate-300">•</span>
@@ -1982,7 +2032,7 @@ export default function GraphCanvas({
               {nodes.length} nodes, {links.length} links
             </span>
             <span className="hidden 2xl:inline text-slate-300">•</span>
-            <span className="hidden 2xl:inline capitalize font-medium text-sky-600">
+            <span className="hidden 2xl:inline capitalize font-semibold text-sky-700">
               Layout: {layoutMode}
             </span>
           </div>
@@ -1998,9 +2048,10 @@ export default function GraphCanvas({
         </div>
 
         {/* Right: Live Military SYS UTC Clock */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border shadow-2xs shrink-0 whitespace-nowrap text-[11px] border-slate-200/90 bg-white text-slate-600">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">SYS UTC</span>
-          <span className="crypto-mono text-xs font-semibold">{now}</span>
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-slate-300/80 bg-gradient-to-b from-white to-slate-50 text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),inset_0_1px_0_#ffffff] shrink-0 whitespace-nowrap text-[11px]">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_#10b981]" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">SYS UTC</span>
+          <span className="crypto-mono text-xs font-semibold text-slate-800">{now}</span>
         </div>
       </div>
     </div>
@@ -2027,10 +2078,10 @@ function ToolBtn({
       aria-label={label}
       title={label}
       className={clsx(
-        "w-7.5 h-7.5 flex items-center justify-center rounded-md border transition-all cursor-pointer shadow-2xs",
+        "w-7 h-7 flex items-center justify-center rounded-md transition-all cursor-pointer select-none active:translate-y-[0.5px]",
         active
-          ? "bg-sky-50 border-sky-300 text-sky-700 shadow-inner"
-          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
+          ? "bg-gradient-to-b from-white to-slate-50 border border-slate-300 text-sky-700 shadow-[0_1px_2px_rgba(15,23,42,0.08),inset_0_1px_0_#ffffff] font-bold"
+          : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
       )}
     >
       {icon}
