@@ -219,13 +219,13 @@ export default function ModelProvenanceModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-provenance-title"
-        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl border border-slate-300/90 shadow-[0_0_0_1px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,1)_inset,0_20px_50px_-12px_rgba(15,23,42,0.22),0_40px_80px_-24px_rgba(15,23,42,0.18)] flex flex-col overflow-hidden transition-all duration-200"
+        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl border-t border-t-white border-x border-x-slate-300/90 border-b border-b-slate-400/90 shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_0_rgba(255,255,255,1)_inset,0_20px_50px_-12px_rgba(15,23,42,0.22),0_40px_80px_-24px_rgba(15,23,42,0.18)] flex flex-col overflow-hidden transition-all duration-200"
       >
         {/* Header Strip with 3D Light-from-Above */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/90 bg-gradient-to-b from-white via-slate-50/90 to-slate-100/90 shadow-[inset_0_1px_0_#ffffff] shrink-0">
           <div className="flex items-center gap-3.5">
-            {/* Medallion Icon */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-sky-500 via-sky-600 to-sky-700 text-white border-t border-t-sky-300/70 border-x border-x-sky-500/60 border-b border-b-sky-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_2px_6px_rgba(2,132,199,0.32)] flex items-center justify-center shrink-0">
+            {/* Tactile Medallion Icon */}
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-sky-500 via-sky-600 to-sky-700 text-white border-t border-t-sky-300/80 border-x border-x-sky-500/70 border-b border-b-sky-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_2px_6px_rgba(2,132,199,0.35)] flex items-center justify-center shrink-0">
               <Cpu className="w-5 h-5 text-white stroke-[2.2]" />
             </div>
 
@@ -233,11 +233,11 @@ export default function ModelProvenanceModal({
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h2
                   id="modal-provenance-title"
-                  className="text-sm sm:text-base font-bold text-slate-900 tracking-tight"
+                  className="text-base font-bold text-slate-950 tracking-tight"
                 >
-                  Dual Transformer Model Provenance & Benchmark Audit
+                  Dual Transformer Model Provenance &amp; Benchmark Audit
                 </h2>
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-300/90 text-emerald-800 text-[10px] font-bold tracking-wide crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 text-[10px] font-bold tracking-wide crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600" />
@@ -246,27 +246,29 @@ export default function ModelProvenanceModal({
                 </div>
               </div>
               <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
-                <span>Sovereign Air-Gapped CPU Execution</span>
+                <span className="font-medium text-slate-600">Sovereign Air-Gapped CPU Execution</span>
                 <span className="text-slate-300">•</span>
                 <span className="text-emerald-700 font-semibold flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                   Promoted Gate Pass (F1 &ge; 0.880)
                 </span>
                 <span className="text-slate-300">•</span>
-                <span className="text-slate-400 font-mono text-[11px]">NTRO Spec §4.2</span>
+                <span className="text-slate-500 font-mono text-[11px] bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
+                  NTRO Spec §4.2
+                </span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-400 text-[10px] crypto-mono font-medium shadow-[inset_0_1px_0_#ffffff,0_1px_1px_rgba(15,23,42,0.05)]">
+            <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-500 text-[10px] crypto-mono font-semibold shadow-[inset_0_1px_0_#ffffff,0_1px_1px_rgba(15,23,42,0.05)]">
               ESC
             </kbd>
             <button
               id="model-provenance-close-btn"
               onClick={onClose}
               aria-label="Close modal"
-              className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-100 border border-slate-300 text-slate-600 hover:text-slate-900 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.08)] active:shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.18)] active:translate-y-[0.5px] transition-all cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-100 border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.08)] active:shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.18)] active:translate-y-[0.5px] transition-all cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -436,13 +438,13 @@ export default function ModelProvenanceModal({
           </div>
 
           {/* Forensic Head-to-Head Benchmark Table */}
-          <div className="rounded-xl border border-slate-300/90 overflow-hidden bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06),0_4px_12px_-2px_rgba(15,23,42,0.03)]">
-            <div className="px-5 py-3.5 bg-gradient-to-r from-slate-50 via-slate-100/90 to-slate-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
+          <div className="rounded-xl border-t border-t-white border-x border-x-slate-300/90 border-b border-b-slate-400/80 overflow-hidden bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06),0_4px_14px_-2px_rgba(15,23,42,0.04)]">
+            <div className="px-5 py-3 bg-gradient-to-r from-slate-50 via-slate-100/90 to-slate-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
                 <div className="w-6 h-6 rounded-md bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
                   <Activity className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-950 uppercase tracking-wider">
                   Head-to-Head Forensic Architecture Comparison
                 </span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200/80 text-slate-700 border border-slate-300/70 crypto-mono">
@@ -450,10 +452,10 @@ export default function ModelProvenanceModal({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] crypto-mono text-slate-500">
+                <span className="text-[11px] crypto-mono text-slate-500 font-medium">
                   Gate Threshold: Test F1 &ge; 0.880
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold crypto-mono">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
                   <Check className="w-3 h-3 stroke-[2.5]" />
                   PASSED: 0.921
                 </span>
@@ -463,22 +465,22 @@ export default function ModelProvenanceModal({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-semibold">
-                    <th className="py-3 px-4 w-[20%] text-slate-700 font-bold">
+                  <tr className="border-b border-slate-200 bg-slate-50/90 text-slate-600 font-semibold">
+                    <th className="py-3 px-4 w-[20%] text-slate-800 font-bold uppercase tracking-wider text-[11px]">
                       Metric / Dimension
                     </th>
-                    <th className="py-3 px-4 w-[32%] text-sky-950 font-bold bg-sky-50/50 border-x border-sky-200/70">
+                    <th className="py-3 px-4 w-[32%] text-sky-950 font-bold bg-sky-50/70 border-x border-sky-200/80">
                       <div className="flex items-center justify-between">
-                        <span>Dual Transformer Architecture</span>
-                        <span className="text-[9.5px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-sky-600 text-white shadow-2xs">
-                          ACTIVE
+                        <span className="uppercase tracking-wider text-[11px]">Dual Transformer Architecture</span>
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-sky-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(2,132,199,0.3)]">
+                          ACTIVE SOTA
                         </span>
                       </div>
                     </th>
-                    <th className="py-3 px-4 w-[24%] text-slate-600 font-medium">
-                      Baseline Architecture (Legacy Reference)
+                    <th className="py-3 px-4 w-[24%] text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                      Baseline Architecture (Legacy)
                     </th>
-                    <th className="py-3 px-4 w-[24%] text-slate-800 font-semibold">
+                    <th className="py-3 px-4 w-[24%] text-slate-800 font-bold uppercase tracking-wider text-[11px]">
                       Impact on NTRO Forensics
                     </th>
                   </tr>
@@ -489,39 +491,39 @@ export default function ModelProvenanceModal({
                       key={row.dimension}
                       className={clsx(
                         "transition-colors",
-                        idx % 2 === 0 ? "bg-white" : "bg-slate-50/30",
-                        "hover:bg-slate-50/80"
+                        idx % 2 === 0 ? "bg-white" : "bg-slate-50/40",
+                        "hover:bg-slate-50/90"
                       )}
                     >
                       {/* Dimension Name */}
                       <td className="py-3.5 px-4 align-top">
-                        <div className="font-bold text-slate-900 text-xs">
+                        <div className="font-bold text-slate-950 text-xs">
                           {row.dimension}
                         </div>
-                        <span className="inline-block mt-1 text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                        <span className="inline-block mt-1 text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                           {row.categoryTag}
                         </span>
                       </td>
 
                       {/* Active Dual Transformer (Champion Column) */}
-                      <td className="py-3.5 px-4 bg-sky-50/30 border-x border-sky-200/60 align-top">
+                      <td className="py-3.5 px-4 bg-sky-50/40 border-x border-sky-200/70 align-top">
                         <div className="flex items-center justify-between gap-1.5">
                           <div className="font-bold text-slate-950 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span>{row.active.title}</span>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="text-[12.5px]">{row.active.title}</span>
                           </div>
-                          <span className="text-[10px] font-semibold text-sky-800 bg-sky-100 px-1.5 py-0.2 rounded border border-sky-200/80 crypto-mono shrink-0">
+                          <span className="text-[10px] font-bold text-sky-800 bg-sky-100/90 px-2 py-0.5 rounded border border-sky-200/80 crypto-mono shrink-0 shadow-[inset_0_1px_0_#ffffff]">
                             {row.active.badge}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                        <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed font-normal">
                           {row.active.detail}
                         </p>
-                        <div className="flex flex-wrap gap-1 mt-2">
+                        <div className="flex flex-wrap gap-1.5 mt-2.5">
                           {row.active.chips.map((chip) => (
                             <span
                               key={chip}
-                              className="text-[9.5px] font-mono px-1.5 py-0.2 rounded bg-white text-slate-700 border border-slate-200 shadow-2xs"
+                              className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-white text-slate-800 border border-slate-200/90 shadow-[inset_0_1px_0_#ffffff,0_1px_1px_rgba(15,23,42,0.04)]"
                             >
                               {chip}
                             </span>
@@ -531,18 +533,18 @@ export default function ModelProvenanceModal({
 
                       {/* Baseline Legacy Architecture */}
                       <td className="py-3.5 px-4 align-top text-slate-500">
-                        <div className="font-medium text-slate-700 flex items-center gap-1.5">
+                        <div className="font-semibold text-slate-700 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                           <span>{row.baseline.title}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                        <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
                           {row.baseline.detail}
                         </p>
                       </td>
 
                       {/* Forensic Impact */}
                       <td className="py-3.5 px-4 align-top text-slate-800">
-                        <span className="inline-block text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/80 mb-1">
+                        <span className="inline-block text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 mb-1.5 shadow-[inset_0_1px_0_#ffffff]">
                           {row.impact.tag}
                         </span>
                         <p className="text-[11px] leading-relaxed text-slate-700">
@@ -557,7 +559,7 @@ export default function ModelProvenanceModal({
           </div>
 
           {/* Cryptographic Provenance & File Integrity Block */}
-          <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
+          <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/70 border-t border-t-white border-x border-x-slate-300/80 border-b border-b-slate-300/90 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <FileCode className="w-4 h-4 text-slate-700" />
@@ -571,7 +573,7 @@ export default function ModelProvenanceModal({
                 <span className="crypto-mono font-semibold text-slate-800">
                   2026-09-09 22:45 UTC
                 </span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold crypto-mono">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold crypto-mono shadow-[inset_0_1px_0_#ffffff]">
                   <ShieldCheck className="w-3 h-3 text-emerald-600" />
                   VERIFIED
                 </span>
@@ -582,14 +584,14 @@ export default function ModelProvenanceModal({
               {MODEL_WEIGHTS_CHECKSUMS.map((item) => (
                 <div
                   key={item.filename}
-                  className="p-3 rounded-lg bg-white border border-slate-200/90 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  className="p-3 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-slate-900 crypto-mono">
+                      <span className="font-bold text-slate-900 crypto-mono text-xs">
                         {item.filename}
                       </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                         {item.size}
                       </span>
                       <span className="text-[10px] font-medium text-slate-500">
@@ -602,7 +604,7 @@ export default function ModelProvenanceModal({
                         SHA-256:
                       </span>
                       <div
-                        className="bg-slate-50 border border-slate-200/80 rounded px-2 py-0.5 text-[11px] crypto-mono text-slate-700 font-medium truncate flex-1 select-all"
+                        className="bg-slate-50 border border-slate-200/80 rounded px-2.5 py-1 text-[11px] crypto-mono text-slate-800 font-medium truncate flex-1 select-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)]"
                         title={item.hash}
                       >
                         {item.hash}
@@ -612,7 +614,7 @@ export default function ModelProvenanceModal({
 
                   <button
                     onClick={() => copyHash(item.hash, item.filename)}
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md tactile-btn-secondary text-slate-700 hover:text-slate-900 text-xs font-medium cursor-pointer"
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md tactile-btn-secondary text-slate-700 hover:text-slate-900 text-xs font-semibold cursor-pointer"
                     title="Copy SHA-256 checksum to clipboard"
                   >
                     {copiedHash === item.hash ? (
@@ -645,13 +647,13 @@ export default function ModelProvenanceModal({
           <div className="flex items-center gap-2">
             <button
               onClick={copyAuditSummary}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md tactile-btn-secondary text-slate-700 text-xs font-medium cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md tactile-btn-secondary text-slate-800 text-xs font-semibold cursor-pointer"
               title="Copy complete audit summary to clipboard"
             >
               {copiedDossier ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
-                  <span className="text-emerald-700 font-semibold">Audit Copied</span>
+                  <span className="text-emerald-700 font-bold">Audit Copied</span>
                 </>
               ) : (
                 <>
@@ -663,7 +665,7 @@ export default function ModelProvenanceModal({
 
             <button
               onClick={onClose}
-              className="px-4 py-1.5 rounded-md tactile-btn-primary text-white text-xs font-medium cursor-pointer"
+              className="px-4 py-1.5 rounded-md tactile-btn-primary text-white text-xs font-semibold cursor-pointer"
             >
               Dismiss
             </button>
