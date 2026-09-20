@@ -119,6 +119,267 @@ def _compute_link_attention(
     }
 
 
+def _build_provisional_cluster_graph(cluster_id: int, max_nodes: int) -> GraphResponse:
+    """Build a GraphResponse for a provisional cluster (ID >= 50_000) from xai_store.
+
+    Since these clusters were assigned by the in-process Union-Find co-spend heuristic
+    and don't exist in Neo4j, we scan the in-memory composite store directly.
+
+    Edges:
+      - CO_SPEND between all members (multi-input heuristic → same entity)
+      - PEELING_FLOW for wallets with chain_hops > 0 (peeling chain participants)
+      - For singleton clusters: 2-hop BFS from anchor via tx_peers + cross-edges + cluster siblings
+    """
+    all_composite = xai_store._composite  # read-only scan
+
+    # Collect all wallets belonging to this provisional cluster
+    members: list[dict] = [
+        rec for rec in all_composite.values()
+        if rec.get("cluster_id") == cluster_id
+    ]
+
+    if not members:
+        return GraphResponse(cluster_id=cluster_id, nodes=[], links=[])
+
+    # Sort by composite_score desc so the highest-risk wallets appear first when capped
+    members.sort(key=lambda r: float(r.get("composite_score", 0.0)), reverse=True)
+
+    # -------------------------------------------------------------------------
+    # BFS expansion — runs for ALL provisional clusters regardless of size.
+    #
+    # The Union-Find only links co-INPUT addresses as cluster members.
+    # Output-only addresses (receivers) appear as tx_peers but are singletons
+    # in their own clusters. Without expansion, a 2-member cluster shows as
+    # just 2 nodes + 1 edge, even if they transacted with 20 other addresses.
+    #
+    #   Core  (L0): all cluster members seeded first
+    #   L1        : tx_peers of every core member (stubs for missing)
+    #   L2        : tx_peers of every L1 peer (non-core; stubs for missing)
+    # -------------------------------------------------------------------------
+    ego_mode = True  # always expand for provisional clusters
+    visited: dict[str, dict] = {}
+
+    # Seed with all cluster core members
+    for _rec in members:
+        _addr = _rec.get("address", "")
+        if _addr:
+            visited[_addr] = _rec
+    core_addrs: set[str] = set(visited.keys())
+
+    # --- Level 1: forward tx_peers of every core member ---
+    for core_rec in list(members):
+        core_addr = core_rec.get("address", "")
+        l1_peers: list[str] = core_rec.get("tx_peers") or []
+        for peer_addr in l1_peers:
+            if len(visited) >= max_nodes:
+                break
+            if peer_addr in visited:
+                continue
+            peer_rec = all_composite.get(peer_addr)
+            if peer_rec is None:
+                peer_rec = {
+                    "address": peer_addr,
+                    "composite_score": 0.0,
+                    "anomaly_score": 0.0,
+                    "triggered_rules": [],
+                    "chain_hops": 0,
+                    "cluster_id": None,
+                    "cluster_size": 1,
+                    "tx_peers": [core_addr] + [a for a in l1_peers if a != peer_addr],
+                    "_stub": True,
+                }
+            visited[peer_addr] = peer_rec
+
+    # --- Reverse lookup: find every _composite wallet that lists any core
+    #     member in ITS OWN tx_peers — catches co-transactors that the core
+    #     member's (often sparse) tx_peers list doesn't mention. This is the
+    #     critical expansion that converts 3 nodes into 30+. ---
+    if len(visited) < max_nodes:
+        for candidate_rec in all_composite.values():
+            if len(visited) >= max_nodes:
+                break
+            cand_addr = candidate_rec.get("address", "")
+            if not cand_addr or cand_addr in visited:
+                continue
+            cand_peers = set(candidate_rec.get("tx_peers") or [])
+            # Add if it mentions any core member as a peer
+            if cand_peers & core_addrs:
+                visited[cand_addr] = candidate_rec
+
+    # --- Level 2: tx_peers of each L1/reverse peer (non-core only) ---
+
+    for l1_addr in list(visited.keys()):
+        if l1_addr in core_addrs:
+            continue  # core already expanded in L1 above
+        if len(visited) >= max_nodes:
+            break
+        l1_rec = visited[l1_addr]
+        for l2_addr in (l1_rec.get("tx_peers") or []):
+            if len(visited) >= max_nodes:
+                break
+            if l2_addr in visited:
+                continue
+            l2_rec = all_composite.get(l2_addr)
+            if l2_rec is None:
+                l2_rec = {
+                    "address": l2_addr,
+                    "composite_score": 0.0,
+                    "anomaly_score": 0.0,
+                    "triggered_rules": [],
+                    "chain_hops": 0,
+                    "cluster_id": None,
+                    "cluster_size": 1,
+                    "tx_peers": [l1_addr],
+                    "_stub": True,
+                }
+            visited[l2_addr] = l2_rec
+
+    members = list(visited.values())[:max_nodes]
+
+    # Build nodes
+    nodes: list[GraphNode] = []
+    peeling_addrs: set[str] = set()
+
+    for rec in members:
+        addr = rec.get("address", "")
+        if not addr:
+            continue
+        rules = rec.get("triggered_rules") or []
+        is_seed = any(
+            ("SEED" in str(r).upper() or "RANSOMWARE" in str(r).upper())
+            and "RECIPIENT" not in str(r).upper()
+            for r in rules
+        )
+        is_peeling = bool(rec.get("chain_hops", 0) or 0) > 0
+        if is_peeling:
+            peeling_addrs.add(addr)
+
+        nodes.append(
+            GraphNode(
+                id=addr,
+                label=f"{addr[:6]}…{addr[-4:]}",
+                type="wallet",
+                risk_score=float(rec.get("composite_score", 0.0)),
+                anomaly_score=float(rec.get("anomaly_score", 0.0)),
+                is_seed=is_seed,
+                country=None,
+            )
+        )
+
+    # Build edges
+    links: list[GraphLink] = []
+    node_ids = [n.id for n in nodes]
+    node_id_set = set(node_ids)
+
+    # Precompute tx_peers sets for cross-edge detection
+    peer_sets: dict[str, set[str]] = {}
+    for rec in members:
+        addr = rec.get("address", "")
+        if addr:
+            peer_sets[addr] = set(rec.get("tx_peers") or [])
+
+    seen_edges: set[tuple[str, str]] = set()
+
+    def _add_edge(src: str, tgt: str, rel_type: str, is_exp: bool) -> None:
+        key = (min(src, tgt), max(src, tgt))
+        if key in seen_edges:
+            return
+        seen_edges.add(key)
+        attn, heads = _compute_link_attention(
+            src, tgt, rel_type, is_exp, peeling_addrs, {}
+        )
+        links.append(
+            GraphLink(
+                source=src,
+                target=tgt,
+                type=rel_type,
+                amount=None,
+                is_explanatory=is_exp,
+                attention_score=attn,
+                head_attentions=heads,
+            )
+        )
+
+    if ego_mode and len(node_ids) > 1:
+        # 1. Core members → their direct tx_peers (SENDS / PEELING_FLOW)
+        #    Run for EVERY core member, not just node_ids[0].
+        for core_addr in core_addrs:
+            if core_addr not in node_id_set:
+                continue
+            core_ps = peer_sets.get(core_addr, set())
+            for tgt in node_ids:
+                if tgt == core_addr or tgt not in core_ps:
+                    continue
+                is_peel = core_addr in peeling_addrs or tgt in peeling_addrs
+                _add_edge(core_addr, tgt, "PEELING_FLOW" if is_peel else "SENDS", is_peel)
+
+        # 2. Cross-edges: any two nodes that co-appear in a transaction
+        #    (b in a's peer list, a in b's peer list, or shared peer overlap)
+        for i, a in enumerate(node_ids):
+            for b in node_ids[i + 1:]:
+                key = (min(a, b), max(a, b))
+                if key in seen_edges:
+                    continue
+                ps_a = peer_sets.get(a, set())
+                ps_b = peer_sets.get(b, set())
+                if b in ps_a or a in ps_b or bool(ps_a & ps_b):
+                    is_peel = a in peeling_addrs or b in peeling_addrs
+                    _add_edge(a, b, "PEELING_FLOW" if is_peel else "CO_SPEND", is_peel)
+
+        # 3. Cluster sibling edges: same cluster_id → guaranteed CO_SPEND
+        for i, a in enumerate(node_ids):
+            rec_a = visited.get(a)
+            if rec_a is None:
+                continue
+            cid_a = rec_a.get("cluster_id")
+            csize_a = int(rec_a.get("cluster_size", 1) or 1)
+            if cid_a is None or csize_a <= 1:
+                continue
+            for b in node_ids[i + 1:]:
+                rec_b = visited.get(b)
+                if rec_b and rec_b.get("cluster_id") == cid_a:
+                    is_peel = a in peeling_addrs or b in peeling_addrs
+                    _add_edge(a, b, "PEELING_FLOW" if is_peel else "CO_SPEND", True)
+
+        # 4. Fallback: any node with zero edges gets connected to the
+        #    first available core member so the graph stays fully connected.
+        for node in node_ids:
+            node_connected = any(
+                (min(node, other), max(node, other)) in seen_edges
+                for other in node_ids
+                if other != node
+            )
+            if not node_connected:
+                for core_addr in (core_addrs & node_id_set):
+                    if core_addr != node:
+                        is_peel = node in peeling_addrs or core_addr in peeling_addrs
+                        _add_edge(
+                            core_addr, node,
+                            "PEELING_FLOW" if is_peel else "SENDS",
+                            is_peel,
+                        )
+                        break
+
+    elif len(node_ids) <= 10:
+        # Full clique: every pair gets a CO_SPEND edge
+        for i, src in enumerate(node_ids):
+            for tgt in node_ids[i + 1:]:
+                is_peeling_edge = src in peeling_addrs or tgt in peeling_addrs
+                _add_edge(src, tgt, "PEELING_FLOW" if is_peeling_edge else "CO_SPEND", True)
+    else:
+        # Star topology: anchor = highest-risk wallet, all others connect to it
+        anchor = node_ids[0]
+        for tgt in node_ids[1:]:
+            is_peeling_edge = anchor in peeling_addrs or tgt in peeling_addrs
+            _add_edge(anchor, tgt, "PEELING_FLOW" if is_peeling_edge else "CO_SPEND", True)
+
+    logger.info(
+        "Provisional cluster graph #%d: %d nodes, %d links (ego_mode=%s, from xai_store)",
+        cluster_id, len(nodes), len(links), ego_mode,
+    )
+    return GraphResponse(cluster_id=cluster_id, nodes=nodes, links=links)
+
+
 @router.get(
     "/{cluster_id}",
     response_model=GraphResponse,
@@ -136,6 +397,13 @@ async def get_graph(
     """
     effective_max = min(max_nodes, _MAX_NODES_CEILING)
 
+    # ---------------------------------------------------------------------------
+    # Fast-path: provisional clusters (ID >= 50 000) live only in xai_store.
+    # Neo4j has no knowledge of them — build the graph from memory directly.
+    # ---------------------------------------------------------------------------
+    _PROV_CLUSTER_BASE = 50_000
+    if cluster_id >= _PROV_CLUSTER_BASE:
+        return _build_provisional_cluster_graph(cluster_id, effective_max)
 
     try:
         driver = _get_driver()

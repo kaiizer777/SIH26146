@@ -212,7 +212,7 @@ export async function generateSection65BCertificate(
       wallet_address: address,
       composite_risk_score: Number(data.composite_score.toFixed(5)),
       verdict: data.verdict,
-      cluster_id: isProvisional ? null : data.evidence_trail?.cluster_id ?? null,
+      cluster_id: data.evidence_trail?.cluster_id ?? null,
       anomaly_score: Number(
         (data.evidence_trail?.anomaly_score ?? data.score_breakdown?.anomaly_component ?? 0).toFixed(6),
       ),

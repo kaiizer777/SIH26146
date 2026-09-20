@@ -197,14 +197,48 @@ export default function IngestModal({
     [pollStatus],
   );
 
+  const SAMPLE_DATASETS = [
+    {
+      name: "test_2000.csv",
+      title: "Sample 2,000 TXs",
+      tagline: "High-volume stress test dataset",
+      size: "700 KB",
+      rows: "2,000 rows",
+      badge: "2,000 Rows",
+      badgeStyle: "bg-indigo-50 text-indigo-700 border-indigo-200/90",
+      url: "/sample_data/test_2000.csv",
+    },
+  ];
+
+  const loadSampleDataset = useCallback(
+    async (url: string, filename: string) => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const file = new File([blob], filename, { type: "text/csv" });
+        startUpload(file);
+      } catch (err) {
+        toast.error(`Failed to load sample dataset: ${filename}`);
+      }
+    },
+    [startUpload],
+  );
+
   const onDrop = useCallback(
-    (e: React.DragEvent) => {
+    async (e: React.DragEvent) => {
       e.preventDefault();
       setDragOver(false);
+      const sampleUrl = e.dataTransfer.getData("application/sample-dataset");
+      const sampleName = e.dataTransfer.getData("text/plain");
+      if (sampleUrl) {
+        await loadSampleDataset(sampleUrl, sampleName || "test_2000.csv");
+        return;
+      }
       const file = e.dataTransfer.files[0];
       if (file) startUpload(file);
     },
-    [startUpload],
+    [startUpload, loadSampleDataset],
   );
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -224,7 +258,7 @@ export default function IngestModal({
         onClick={handleClose}
       />
 
-      {/* 3D Elevated Modal Card Container */}
+      {/* 3D Elevated Modal Card Container in the Center */}
       <div
         role="dialog"
         aria-modal="true"
@@ -270,14 +304,14 @@ export default function IngestModal({
               onDrop={onDrop}
               onClick={() => fileInputRef.current?.click()}
               className={clsx(
-                "relative flex flex-col items-center justify-center gap-4 py-9 px-6 rounded-xl cursor-pointer select-none",
+                "relative flex flex-col items-center justify-center gap-4 py-9 px-6 rounded-xl cursor-pointer select-none transition-all duration-150",
                 dragOver ? "tactile-dropzone-3d-active" : "tactile-dropzone-3d"
               )}
             >
-              {/* 3D Floating Icon Medallion — Default Sky-Tinted 3D Elevation */}
+              {/* 3D Floating Icon Medallion */}
               <div
                 className={clsx(
-                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-colors duration-150",
+                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-150",
                   dragOver
                     ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_6px_16px_rgba(2,132,199,0.35)] scale-105"
                     : "tactile-medallion-3d"
@@ -510,6 +544,101 @@ export default function IngestModal({
           </div>
         </div>
       </div>
+
+      {/* Distinct Sample Dataset Dock — Anchored on the Far Right End of the Screen */}
+      {stage === "idle" && (
+        <aside
+          aria-label="Sample test dataset"
+          className="fixed z-50 right-8 top-1/2 -translate-y-1/2 w-80 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_12px_36px_rgba(15,23,42,0.18)] p-4 flex flex-col gap-3.5 animate-in fade-in slide-in-from-right-4 duration-200"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-gradient-to-b from-sky-50 to-sky-100 border border-sky-200 flex items-center justify-center text-sky-700 shadow-sm">
+                <Sliders className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-bold text-slate-800 tracking-tight">
+                Sample Dataset
+              </span>
+            </div>
+            <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              Drag to upload
+            </span>
+          </div>
+
+          <p className="text-[11px] text-slate-500 leading-snug">
+            Drag test batch into the center upload box or click <b>⚡ Ingest</b>:
+          </p>
+
+          {/* Cards List */}
+          <div className="flex flex-col gap-2.5">
+            {SAMPLE_DATASETS.map((sample) => (
+              <div
+                key={sample.name}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("text/plain", sample.name);
+                  e.dataTransfer.setData("application/sample-dataset", sample.url);
+                  e.dataTransfer.effectAllowed = "copy";
+                }}
+                className="group relative p-3 rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_6px_rgba(15,23,42,0.06)] hover:border-sky-300 hover:shadow-[0_4px_12px_rgba(2,132,199,0.15)] transition-all cursor-grab active:cursor-grabbing"
+              >
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-4 h-4 text-sky-600 shrink-0" />
+                    <span className="text-xs font-bold text-slate-800 truncate">
+                      {sample.title}
+                    </span>
+                  </div>
+                  <span
+                    className={clsx(
+                      "text-[9px] font-mono font-bold px-2 py-0.5 rounded border shrink-0",
+                      sample.badgeStyle
+                    )}
+                  >
+                    {sample.badge}
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-500 leading-tight mb-2.5">
+                  {sample.tagline}
+                </p>
+
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                  <span className="crypto-mono text-[10px] font-medium text-slate-400">
+                    {sample.size}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={sample.url}
+                      download={sample.name}
+                      onClick={(e) => e.stopPropagation()}
+                      title={`Download ${sample.name}`}
+                      className="text-[10px] font-medium text-slate-500 hover:text-slate-900 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                    >
+                      Save CSV
+                    </a>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        loadSampleDataset(sample.url, sample.name);
+                      }}
+                      className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_3px_rgba(2,132,199,0.3)] hover:from-sky-600 hover:to-sky-700 active:translate-y-[0.5px] transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <span>⚡ Ingest</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-sky-700 font-medium bg-sky-50/80 rounded-lg py-1.5 border border-sky-200/70">
+            <span>👈 Drag card across into center box</span>
+          </div>
+        </aside>
+      )}
     </>
   );
 }

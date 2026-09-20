@@ -270,8 +270,8 @@ export default function EntityDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200/90 bg-slate-50/90 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-md bg-slate-900 text-white flex items-center justify-center shadow-2xs">
-              <Shield className="w-3.5 h-3.5 text-sky-400 stroke-[2.2]" />
+            <div className="w-6 h-6 rounded-md bg-gradient-to-b from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-xs border border-blue-500/40">
+              <Shield className="w-3.5 h-3.5 text-white stroke-[2.2] fill-white/10" />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
@@ -478,31 +478,25 @@ export default function EntityDrawer({
                   >
                     <Row
                       label="Cluster ID"
-                      value={isProvisional ? "—" : (data.evidence_trail.cluster_id ?? "—")}
+                      value={data.evidence_trail.cluster_id ?? "—"}
                       mono
-                      tooltip={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
-                      subtitle={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
+                      subtitle={isProvisional && data.evidence_trail.cluster_id != null ? "Co-spend heuristic (provisional)" : undefined}
                     />
                     <Row
                       label="Cluster Size"
-                      value={isProvisional ? "—" : (data.evidence_trail.cluster_size?.toLocaleString() ?? "—")}
+                      value={data.evidence_trail.cluster_size?.toLocaleString() ?? "—"}
                       mono
-                      tooltip={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
                     />
                     <Row
                       label="Seed Wallet Proximity"
                       value={
-                        isProvisional
-                          ? "—"
-                          : typeof data.evidence_trail.seed_wallet_proximity === "number"
+                        typeof data.evidence_trail.seed_wallet_proximity === "number"
                           ? data.evidence_trail.seed_wallet_proximity.toFixed(4)
                           : typeof data.evidence_trail.extra?.seed_wallet_proximity === "number"
                           ? Number(data.evidence_trail.extra.seed_wallet_proximity).toFixed(4)
                           : "—"
                       }
                       mono
-                      tooltip={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
-                      subtitle={isProvisional ? "Requires full Louvain/PageRank rerun" : undefined}
                     />
                     <Row
                       label="Anomaly Rank"
@@ -649,13 +643,15 @@ export default function EntityDrawer({
                   icon={<Activity className="w-4 h-4 text-sky-600" />}
                   defaultOpen={isProvisional || data.shap_attributions.length > 0}
                 >
-                  {isProvisional ? (
+                  {data.shap_attributions.length === 0 ? (
                     <div
                       id="shap-provisional-placeholder"
                       className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
                     >
                       <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
-                        SHAP attribution and attention weights are unavailable for newly ingested provisional entities — run full pipeline retraining to compute.
+                        {isProvisional
+                          ? "SHAP attribution and attention weights are unavailable for newly ingested provisional entities — run full pipeline retraining to compute."
+                          : "No SHAP attribution data available for this entity."}
                       </p>
                     </div>
                   ) : (
@@ -716,16 +712,7 @@ export default function EntityDrawer({
                   icon={<Network className="w-4 h-4 text-indigo-600" />}
                   defaultOpen={isProvisional || (data.gnn_subgraph != null && data.gnn_subgraph.nodes.length > 0)}
                 >
-                  {isProvisional ? (
-                    <div
-                      id="gnn-provisional-placeholder"
-                      className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
-                    >
-                      <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
-                        Topological subgraph and Louvain cluster analysis unavailable for provisional entities — requires Neo4j graph pipeline update.
-                      </p>
-                    </div>
-                  ) : data.gnn_subgraph && data.gnn_subgraph.nodes.length > 0 ? (
+                  {data.gnn_subgraph && data.gnn_subgraph.nodes.length > 0 ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
                         <span>

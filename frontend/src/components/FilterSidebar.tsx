@@ -92,7 +92,7 @@ export default function FilterSidebar({
 
   return (
     <aside className="w-[280px] shrink-0 flex flex-col bg-white border-r border-slate-200/90 overflow-y-auto select-none">
-      <div className="flex flex-col gap-4.5 p-3.5 pb-24">
+      <div className="flex flex-col gap-4.5 p-3.5">
         {/* Coverage Gauge / Stream Telemetry Card with 3D Enclosure */}
         <div className="card-3d p-3.5 rounded-xl">
           <div className="flex items-center justify-between mb-2.5 gap-2">
