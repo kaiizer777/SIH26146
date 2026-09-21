@@ -64,6 +64,7 @@ services:
       - sih_network
 
   fastapi:
+    image: kaiizer777/sih26146-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -103,6 +104,7 @@ services:
       - sih_network
 
   celery-worker:
+    image: kaiizer777/sih26146-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -138,6 +140,7 @@ services:
       - sih_network
 
   next-frontend:
+    image: kaiizer777/sih26146-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
