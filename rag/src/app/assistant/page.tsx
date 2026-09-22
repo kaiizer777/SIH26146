@@ -30,6 +30,12 @@ export interface ChatMessage {
 
 const SUGGESTED_QUERIES = [
   {
+    icon: "🎯",
+    title: "Proposed Solution",
+    desc: "7-Stage sovereign architecture overview",
+    query: "Can you tell me the proposed solution and end-to-end architecture of SIH26146?",
+  },
+  {
     icon: "⚡",
     title: "Dual-Transformer GNN",
     desc: "Architecture & illicit entity classification",
@@ -46,12 +52,6 @@ const SUGGESTED_QUERIES = [
     title: "Multi-Factor Risk & §65B",
     desc: "Risk scoring formula & legal admissibility",
     query: "Explain the multi-factor risk scoring formula and Section 65B legal certificate generation.",
-  },
-  {
-    icon: "🔄",
-    title: "Celery Worker Task SLAs",
-    desc: "Concurrency pools & rate limits",
-    query: "What are the Celery worker task queues, SLAs, and pool configurations?",
   },
 ];
 

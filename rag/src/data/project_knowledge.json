@@ -311,6 +311,128 @@
     "codeSnippet": "# Cryptographic SHA-256 address token generation for DPDP compliance\nimport hashlib\n\ndef generate_sovereign_token(address: str) -> str:\n    \"\"\"Return an 8-character pseudonymized token complying with DPDP log standards.\"\"\"\n    digest = hashlib.sha256(address.encode('utf-8')).hexdigest()\n    return f\"[addr:{digest[:8]}]\""
   },
   {
+    "id": "sih26146-proposed-solution-architecture",
+    "category": "Architecture & Sovereign Air-Gap",
+    "question": "What is the proposed solution and end-to-end architecture of SIH26146?",
+    "title": "Proposed Solution: 7-Stage Sovereign Bitcoin AML Intelligence Architecture",
+    "tldr": "The proposed solution for SIH26146 is an integrated, 100% air-gapped Bitcoin transaction surveillance and forensic intelligence platform built for NTRO. It correlates physical P2P network broadcast telemetry (IP, Port, ASN, GeoIP) with UTXO transaction graphs across a decoupled 7-stage pipeline, executing dual-tier neural anomaly detection (FT-Transformer + Relational Graph Transformer), deterministic laundering heuristics (peeling chains & CoinJoin mixers), and generating court-admissible dual explainability dossiers under Section 65B of the Indian Evidence Act / Section 63 BSA 2023.",
+    "body": "The proposed solution directly fulfills the sovereign surveillance mandate of the National Technical Research Organisation (NTRO) for Problem Code SIH26146, designed to counter ransomware syndicates (LockBit, Conti, REvil), state-sponsored APT groups, and darknet money-laundering operations without cloud dependencies or WAN network leaks.\n\nThe system operates across a 7-stage decoupled pipeline:\n1. Multi-Format Ingestion & Content Sniffing: Magic-byte inspection (512-byte header) ingests bulk CSV, JSON, and XML telemetry with strict Pydantic v2 schema validation, streaming large files with memory efficiency and enforcing Redis SHA-256 idempotency locks.\n2. Offline Network Enrichment & Relational Store: Correlates IP addresses with local MaxMind GeoLite2-City and GeoLite2-ASN databases, streaming records into PostgreSQL 16 via binary COPY FROM STDIN at >10,000 tx/sec.\n3. Graph Topology & Entity Clustering: Ingests transactions into Neo4j 5.26, constructs Common-Input-Ownership-Heuristic (CIOH) co-spending graphs with lexicographical ordering (w1.address < w2.address), and runs Neo4j GDS 2.13 Louvain Community Detection (modularity 0.4613) and Seed-Weighted PageRank from verified Ransomwhere seeds.\n4. Dual-Tier AI/ML Detection Engine: Evaluates an unsupervised FT-Transformer across 18 tabular behavioral features for reconstruction MSE anomalies (ROC-AUC: 0.9984), combined with a 3-layer Relational Graph Transformer (PyG TransformerConv with Focal Loss gamma=2.0, alpha=6.20, F1: 0.9209) propagating risk across heterogeneous edges.\n5. Deterministic Laundering Heuristics: High-performance Cypher queries detect multi-hop peeling chains (1-in/2-out, <=5% peel ratio, >=80% pass-through, >=5 hops) and CoinJoin mixers (>=3-in, >=3-out, equal amounts within +/-1%, >=0.05 BTC).\n6. Composite Risk Calibration & Dual XAI: Computes multi-factor composite risk: Score = clip(0.35*AE + 0.45*GNN + 0.15*Rules + 0.05*Mixer, 0, 1), categorized into CRITICAL (>=0.80), HIGH (>=0.60), MEDIUM (>=0.40), and LOW (<0.40). Generates SHAP GradientExplainer waterfall attributions and GNNExplainer topological subgraphs.\n7. Sovereign Command Center & Legal Admissibility: Next.js 16 tactical dashboard delivers virtualized high-frequency alerts, interactive D3 force-directed subgraphs with relational attention glows, and exports Section 65B / Section 63 BSA digital evidence certificates with cryptographic SHA-256 chain-of-custody stamps.",
+    "tags": [
+      "proposed",
+      "solution",
+      "architecture",
+      "overview",
+      "system",
+      "pipeline",
+      "sih26146",
+      "ntro",
+      "airgap",
+      "mission",
+      "aml",
+      "surveillance",
+      "summary"
+    ],
+    "chapterUrl": "/docs/ch1-mission-architecture",
+    "chapterTitle": "Chapter 1: Sovereign Air-Gap, Mission & Core Architecture",
+    "fileCitations": [
+      "backend/app/main.py",
+      "backend/app/services/parser.py",
+      "backend/app/services/bulk_insert.py",
+      "backend/app/services/graph_service.py",
+      "backend/app/ml/ft_transformer.py",
+      "backend/app/ml/graph_transformer.py",
+      "backend/app/services/inline_scorer.py",
+      "backend/app/services/xai_store.py",
+      "frontend/src/app/page.tsx"
+    ],
+    "keyMetrics": {
+      "Ingest Throughput": ">10,000 tx/sec",
+      "Relational Graph Transformer F1": 0.9209,
+      "FT-Transformer ROC-AUC": 0.9984,
+      "Forensic Query Latency": "<5ms",
+      "Air-Gap Network Egress": "0 bytes"
+    },
+    "codeSnippet": "# Core Composite Risk Formula\nscore = min(max(0.35 * anomaly_score + 0.45 * gnn_risk + 0.15 * peeling_flag + 0.05 * mixing_flag, 0.0), 1.0)"
+  },
+  {
+    "id": "sih26146-problem-statement-mandate",
+    "category": "Architecture & Sovereign Air-Gap",
+    "question": "What is the problem statement, threat context, and intelligence mandate of SIH26146?",
+    "title": "NTRO Mandate: Problem Statement, Operational Threat Context & Sovereign Requirements",
+    "tldr": "SIH26146 resolves three critical vulnerabilities in modern Bitcoin transaction surveillance: siloed analysis between physical IP routing and UTXO blockchain layers, operational security leaks from cloud-dependent SaaS tools (e.g. Chainalysis, Elliptic), and black-box deep learning opacity that fails Indian evidentiary admissibility standards (Section 65B IEA / Section 63 BSA 2023).",
+    "body": "Modern asymmetric threat actors—including ransomware cartels (LockBit, Conti, REvil), darknet drug markets, and state-sponsored APTs—leverage Bitcoin to launder illicit capital through multi-hop peeling chains and CoinJoin mixers.\n\nConventional AML tools fail in sovereign intelligence environments for three critical reasons:\n1. Siloed Layer Analysis: Legacy tools examine UTXO transaction graphs in total isolation from the physical network routing layer (peer broadcast IPs, ASNs, BGP prefixes, GeoIP locations). Threat actors exploit this gap by rotating wallet addresses while operating from identical ASN/ISP network infrastructures.\n2. Cloud & SaaS Vulnerability: Commercial multi-tenant platforms (such as Chainalysis and Elliptic) require continuous outbound internet access and submit sensitive investigative queries to commercial cloud servers—violating air-gapped defense enclaves and exposing ongoing intelligence investigations.\n3. Black-Box Opacity: Commercial neural anomaly detectors output uncalibrated scalar risk numbers without mathematical feature attributions or topological subgraphs, rendering findings inadmissible under Section 65B of the Indian Evidence Act and Section 63 of the Bharatiya Sakshya Adhiniyam (BSA) 2023.\n\nThe SIH26146 platform delivers a 100% air-gapped, zero-CDN sovereign architecture running entirely on commodity x86-64 hardware with sustained >10,000 tx/s ingestion, sub-5ms query response, and cryptographically verified evidence generation.",
+    "tags": [
+      "problem",
+      "statement",
+      "mandate",
+      "ntro",
+      "sih26146",
+      "threat",
+      "ransomware",
+      "chainalysis",
+      "cloud-vulnerability",
+      "airgap",
+      "bsa",
+      "evidence"
+    ],
+    "chapterUrl": "/docs/ch1-mission-architecture",
+    "chapterTitle": "Chapter 1: Sovereign Air-Gap, Mission & Core Architecture",
+    "fileCitations": [
+      "backend/app/config.py",
+      "backend/app/main.py",
+      "frontend/src/components/TopNav.tsx"
+    ],
+    "keyMetrics": {
+      "WAN Dependency": "0%",
+      "External CDN Calls": 0,
+      "Supported Telemetry Formats": "CSV, JSON, XML",
+      "Legal Compliance": "Section 65B IEA & Section 63 BSA 2023"
+    },
+    "codeSnippet": "# Sovereign air-gap assurance: zero WAN egress verified\nALLOW_EXTERNAL_NETWORK = False\nassert os.environ.get('ALLOW_EXTERNAL_NETWORK', '0') == '0'"
+  },
+  {
+    "id": "sih26146-7-stage-pipeline-workflow",
+    "category": "Architecture & Sovereign Air-Gap",
+    "question": "What are the detailed stages and dataflow of the end-to-end intelligence surveillance pipeline?",
+    "title": "End-to-End 7-Stage Intelligence Surveillance Pipeline & Dataflow Specification",
+    "tldr": "The surveillance platform implements a decoupled 7-stage pipeline: (1) Multi-format chunked ingestion with magic-byte detection, (2) Offline GeoIP/ASN enrichment & PostgreSQL 16 streaming, (3) Neo4j GDS Louvain clustering & PageRank, (4) Dual-tier neural inference (FT-Transformer & Relational Graph Transformer), (5) Deterministic peeling chain & CoinJoin heuristics, (6) Composite risk calibration & dual XAI (SHAP + GNNExplainer), and (7) Next.js 16 air-gapped Command Center with Section 65B evidence export.",
+    "body": "The intelligence platform processes Bitcoin and network telemetry through seven decoupled stages:\n- Stage 1 (Ingestion & Sniffing): Multi-format parser in backend/app/services/parser.py inspects 512-byte magic headers to identify CSV, JSON, or XML streams. Records are validated using Pydantic v2 schemas. Redis SHA-256 hashing enforces idempotent deduplication (HTTP 409 guard).\n- Stage 2 (Offline GeoIP & Relational Store): Offline MaxMind GeoLite2-City and GeoLite2-ASN databases resolve IP geolocation and ASNs in backend/app/services/enrichment.py. Bulk insert in bulk_insert.py leverages PostgreSQL 16 binary COPY FROM STDIN exceeding 10,000 transactions per second.\n- Stage 3 (Graph Topology & Entity Clustering): Neo4j 5.26 links (:Wallet), (:Transaction), and (:IP) nodes with (:SENDS), (:RECEIVES), (:OBSERVED), and (:CO_SPEND) edges. Neo4j GDS 2.13 executes Louvain Community Detection (modularity 0.4613) on co-spending wallets and Seed-Weighted PageRank from Ransomwhere seeds.\n- Stage 4 (Dual AI/ML Detection Engine): FT-Transformer in backend/app/ml/ft_transformer.py computes reconstruction MSE over 18 tabular behavioral features. Relational Graph Transformer in graph_transformer.py with Focal Loss (gamma=2.0, alpha=6.20) classifies illicit entities across multi-relational graph edges.\n- Stage 5 (Laundering Graph Heuristics): Deterministic Cypher queries identify peeling chains (1-in/2-out, <=5% peel ratio, >=80% pass-through, >=5 hops) and CoinJoin mixers (>=3-in, >=3-out, equal amounts within +/-1%, >=0.05 BTC).\n- Stage 6 (Composite Risk & Dual XAI): In-process scoring in inline_scorer.py combines model outputs into a calibrated composite risk score [0, 1]. SHAP GradientExplainer produces 18-feature attribution waterfalls, while GNNExplainer isolates critical topological subgraphs.\n- Stage 7 (Tactical Command Center & Legal Certification): Next.js 16 frontend displays virtualized alerts and D3 force-directed subgraphs. Generates court-admissible Section 65B Indian Evidence Act / Section 63 BSA 2023 forensic certificates stamped with cryptographic SHA-256 hashes.",
+    "tags": [
+      "pipeline",
+      "stages",
+      "dataflow",
+      "workflow",
+      "ingestion",
+      "enrichment",
+      "clustering",
+      "neural",
+      "heuristics",
+      "xai",
+      "command-center",
+      "overview"
+    ],
+    "chapterUrl": "/docs/ch1-mission-architecture",
+    "chapterTitle": "Chapter 1: Sovereign Air-Gap, Mission & Core Architecture",
+    "fileCitations": [
+      "backend/app/services/parser.py",
+      "backend/app/services/enrichment.py",
+      "backend/app/services/bulk_insert.py",
+      "backend/app/services/graph_service.py",
+      "backend/app/ml/ft_transformer.py",
+      "backend/app/ml/graph_transformer.py",
+      "backend/app/services/inline_scorer.py",
+      "backend/app/services/xai_store.py"
+    ],
+    "keyMetrics": {
+      "Pipeline Stages": 7,
+      "Ingest Throughput": ">10,000 tx/sec",
+      "Graph Modularity": 0.4613,
+      "Model Inference Latency": "4.8ms / entity",
+      "Forensic Query Latency": "<5ms"
+    },
+    "codeSnippet": "# 7-Stage Pipeline Orchestration in Celery worker\ndef process_ingest_file(file_path: str, task_id: str):\n    records = parse_telemetry_stream(file_path)\n    enriched = enrich_geoip_offline(records)\n    bulk_copy_postgres(enriched)\n    sync_graph_topology_neo4j()\n    run_louvain_and_pagerank()\n    run_dual_transformer_scoring()"
+  },
+  {
     "id": "ingest-512byte-format-sniffer",
     "category": "Multi-Format Ingest & GeoIP",
     "question": "How does the parser determine whether an uploaded file is CSV, JSON, or XML without relying on extensions?",

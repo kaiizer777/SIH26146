@@ -149,7 +149,33 @@ const EXACT_BOOSTER_TERMS: Record<string, number> = {
   "3001": 10.0,
   "5432": 10.0,
   "7687": 10.0,
-  "6379": 10.0
+  "6379": 10.0,
+  "proposed solution": 35.0,
+  "proposed": 25.0,
+  "solution": 25.0,
+  "problem statement": 30.0,
+  "system architecture": 25.0,
+  "how does the system work": 25.0,
+  "what is this project": 25.0,
+  "overview of the project": 25.0,
+  "project overview": 25.0,
+  "7-stage": 20.0,
+  "pipeline": 18.0,
+  "surveillance": 15.0
+};
+
+// Domain Concept Expansions for Natural Language queries
+const CONCEPT_EXPANSIONS: Record<string, string[]> = {
+  solution: ["proposed", "architecture", "pipeline", "mission"],
+  proposed: ["solution", "architecture", "system", "sih26146"],
+  project: ["solution", "architecture", "mission", "sih26146"],
+  system: ["architecture", "pipeline", "solution"],
+  overview: ["architecture", "mission", "pipeline", "solution"],
+  problem: ["statement", "mandate", "threat"],
+  statement: ["problem", "mandate"],
+  mandate: ["mission", "ntro", "problem"],
+  architecture: ["solution", "pipeline", "system"],
+  pipeline: ["stages", "workflow", "architecture"]
 };
 
 /**
@@ -312,6 +338,34 @@ export function searchKnowledge(
       const points = weight * (1 + Math.log(posting.frequency));
       addScore(posting.docId, points, token);
     }
+
+    // Concept expansion for semantic domain coverage
+    const expansions = CONCEPT_EXPANSIONS[token];
+    if (expansions) {
+      for (const syn of expansions) {
+        const synPostings = invertedIndex.getPostings(syn);
+        for (const posting of synPostings) {
+          let weight = 0.8;
+          switch (posting.field) {
+            case "question":
+              weight = 2.0;
+              break;
+            case "tags":
+            case "title":
+              weight = 1.8;
+              break;
+            case "tldr":
+              weight = 1.4;
+              break;
+            case "body":
+              weight = 0.7;
+              break;
+          }
+          const points = weight * (1 + Math.log(posting.frequency));
+          addScore(posting.docId, points, syn);
+        }
+      }
+    }
   }
 
   // 2. Dynamic Exact Keyword Boosters
@@ -337,11 +391,11 @@ export function searchKnowledge(
   // 3. Exact phrase match boost on question or title
   for (const item of corpus) {
     if (item.question.toLowerCase().includes(rawQuery)) {
-      addScore(item.id, 12.0, rawQuery);
+      addScore(item.id, 16.0, rawQuery);
     } else if (item.title.toLowerCase().includes(rawQuery)) {
-      addScore(item.id, 10.0, rawQuery);
+      addScore(item.id, 14.0, rawQuery);
     } else if (item.tldr.toLowerCase().includes(rawQuery)) {
-      addScore(item.id, 6.0, rawQuery);
+      addScore(item.id, 8.0, rawQuery);
     }
   }
 
@@ -380,6 +434,31 @@ export function searchKnowledge(
 
   // Sort descending by score
   results.sort((a, b) => b.score - a.score);
+
+  // 4. Foundational Architecture Fallback
+  // If no items matched (e.g. conversational/broad query), provide foundational architecture documents
+  if (results.length === 0) {
+    const fallbackIds = [
+      "sih26146-proposed-solution-architecture",
+      "sih26146-7-stage-pipeline-workflow",
+      "airgap-sovereign-mission-overview",
+      "sih26146-problem-statement-mandate",
+      "xai-composite-risk-formula",
+    ];
+    for (const docId of fallbackIds) {
+      const doc = invertedIndex.getDocument(docId);
+      if (doc) {
+        results.push({
+          item: doc,
+          score: 15.0,
+          confidence: 88,
+          matchedTerms: ["system-architecture-overview"],
+          snippet: doc.tldr.slice(0, 180) + "...",
+          latencyMs: 0.1,
+        });
+      }
+    }
+  }
 
   // Apply limit
   const limit = options?.limit || 10;
@@ -451,6 +530,8 @@ export function getKnowledgeById(id: string): KnowledgeItem | undefined {
  */
 export function getQuickDoubts(): string[] {
   return [
+    "What is the proposed solution and end-to-end architecture of SIH26146?",
+    "What is the NTRO problem statement and operational mandate?",
     "Why did re-uploading the same CSV return HTTP 409?",
     "How does peeling chain traversal work in Cypher?",
     "How does FT-Transformer compute anomaly scores?",

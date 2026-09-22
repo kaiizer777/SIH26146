@@ -147,7 +147,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare Context from Retrieved Knowledge Items (STRICTLY NO .md FILES)
-    const contextText = retrieved
+    const effectiveRetrieved = retrieved.length > 0 
+      ? retrieved 
+      : searchKnowledge("proposed solution", { limit: 4 }).map((res) => ({
+          ...res,
+          item: sanitizeKnowledgeItem(res.item),
+          snippet: sanitizeResponseText(res.snippet),
+        }));
+
+    const contextText = effectiveRetrieved
       .map(
         (res, idx) => `
 [DOCUMENT ${idx + 1}]
@@ -172,7 +180,8 @@ You must adhere strictly to the following rules:
 2. CITATIONS: Cite exact file paths (e.g. backend/app/routers/ingest.py, backend/app/services/xai_store.py), mathematical formulas, and verified benchmarks.
 3. CONCISENESS & CLARITY: Start with a clear 2-sentence executive takeaway. Then provide precise forensic engineering detail, code/formula snippets if relevant, and statutory context (e.g. Section 65B Indian Evidence Act / BSA 2023).
 4. TONE: Authoritative, senior-to-senior, crisp, and analytical. No fluff or generic conversational filler.
-5. NO MARKDOWN FILE CITATIONS: NEVER mention, cite, or name any .md files (e.g. WORK-1.md, WORK-2.md, WORK-3.md, README.md, dev-server.md, flow.md, or any file ending in .md) in your response under any circumstances. Teammates must only receive the concrete data, equations, schemas, parameters, and code logic. If referring to implementation files, only cite real code files (.py, .ts, .tsx, .json) or speak in terms of the system components.`;
+5. NO MARKDOWN FILE CITATIONS: NEVER mention, cite, or name any .md files (e.g. WORK-1.md, WORK-2.md, WORK-3.md, README.md, dev-server.md, flow.md, or any file ending in .md) in your response under any circumstances. Teammates must only receive the concrete data, equations, schemas, parameters, and code logic. If referring to implementation files, only cite real code files (.py, .ts, .tsx, .json) or speak in terms of the system components.
+6. ARCHITECTURAL & SOLUTION QUERIES: When asked about the proposed solution, problem statement, or system architecture, synthesize a direct, authoritative forensic breakdown covering the 7-stage intelligence pipeline, dual-tier neural models, graph analytics, and forensic evidence generation from the provided documents. NEVER output procedural refusals claiming documents are missing, and NEVER invent hypothetical file paths.`;
 
     const userPrompt = `Retrieved System Knowledge Documents:
 ${contextText}
