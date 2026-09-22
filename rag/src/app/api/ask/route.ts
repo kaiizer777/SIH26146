@@ -43,7 +43,7 @@ type GroqResult = GroqSuccessResult | GroqErrorResult;
  * Replaces known document filenames with clear architectural/operational terminology
  * and completely scrubs any lingering .md filenames or references.
  */
-export function sanitizeResponseText(text: string): string {
+function sanitizeResponseText(text: string): string {
   if (!text || typeof text !== "string") return "";
   let sanitized = text;
 
