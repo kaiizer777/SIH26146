@@ -222,9 +222,11 @@ export function FloatingAssistant() {
       if (Array.isArray(data.retrieved)) {
         data.retrieved.forEach((res: { item?: { fileCitations?: string[] } }) => {
           if (Array.isArray(res.item?.fileCitations)) {
-            res.item.fileCitations.forEach((src) => {
-              if (!sources.includes(src)) sources.push(src);
-            });
+            res.item.fileCitations
+              .filter((src) => typeof src === "string" && !src.toLowerCase().endsWith(".md") && !/\.md\b/i.test(src))
+              .forEach((src) => {
+                if (!sources.includes(src)) sources.push(src);
+              });
           }
         });
       }
@@ -377,7 +379,7 @@ export function FloatingAssistant() {
                         NTRO Forensic Intelligence Assistant
                       </h3>
                       <p className="text-xs text-slate-500 leading-relaxed font-sans">
-                        Instant technical answers grounded strictly in WORK-1, WORK-2, WORK-3, and system architecture specifications. Zero hallucination.
+                        Instant technical answers grounded strictly in verified system architecture, mathematical models, and codebase implementations.
                       </p>
                     </div>
                   </div>
@@ -419,7 +421,7 @@ export function FloatingAssistant() {
                   <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-center sm:justify-around gap-2 text-[10px] font-mono text-slate-500">
                     <span className="flex items-center gap-1">
                       <Database className="w-3 h-3 text-slate-400" />
-                      14 Docs Indexed
+                      88 Knowledge Modules Indexed
                     </span>
                     <span className="text-slate-300 hidden sm:inline">•</span>
                     <span className="flex items-center gap-1">
@@ -490,45 +492,51 @@ export function FloatingAssistant() {
                           <MarkdownMessage content={message.content} />
 
                           {/* Citations and Chapter Link */}
-                          {(Boolean(message.sources?.length) || message.docLink) && (
-                            <div className="pt-2.5 border-t border-slate-100 space-y-2">
-                              {message.sources && message.sources.length > 0 && (
-                                <div className="space-y-1">
-                                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                    <FileCode className="w-3 h-3" />
-                                    <span>Verified Sources</span>
+                          {(() => {
+                            const cleanSources = (message.sources || []).filter(
+                              (src) => !src.toLowerCase().endsWith(".md") && !/\.md\b/i.test(src)
+                            );
+                            if (cleanSources.length === 0 && !message.docLink) return null;
+                            return (
+                              <div className="pt-2.5 border-t border-slate-100 space-y-2">
+                                {cleanSources.length > 0 && (
+                                  <div className="space-y-1">
+                                    <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                      <FileCode className="w-3 h-3" />
+                                      <span>Verified Sources</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {cleanSources.slice(0, 3).map((src, i) => (
+                                        <span
+                                          key={i}
+                                          className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded text-slate-600"
+                                        >
+                                          {src}
+                                        </span>
+                                      ))}
+                                    </div>
                                   </div>
-                                  <div className="flex flex-wrap gap-1">
-                                    {message.sources.slice(0, 3).map((src, i) => (
-                                      <span
-                                        key={i}
-                                        className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded text-slate-600"
-                                      >
-                                        {src}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
+                                )}
 
-                              {message.docLink && (
-                                <div className="pt-1 flex justify-end">
-                                  <Link
-                                    href={message.docLink}
-                                    onClick={() => setIsOpen(false)}
-                                    className="btn-tactical-primary text-white text-[11px] font-mono font-medium px-2.5 py-1 rounded-md flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <span>
-                                      {message.chapterTitle
-                                        ? `Jump to ${message.chapterTitle.split(":")[0]}`
-                                        : "Jump to Chapter"}
-                                    </span>
-                                    <ExternalLink className="w-3 h-3 text-slate-300" />
-                                  </Link>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                {message.docLink && (
+                                  <div className="pt-1 flex justify-end">
+                                    <Link
+                                      href={message.docLink}
+                                      onClick={() => setIsOpen(false)}
+                                      className="btn-tactical-primary text-white text-[11px] font-mono font-medium px-2.5 py-1 rounded-md flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <span>
+                                        {message.chapterTitle
+                                          ? `Jump to ${message.chapterTitle.split(":")[0]}`
+                                          : "Jump to Chapter"}
+                                      </span>
+                                      <ExternalLink className="w-3 h-3 text-slate-300" />
+                                    </Link>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     );

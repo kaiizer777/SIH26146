@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchKnowledge, SearchResult } from "@/lib/ragEngine";
+import { searchKnowledge, SearchResult, KnowledgeItem } from "@/lib/ragEngine";
 
 interface GroqChatCompletionResponse {
   id?: string;
@@ -37,6 +37,67 @@ interface GroqErrorResult {
 
 type GroqResult = GroqSuccessResult | GroqErrorResult;
 
+/**
+ * Infallible post-processing response sanitizer function.
+ * Ensures zero .md files or markdown document filenames appear in the output.
+ * Replaces known document filenames with clear architectural/operational terminology
+ * and completely scrubs any lingering .md filenames or references.
+ */
+export function sanitizeResponseText(text: string): string {
+  if (!text || typeof text !== "string") return "";
+  let sanitized = text;
+
+  // 1. Grouped/compound references like "WORK-1, WORK-2, WORK-3" or "WORK-1.md, WORK-2.md, WORK-3.md"
+  sanitized = sanitized.replace(
+    /\bWORK-[0-9]+(?:\.md)?(?:[\s,]+(?:and\s+|or\s+)?WORK-[0-9]+(?:\.md)?)+/gi,
+    "verified system architecture specifications"
+  );
+
+  // 2. Specific known documentation files to clean operational/architecture terms
+  sanitized = sanitized.replace(/\bWORK-[0-9]+\.md\b/gi, "system architecture specifications");
+  sanitized = sanitized.replace(/\bWORK-[0-9]+\b/gi, "system architecture specifications");
+  sanitized = sanitized.replace(/\bdev-server\.md\b/gi, "system runbook");
+  sanitized = sanitized.replace(/\bflow\.md\b/gi, "system dataflow specifications");
+  sanitized = sanitized.replace(/\bREADME\.md\b/gi, "system overview documentation");
+  sanitized = sanitized.replace(/\bDEPLOYMENT\.md\b/gi, "deployment runbook");
+
+  // 3. Markdown links containing .md files: [Label](path/file.md) -> Label
+  sanitized = sanitized.replace(/\[([^\]]+)\]\([^)]*\.md[^)]*\)/gi, "$1");
+
+  // 4. Any file ending in .md e.g. `architecture.md` -> `architecture specifications`
+  sanitized = sanitized.replace(/\b([a-zA-Z0-9_\-]+)\.md\b/gi, "$1 specifications");
+
+  // 5. Infallible fallback: scrub any remaining literal '.md' extension or token
+  sanitized = sanitized.replace(/\.md\b/gi, "");
+
+  // 6. Clean up phrasing duplicates resulting from substitutions
+  sanitized = sanitized.replace(
+    /(?:system architecture specifications)(?:\s*,\s*system architecture specifications)+/gi,
+    "system architecture specifications"
+  );
+  sanitized = sanitized.replace(/\s{2,}/g, " ");
+
+  return sanitized.trim();
+}
+
+/**
+ * Filter and sanitize KnowledgeItem to purge any .md file citations or text
+ */
+function sanitizeKnowledgeItem(item: KnowledgeItem): KnowledgeItem {
+  const filteredCitations = (item.fileCitations || [])
+    .filter((src) => typeof src === "string" && !src.toLowerCase().endsWith(".md") && !/\.md\b/i.test(src))
+    .map(sanitizeResponseText)
+    .filter(Boolean);
+
+  return {
+    ...item,
+    title: sanitizeResponseText(item.title),
+    tldr: sanitizeResponseText(item.tldr),
+    body: sanitizeResponseText(item.body),
+    fileCitations: filteredCitations,
+  };
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   try {
@@ -61,7 +122,14 @@ export async function POST(request: NextRequest) {
     const trimmedQuestion = question.trim();
 
     // 1. Air-Gapped Inverted Index Retrieval (Top 4 most relevant items)
-    const retrieved: SearchResult[] = searchKnowledge(trimmedQuestion, { limit: 4 });
+    const rawRetrieved: SearchResult[] = searchKnowledge(trimmedQuestion, { limit: 4 });
+
+    // Clean and sanitize all retrieved items: purge any .md file citations and body references
+    const retrieved: SearchResult[] = rawRetrieved.map((res) => ({
+      ...res,
+      item: sanitizeKnowledgeItem(res.item),
+      snippet: sanitizeResponseText(res.snippet),
+    }));
 
     // Mode 1: Instant Air-Gap Retrieval only
     if (mode === "instant") {
@@ -69,7 +137,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         mode: "instant",
         answer: topMatch
-          ? `${topMatch.item.tldr}\n\n${topMatch.item.body}`
+          ? sanitizeResponseText(`${topMatch.item.tldr}\n\n${topMatch.item.body}`)
           : "No direct forensic matches found in offline knowledge index. Please refine your search query.",
         retrieved,
         latencyMs: Date.now() - startTime,
@@ -78,7 +146,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Prepare Context from Retrieved Knowledge Items
+    // Prepare Context from Retrieved Knowledge Items (STRICTLY NO .md FILES)
     const contextText = retrieved
       .map(
         (res, idx) => `
@@ -100,10 +168,11 @@ Documentation: ${res.item.chapterTitle} (${res.item.chapterUrl})
 
 Your role is to solve technical, architectural, and mathematical doubts for intelligence analysts and engineering teammates.
 You must adhere strictly to the following rules:
-1. STRICT FACTUAL ACCURACY: Base your answer EXCLUSIVELY on the provided forensic documents below, derived from WORK-1.md, WORK-2.md, WORK-3.md, and system runbooks. NEVER hallucinate ungrounded numbers, libraries, or architectures.
+1. STRICT FACTUAL ACCURACY: Base your answer EXCLUSIVELY on the provided forensic documents below, derived from verified system architecture specifications, mathematical models, and codebase implementations. NEVER hallucinate ungrounded numbers, libraries, or architectures.
 2. CITATIONS: Cite exact file paths (e.g. backend/app/routers/ingest.py, backend/app/services/xai_store.py), mathematical formulas, and verified benchmarks.
 3. CONCISENESS & CLARITY: Start with a clear 2-sentence executive takeaway. Then provide precise forensic engineering detail, code/formula snippets if relevant, and statutory context (e.g. Section 65B Indian Evidence Act / BSA 2023).
-4. TONE: Authoritative, senior-to-senior, crisp, and analytical. No fluff or generic conversational filler.`;
+4. TONE: Authoritative, senior-to-senior, crisp, and analytical. No fluff or generic conversational filler.
+5. NO MARKDOWN FILE CITATIONS: NEVER mention, cite, or name any .md files (e.g. WORK-1.md, WORK-2.md, WORK-3.md, README.md, dev-server.md, flow.md, or any file ending in .md) in your response under any circumstances. Teammates must only receive the concrete data, equations, schemas, parameters, and code logic. If referring to implementation files, only cite real code files (.py, .ts, .tsx, .json) or speak in terms of the system components.`;
 
     const userPrompt = `Retrieved System Knowledge Documents:
 ${contextText}
@@ -186,7 +255,7 @@ Provide a comprehensive, authoritative forensic answer directly resolving this d
       if (primaryResult.success) {
         return NextResponse.json({
           mode: "synthesis",
-          answer: primaryResult.answer,
+          answer: sanitizeResponseText(primaryResult.answer),
           retrieved,
           latencyMs: Date.now() - startTime,
           model: primaryModel,
@@ -208,7 +277,7 @@ Provide a comprehensive, authoritative forensic answer directly resolving this d
       if (fallbackResult.success) {
         return NextResponse.json({
           mode: "synthesis_fallback",
-          answer: fallbackResult.answer,
+          answer: sanitizeResponseText(fallbackResult.answer),
           retrieved,
           latencyMs: Date.now() - startTime,
           model: fallbackModel,
@@ -231,7 +300,7 @@ Provide a comprehensive, authoritative forensic answer directly resolving this d
       : "[OFFLINE AIR-GAP FALLBACK - ALL EXTERNAL AI TIERS EXHAUSTED]";
 
     const offlineAnswer = topMatch
-      ? `${offlinePrefix}\n\n${topMatch.item.tldr}\n\n${topMatch.item.body}`
+      ? sanitizeResponseText(`${offlinePrefix}\n\n${topMatch.item.tldr}\n\n${topMatch.item.body}`)
       : "No matching forensic knowledge entries found in local air-gap index.";
 
     return NextResponse.json({

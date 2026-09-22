@@ -53,3 +53,4 @@ next-env.d.ts
 !DEPLOYMENT.md
 !README.md
 !AGENTS.md
+/scripts

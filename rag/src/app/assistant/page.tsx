@@ -179,14 +179,16 @@ export default function AssistantPage() {
 
       const data = await resp.json();
 
-      // Extract unique file citations from retrieved items
+      // Extract unique file citations from retrieved items (excluding any .md files)
       const sources: string[] = [];
       if (Array.isArray(data.retrieved)) {
         data.retrieved.forEach((res: { item?: { fileCitations?: string[] } }) => {
           if (Array.isArray(res.item?.fileCitations)) {
-            res.item.fileCitations.forEach((src) => {
-              if (!sources.includes(src)) sources.push(src);
-            });
+            res.item.fileCitations
+              .filter((src) => typeof src === "string" && !src.toLowerCase().endsWith(".md") && !/\.md\b/i.test(src))
+              .forEach((src) => {
+                if (!sources.includes(src)) sources.push(src);
+              });
           }
         });
       }
@@ -298,7 +300,7 @@ export default function AssistantPage() {
                   NTRO Forensic Intelligence Assistant
                 </h1>
                 <p className="text-sm text-slate-500 leading-relaxed font-sans">
-                  Direct conversational intelligence grounded strictly in WORK-1, WORK-2, WORK-3, and system architecture docs. Ask any architectural, operational, or pipeline question.
+                  Instant technical answers grounded strictly in verified system architecture, mathematical models, and codebase implementations.
                 </p>
               </div>
 
@@ -406,42 +408,48 @@ export default function AssistantPage() {
                       </div>
 
                       {/* Citations & Sources Footer */}
-                      {(Boolean(message.sources?.length) || message.docLink) && (
-                        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                          {message.sources && message.sources.length > 0 && (
-                            <div className="space-y-1 min-w-0 flex-1">
-                              <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                <FileCode className="w-3 h-3 shrink-0" />
-                                <span>Verified Source Citations</span>
+                      {(() => {
+                        const cleanSources = (message.sources || []).filter(
+                          (src) => !src.toLowerCase().endsWith(".md") && !/\.md\b/i.test(src)
+                        );
+                        if (cleanSources.length === 0 && !message.docLink) return null;
+                        return (
+                          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                            {cleanSources.length > 0 && (
+                              <div className="space-y-1 min-w-0 flex-1">
+                                <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                  <FileCode className="w-3 h-3 shrink-0" />
+                                  <span>Verified Source Citations</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {cleanSources.map((src, i) => (
+                                    <span
+                                      key={i}
+                                      className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] sm:text-[11px] font-mono border border-slate-200 break-all"
+                                    >
+                                      {src}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {message.sources.map((src, i) => (
-                                  <span
-                                    key={i}
-                                    className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] sm:text-[11px] font-mono border border-slate-200 break-all"
-                                  >
-                                    {src}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                            )}
 
-                          {message.docLink && (
-                            <Link
-                              href={message.docLink}
-                              className="btn-tactical-primary text-white text-xs font-mono font-medium px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 shrink-0 hover:opacity-95 transition-all shadow-xs w-full sm:w-auto"
-                            >
-                              <span>
-                                {message.chapterTitle
-                                  ? `Jump to ${message.chapterTitle.split(":")[0]}`
-                                  : "Jump to Documentation"}
-                              </span>
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                            </Link>
-                          )}
-                        </div>
-                      )}
+                            {message.docLink && (
+                              <Link
+                                href={message.docLink}
+                                className="btn-tactical-primary text-white text-xs font-mono font-medium px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 shrink-0 hover:opacity-95 transition-all shadow-xs w-full sm:w-auto"
+                              >
+                                <span>
+                                  {message.chapterTitle
+                                    ? `Jump to ${message.chapterTitle.split(":")[0]}`
+                                    : "Jump to Documentation"}
+                                </span>
+                                <ExternalLink className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                              </Link>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
