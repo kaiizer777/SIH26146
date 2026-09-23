@@ -65,7 +65,7 @@ function renderInlineText(text: string): React.ReactNode[] {
       return (
         <code
           key={index}
-          className="font-mono bg-slate-100 text-slate-900 px-1.5 py-0.5 rounded text-xs border border-slate-200 break-all"
+          className="font-mono bg-slate-100/90 text-slate-800 font-medium px-1.5 py-0.5 rounded text-xs border border-slate-200/80 break-words [word-break:break-word]"
         >
           {part.slice(1, -1)}
         </code>
@@ -271,6 +271,43 @@ function MarkdownTable({ headers, alignments, rows }: MarkdownTableProps) {
   );
 }
 
+function normalizeMarkdownContent(rawText: string): string {
+  if (!rawText) return "";
+  let text = rawText.replace(/\r\n/g, "\n");
+
+  // 1. Repair squashed inline numbered list items like:
+  // "...forensic breakdown: 1. **Multi-Format..." or "...Key Metrics). 2. **Offline..."
+  // Put a double newline before each numbered item
+  text = text.replace(/([^\n])\s+(\d+\.\s+\*\*)/g, "$1\n\n$2");
+
+  // Also repair numbered list items without bold preceded by punctuation
+  text = text.replace(/([.:;!?\)])\s+(\d+\.\s+[A-Z])/g, "$1\n\n$2");
+
+  // 2. Repair squashed sub-bullets like:
+  // "Engine** - - **FT-Transformer**" or "(Document 1). - **Relational Graph Transformer**"
+  text = text.replace(/([^\n])\s+-\s+-\s+(\*\*|[A-Z])/g, "$1\n   - $2");
+  text = text.replace(/([.:;!?\)])\s+-\s+(\*\*|[A-Z])/g, "$1\n   - $2");
+
+  // 3. Repair bold subsection headings squashed after punctuation
+  text = text.replace(/([.:;!?])\s+(\*\*[A-Z][^*]+:\*\*)/g, "$1\n\n$2");
+
+  // 4. Normalize excessive newlines
+  text = text.replace(/\n{3,}/g, "\n\n");
+
+  return text.trim();
+}
+
+interface ParsedNumberedItem {
+  num: string;
+  text: string;
+  subItems: string[];
+}
+
+interface ParsedBulletItem {
+  text: string;
+  subItems: string[];
+}
+
 function renderMarkdownSection(sectionText: string): React.ReactNode[] {
   const lines = sectionText.split(/\r?\n/);
   const elements: React.ReactNode[] = [];
@@ -343,7 +380,7 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       elements.push(
         <h4
           key={`h4-${elements.length}`}
-          className="text-xs font-bold text-slate-800 mt-2.5 mb-1"
+          className="text-xs font-bold text-slate-800 mt-3 mb-1"
         >
           {renderInlineText(trimmed.replace(/^####\s+/, ""))}
         </h4>
@@ -356,7 +393,7 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       elements.push(
         <h3
           key={`h3-${elements.length}`}
-          className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700 mt-3 mb-1"
+          className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700 mt-3.5 mb-1.5"
         >
           {renderInlineText(trimmed.replace(/^###\s+/, ""))}
         </h3>
@@ -369,7 +406,7 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       elements.push(
         <h2
           key={`h2-${elements.length}`}
-          className="text-sm font-bold text-slate-900 mt-3 mb-1"
+          className="text-sm font-bold text-slate-900 mt-4 mb-1.5"
         >
           {renderInlineText(trimmed.replace(/^##\s+/, ""))}
         </h2>
@@ -382,7 +419,7 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       elements.push(
         <h1
           key={`h1-${elements.length}`}
-          className="text-base font-bold text-slate-900 mt-4 mb-1.5"
+          className="text-base font-bold text-slate-900 mt-4 mb-2"
         >
           {renderInlineText(trimmed.replace(/^#\s+/, ""))}
         </h1>
@@ -401,7 +438,7 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       elements.push(
         <blockquote
           key={`bq-${elements.length}`}
-          className="border-l-2 border-slate-400 pl-3 py-1 my-2 bg-slate-50/70 text-slate-700 italic rounded-r text-xs sm:text-sm space-y-1 overflow-x-auto max-w-full break-words"
+          className="border-l-2 border-slate-400 pl-3 py-1 my-2.5 bg-slate-50/70 text-slate-700 italic rounded-r text-xs sm:text-sm space-y-1 overflow-x-auto max-w-full break-words"
         >
           {quoteLines.map((ql, qIdx) => (
             <p key={qIdx}>{renderInlineText(ql)}</p>
@@ -413,17 +450,83 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
 
     // 5. Bullet Lists
     if (/^(\*|-|•)\s+/.test(trimmed)) {
-      const bulletItems: string[] = [];
-      while (i < lines.length && /^(\*|-|•)\s+/.test(lines[i].trim())) {
-        bulletItems.push(lines[i].trim().replace(/^(\*|-|•)\s+/, ""));
-        i++;
+      const bulletItems: ParsedBulletItem[] = [];
+
+      while (i < lines.length) {
+        const line = lines[i];
+        const lineTrim = line.trim();
+
+        if (!lineTrim) {
+          let peek = i + 1;
+          while (peek < lines.length && !lines[peek].trim()) {
+            peek++;
+          }
+          if (peek < lines.length) {
+            const nextTrim = lines[peek].trim();
+            if (/^(\*|-|•)\s+/.test(nextTrim) || lines[peek].startsWith("   ") || lines[peek].startsWith("\t")) {
+              i++;
+              continue;
+            }
+          }
+          break;
+        }
+
+        // Nested sub-bullet item
+        if (line.startsWith("   ") || line.startsWith("  -") || line.startsWith("  *") || line.startsWith("\t")) {
+          const subText = lineTrim.replace(/^(\*|-|•)\s+/, "");
+          if (bulletItems.length > 0) {
+            bulletItems[bulletItems.length - 1].subItems.push(subText);
+            i++;
+            continue;
+          }
+        }
+
+        // Standard bullet item
+        if (/^(\*|-|•)\s+/.test(lineTrim)) {
+          bulletItems.push({
+            text: lineTrim.replace(/^(\*|-|•)\s+/, ""),
+            subItems: [],
+          });
+          i++;
+          continue;
+        }
+
+        if (isBlockStart(i)) {
+          break;
+        }
+
+        // Line continuation
+        if (bulletItems.length > 0) {
+          bulletItems[bulletItems.length - 1].text += " " + lineTrim;
+          i++;
+          continue;
+        }
+
+        break;
       }
+
       elements.push(
-        <ul key={`ul-${elements.length}`} className="space-y-1.5 my-2">
+        <ul key={`ul-${elements.length}`} className="space-y-2 my-2.5">
           {bulletItems.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2 min-w-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 shrink-0" />
-              <span className="flex-1 min-w-0 leading-relaxed break-words">{renderInlineText(item)}</span>
+            <li key={idx} className="space-y-1 min-w-0">
+              <div className="flex items-start gap-2 min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 shrink-0" />
+                <span className="flex-1 min-w-0 leading-relaxed text-slate-800 break-words">
+                  {renderInlineText(item.text)}
+                </span>
+              </div>
+              {item.subItems.length > 0 && (
+                <ul className="pl-6 space-y-1.5 mt-1 border-l-2 border-slate-100 ml-1.5">
+                  {item.subItems.map((sub, sIdx) => (
+                    <li key={sIdx} className="flex items-start gap-2 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0" />
+                      <span className="flex-1 min-w-0 leading-relaxed text-slate-600 text-xs sm:text-[13px] break-words">
+                        {renderInlineText(sub)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>
@@ -431,21 +534,95 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
       continue;
     }
 
-    // 6. Numbered Lists
+    // 6. Numbered Lists (Ordered Lists)
     if (/^\d+\.\s+/.test(trimmed)) {
-      const numItems: string[] = [];
-      while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
-        numItems.push(lines[i].trim().replace(/^\d+\.\s+/, ""));
-        i++;
+      const items: ParsedNumberedItem[] = [];
+
+      while (i < lines.length) {
+        const line = lines[i];
+        const lineTrim = line.trim();
+
+        // Handle blank lines between numbered items without breaking list continuation
+        if (!lineTrim) {
+          let peek = i + 1;
+          while (peek < lines.length && !lines[peek].trim()) {
+            peek++;
+          }
+          if (peek < lines.length) {
+            const nextTrim = lines[peek].trim();
+            if (/^\d+\.\s+/.test(nextTrim) || /^(\*|-|•)\s+/.test(nextTrim) || lines[peek].startsWith("   ") || lines[peek].startsWith("\t")) {
+              i++;
+              continue;
+            }
+          }
+          break;
+        }
+
+        // New numbered item
+        const numMatch = lineTrim.match(/^(\d+)\.\s+(.*)/);
+        if (numMatch) {
+          items.push({
+            num: numMatch[1],
+            text: numMatch[2],
+            subItems: [],
+          });
+          i++;
+          continue;
+        }
+
+        // Sub-bullet item under current numbered item
+        if (/^(\*|-|•)\s+/.test(lineTrim) || line.startsWith("   ") || line.startsWith("  -") || line.startsWith("\t")) {
+          const subText = lineTrim.replace(/^(\*|-|•)\s+/, "");
+          if (items.length > 0) {
+            items[items.length - 1].subItems.push(subText);
+            i++;
+            continue;
+          }
+        }
+
+        if (isBlockStart(i)) {
+          break;
+        }
+
+        // Text continuation
+        if (items.length > 0 && items[items.length - 1].subItems.length === 0) {
+          items[items.length - 1].text += " " + lineTrim;
+          i++;
+          continue;
+        } else if (items.length > 0 && items[items.length - 1].subItems.length > 0) {
+          const lastSubIdx = items[items.length - 1].subItems.length - 1;
+          items[items.length - 1].subItems[lastSubIdx] += " " + lineTrim;
+          i++;
+          continue;
+        }
+
+        break;
       }
+
       elements.push(
-        <ol key={`ol-${elements.length}`} className="space-y-1.5 my-2">
-          {numItems.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2 min-w-0">
-              <span className="font-mono text-xs font-semibold text-slate-500 shrink-0 mt-0.5">
-                {idx + 1}.
-              </span>
-              <span className="flex-1 min-w-0 leading-relaxed break-words">{renderInlineText(item)}</span>
+        <ol key={`ol-${elements.length}`} className="space-y-3 my-2.5">
+          {items.map((item, idx) => (
+            <li key={idx} className="space-y-1.5 min-w-0">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/70 rounded px-1.5 py-0.5 shrink-0 mt-0.5 shadow-2xs select-none">
+                  {item.num}.
+                </span>
+                <div className="flex-1 min-w-0 leading-relaxed text-slate-800 break-words">
+                  {renderInlineText(item.text)}
+                </div>
+              </div>
+              {item.subItems.length > 0 && (
+                <ul className="pl-7 space-y-1.5 mt-1 border-l-2 border-slate-100 ml-3">
+                  {item.subItems.map((sub, sIdx) => (
+                    <li key={sIdx} className="flex items-start gap-2 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2 shrink-0" />
+                      <span className="flex-1 min-w-0 leading-relaxed text-slate-700 text-xs sm:text-[13px] break-words">
+                        {renderInlineText(sub)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ol>
@@ -469,7 +646,7 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
 
     if (paraLines.length > 0) {
       elements.push(
-        <p key={`p-${elements.length}`} className="my-1.5 leading-relaxed text-slate-800 break-words">
+        <p key={`p-${elements.length}`} className="my-2 leading-relaxed text-slate-800 break-words">
           {paraLines.map((pl, plIdx) => (
             <React.Fragment key={plIdx}>
               {plIdx > 0 && " "}
@@ -487,11 +664,11 @@ function renderMarkdownSection(sectionText: string): React.ReactNode[] {
 export function MarkdownMessage({ content }: MarkdownMessageProps) {
   if (!content) return null;
 
-  // Split by triple backticks for code blocks
+  // Split by triple backticks for code blocks to preserve code formatting
   const sections = content.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="space-y-2 text-sm text-slate-800 leading-relaxed font-sans min-w-0 max-w-full">
+    <div className="space-y-2.5 text-sm text-slate-800 leading-relaxed font-sans min-w-0 max-w-full">
       {sections.map((section, secIdx) => {
         if (!section) return null;
 
@@ -502,9 +679,11 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
           return <CodeBlock key={secIdx} lang={lang} code={code} />;
         }
 
+        const normalizedSection = normalizeMarkdownContent(section);
+
         return (
           <React.Fragment key={secIdx}>
-            {renderMarkdownSection(section)}
+            {renderMarkdownSection(normalizedSection)}
           </React.Fragment>
         );
       })}

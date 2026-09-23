@@ -75,7 +75,18 @@ function sanitizeResponseText(text: string): string {
     /(?:system architecture specifications)(?:\s*,\s*system architecture specifications)+/gi,
     "system architecture specifications"
   );
-  sanitized = sanitized.replace(/\s{2,}/g, " ");
+
+  // 7. Normalize CRLF to LF
+  sanitized = sanitized.replace(/\r\n/g, "\n");
+
+  // 8. Strip trailing spaces/tabs on lines
+  sanitized = sanitized.replace(/[ \t]+$/gm, "");
+
+  // 9. Collapse multiple horizontal spaces between words while preserving line indentation and newlines
+  sanitized = sanitized.replace(/([^ \t\r\n])[ \t]{2,}/g, "$1 ");
+
+  // 10. Collapse excessive vertical blank lines (keep at most 2 consecutive newlines)
+  sanitized = sanitized.replace(/\n{3,}/g, "\n\n");
 
   return sanitized.trim();
 }
@@ -181,7 +192,13 @@ You must adhere strictly to the following rules:
 3. CONCISENESS & CLARITY: Start with a clear 2-sentence executive takeaway. Then provide precise forensic engineering detail, code/formula snippets if relevant, and statutory context (e.g. Section 65B Indian Evidence Act / BSA 2023).
 4. TONE: Authoritative, senior-to-senior, crisp, and analytical. No fluff or generic conversational filler.
 5. NO MARKDOWN FILE CITATIONS: NEVER mention, cite, or name any .md files (e.g. WORK-1.md, WORK-2.md, WORK-3.md, README.md, dev-server.md, flow.md, or any file ending in .md) in your response under any circumstances. Teammates must only receive the concrete data, equations, schemas, parameters, and code logic. If referring to implementation files, only cite real code files (.py, .ts, .tsx, .json) or speak in terms of the system components.
-6. ARCHITECTURAL & SOLUTION QUERIES: When asked about the proposed solution, problem statement, or system architecture, synthesize a direct, authoritative forensic breakdown covering the 7-stage intelligence pipeline, dual-tier neural models, graph analytics, and forensic evidence generation from the provided documents. NEVER output procedural refusals claiming documents are missing, and NEVER invent hypothetical file paths.`;
+6. ARCHITECTURAL & SOLUTION QUERIES: When asked about the proposed solution, problem statement, or system architecture, synthesize a direct, authoritative forensic breakdown covering the 7-stage intelligence pipeline, dual-tier neural models, graph analytics, and forensic evidence generation from the provided documents. NEVER output procedural refusals claiming documents are missing, and NEVER invent hypothetical file paths.
+7. FORMATTING & READABILITY: Always format responses using clean, structured Markdown:
+   - Separate every section and paragraph with double newlines.
+   - For numbered architecture components, place EACH item on its own new line (e.g., \n\n1. **Component Name** - details).
+   - Use indented sub-bullets (\n   - sub-detail) for nested points.
+   - Use inline backticks for code symbols, functions, and file paths.
+   - Never run numbered lists or paragraphs together on a single line.`;
 
     const userPrompt = `Retrieved System Knowledge Documents:
 ${contextText}
