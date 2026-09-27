@@ -280,29 +280,29 @@ export default function ModelProvenanceModal({
           {/* Top Summary Cards (4 Core Benchmark Metrics) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Metric 1: Graph F1 Score */}
-            <div className="p-4 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
+            <div className="p-3.5 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5 text-xs uppercase font-semibold text-slate-500 tracking-wider">
-                    <Layers className="w-3.5 h-3.5 text-sky-600" />
-                    <span>Graph F1 Score</span>
-                  </div>
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100/90 text-emerald-800 border border-emerald-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                <div className="flex items-center gap-1.5 min-w-0 text-[11px] uppercase font-semibold text-slate-500 tracking-wide leading-none">
+                  <Layers className="w-3.5 h-3.5 shrink-0 text-sky-600" />
+                  <span className="truncate">Graph F1 Score</span>
+                </div>
+                <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
+                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none">
+                    0.921
+                  </span>
+                  <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-emerald-100/90 text-emerald-800 border border-emerald-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
                     +5.9% delta
                   </span>
-                </div>
-                <div className="text-3xl font-bold crypto-mono text-slate-900 tracking-tight">
-                  0.921
                 </div>
               </div>
 
               {/* Benchmark Visual Progress Meter */}
-              <div className="mt-3 pt-2.5 border-t border-slate-200/70 space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] crypto-mono text-slate-500">
-                  <span>Base: 0.870</span>
-                  <span className="text-emerald-700 font-semibold">Gate: 0.880 ✓</span>
+              <div className="mt-2.5 pt-2 border-t border-slate-200/70 space-y-1">
+                <div className="flex items-center justify-between gap-1 text-[9px] crypto-mono text-slate-500 tracking-tighter">
+                  <span className="whitespace-nowrap">Base: 0.870</span>
+                  <span className="whitespace-nowrap text-emerald-700 font-semibold">Gate: 0.880 ✓</span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-200/80 rounded-full overflow-hidden relative">
+                <div className="h-1 w-full bg-slate-200/80 rounded-full overflow-hidden relative">
                   {/* Gate marker */}
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-slate-400 z-10"
@@ -315,123 +315,117 @@ export default function ModelProvenanceModal({
                     style={{ width: "92%" }}
                   />
                 </div>
-                <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                  <span>Baseline GraphSAGE:</span>
-                  <span className="crypto-mono font-medium text-slate-700">0.870</span>
+                <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1">
+                  <span className="whitespace-nowrap">Baseline GraphSAGE:</span>
+                  <span className="crypto-mono font-medium text-slate-700 whitespace-nowrap">0.870</span>
                 </div>
               </div>
             </div>
 
             {/* Metric 2: Peeling Recall */}
-            <div className="p-4 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
+            <div className="p-3.5 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5 text-xs uppercase font-semibold text-slate-500 tracking-wider">
-                    <GitBranch className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Peeling Recall</span>
-                  </div>
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100/90 text-emerald-800 border border-emerald-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                <div className="flex items-center gap-1.5 min-w-0 text-[11px] uppercase font-semibold text-slate-500 tracking-wide leading-none">
+                  <GitBranch className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                  <span className="truncate">Peeling Recall</span>
+                </div>
+                <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
+                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none">
+                    94.8%
+                  </span>
+                  <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-emerald-100/90 text-emerald-800 border border-emerald-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
                     +13.6% delta
                   </span>
-                </div>
-                <div className="text-3xl font-bold crypto-mono text-slate-900 tracking-tight">
-                  94.8%
                 </div>
               </div>
 
               {/* Benchmark Visual Progress Meter */}
-              <div className="mt-3 pt-2.5 border-t border-slate-200/70 space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] crypto-mono text-slate-500">
-                  <span>Base: 81.2%</span>
-                  <span className="text-emerald-700 font-semibold">Recall: 94.8%</span>
+              <div className="mt-2.5 pt-2 border-t border-slate-200/70 space-y-1">
+                <div className="flex items-center justify-between gap-1 text-[9px] crypto-mono text-slate-500 tracking-tighter">
+                  <span className="whitespace-nowrap">Base: 81.2%</span>
+                  <span className="whitespace-nowrap text-emerald-700 font-semibold">Recall: 94.8%</span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-200/80 rounded-full overflow-hidden">
+                <div className="h-1 w-full bg-slate-200/80 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
                     style={{ width: "94.8%" }}
                   />
                 </div>
-                <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                  <span>Baseline GraphSAGE:</span>
-                  <span className="crypto-mono font-medium text-slate-700">81.2%</span>
+                <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1">
+                  <span className="whitespace-nowrap">Baseline GraphSAGE:</span>
+                  <span className="crypto-mono font-medium text-slate-700 whitespace-nowrap">81.2%</span>
                 </div>
               </div>
             </div>
 
             {/* Metric 3: Combined Latency */}
-            <div className="p-4 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
+            <div className="p-3.5 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5 text-xs uppercase font-semibold text-slate-500 tracking-wider">
-                    <Clock className="w-3.5 h-3.5 text-sky-600" />
-                    <span>Combined Latency</span>
-                  </div>
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100/90 text-sky-800 border border-sky-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-                    -44% latency
-                  </span>
+                <div className="flex items-center gap-1.5 min-w-0 text-[11px] uppercase font-semibold text-slate-500 tracking-wide leading-none">
+                  <Clock className="w-3.5 h-3.5 shrink-0 text-sky-600" />
+                  <span className="truncate">Combined Latency</span>
                 </div>
-                <div className="text-3xl font-bold crypto-mono text-slate-900 tracking-tight flex items-baseline gap-1.5">
-                  <span>4.8ms</span>
-                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 border border-sky-200/80">
-                    CPU
+                <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
+                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none">
+                    4.8ms
+                  </span>
+                  <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-sky-100/90 text-sky-800 border border-sky-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                    -44% latency
                   </span>
                 </div>
               </div>
 
               {/* Benchmark Visual Progress Meter */}
-              <div className="mt-3 pt-2.5 border-t border-slate-200/70 space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] crypto-mono text-slate-500">
-                  <span>Base: 8.6ms</span>
-                  <span className="text-sky-700 font-semibold">Speedup: 1.79×</span>
+              <div className="mt-2.5 pt-2 border-t border-slate-200/70 space-y-1">
+                <div className="flex items-center justify-between gap-1 text-[9px] crypto-mono text-slate-500 tracking-tighter">
+                  <span className="whitespace-nowrap">CPU base: 8.6ms</span>
+                  <span className="whitespace-nowrap text-sky-700 font-semibold">Speedup: 1.79×</span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-200/80 rounded-full overflow-hidden">
+                <div className="h-1 w-full bg-slate-200/80 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-sky-400 to-sky-600 rounded-full"
                     style={{ width: "55.8%" }}
                   />
                 </div>
-                <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                  <span>Baseline MLP/SAGE:</span>
-                  <span className="crypto-mono font-medium text-slate-700">8.6ms</span>
+                <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1">
+                  <span className="whitespace-nowrap">Baseline MLP/SAGE:</span>
+                  <span className="crypto-mono font-medium text-slate-700 whitespace-nowrap">8.6ms</span>
                 </div>
               </div>
             </div>
 
             {/* Metric 4: Memory Footprint */}
-            <div className="p-4 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
+            <div className="p-3.5 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5 text-xs uppercase font-semibold text-slate-500 tracking-wider">
-                    <HardDrive className="w-3.5 h-3.5 text-slate-600" />
-                    <span>Memory Footprint</span>
-                  </div>
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-                    Pure CPU
-                  </span>
+                <div className="flex items-center gap-1.5 min-w-0 text-[11px] uppercase font-semibold text-slate-500 tracking-wide leading-none">
+                  <HardDrive className="w-3.5 h-3.5 shrink-0 text-slate-600" />
+                  <span className="truncate">Memory Footprint</span>
                 </div>
-                <div className="text-3xl font-bold crypto-mono text-slate-900 tracking-tight flex items-baseline gap-1.5">
-                  <span>231 KB</span>
-                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                    Total
+                <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
+                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none">
+                    231 KB
+                  </span>
+                  <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-slate-100 text-slate-700 border border-slate-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                    Pure CPU
                   </span>
                 </div>
               </div>
 
               {/* Capacity Subtitle */}
-              <div className="mt-3 pt-2.5 border-t border-slate-200/70 space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] crypto-mono text-slate-500">
-                  <span>Disk: .pt + scalers</span>
-                  <span className="text-emerald-700 font-semibold">Cold Boot &lt;120ms</span>
+              <div className="mt-2.5 pt-2 border-t border-slate-200/70 space-y-1">
+                <div className="flex items-center justify-between gap-1 text-[9px] crypto-mono text-slate-500 tracking-tighter">
+                  <span className="whitespace-nowrap">Disk: .pt+scalers</span>
+                  <span className="whitespace-nowrap text-emerald-700 font-semibold">Cold Boot &lt;120ms</span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-200/80 rounded-full overflow-hidden">
+                <div className="h-1 w-full bg-slate-200/80 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-slate-400 to-slate-600 rounded-full"
                     style={{ width: "23.1%" }}
                   />
                 </div>
-                <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                  <span>Target Budget:</span>
-                  <span className="crypto-mono font-medium text-slate-700">&lt; 500 MB RAM</span>
+                <div className="text-[10px] text-slate-500 flex items-center justify-between gap-1">
+                  <span className="whitespace-nowrap">Target Budget:</span>
+                  <span className="crypto-mono font-medium text-slate-700 whitespace-nowrap">&lt; 500 MB RAM</span>
                 </div>
               </div>
             </div>
