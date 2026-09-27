@@ -10,6 +10,7 @@ This is a **production-grade, user-facing system** — not a side project, demo,
 
 Strict: Never write, modify, or debug code without viewing the matching skill file first.
 
+Don't make branches when working on this repo as this repo is exception to the branch and pr type work, so directly work on the main branch.
 
 ## How You Work
 

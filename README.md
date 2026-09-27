@@ -36,7 +36,7 @@ Bulk CSV/JSON/XML ──> FastAPI (/ingest) ──> Celery Queue (Redis)
                            [ Dual-Layer Explainability ]
             • XAI-A: SHAP GradientExplainer (18-feature attribution waterfall)
             • XAI-B: PyG GNNExplainer (subgraph masks & relational edge importance)
-            • XAI-C: Structured Forensic Evidence Trail JSON (17,041 dossiers)
+            • XAI-C: Structured Forensic Evidence Trail JSON (15,873 dossiers)
             • XAI-D: Composite Risk Calibration (CRITICAL, HIGH, MEDIUM, LOW)
                                         │
                                         ▼
@@ -99,7 +99,7 @@ All figures represent verified measurements on the development machine (document
 | **CoinJoin Detection (F3)** | Detection Recall (equal outputs) | **100.0%** (50 / 50 synthetic candidates caught) | Heuristic rule validated |
 | **GraphSAGE GNN (F4 - Baseline)** | Training / Inference Time | **12.2s CPU** / **25.4ms** for 24,673 nodes | F1 = 0.9711 (co-spend) |
 | **Graph Transformer (SOTA Risk)** | Test F1 / ROC-AUC / Latency | **F1 = 0.9209**, AUC = 0.9956, Latency = **0.0120ms** | Active Production Engine |
-| **Explainability (XAI)** | Sub-5ms Forensic Index | **17,041 evidence trails** + SHAP waterfall data | Court-admissible dossiers |
+| **Explainability (XAI)** | Sub-5ms Forensic Index | **15,873 evidence trails** + SHAP waterfall data | Court-admissible dossiers |
 
 > Canonical single source of truth for all model metrics is maintained in [`data/models/BENCHMARK_TRUTH.json`](data/models/BENCHMARK_TRUTH.json) and [`BENCHMARK_TRUTH.md`](data/models/BENCHMARK_TRUTH.md).
 
