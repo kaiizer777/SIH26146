@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { clsx } from "clsx";
 import {
   X,
   Zap,
@@ -457,67 +456,68 @@ export default function ModelProvenanceModal({
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              {/* border-separate (not collapse) so position:sticky on <th> is honoured in WebKit/Blink.
+                  Row dividers are drawn per-cell so they survive sticky scrolling. */}
+              <table className="w-full text-left text-xs border-separate border-spacing-0">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/90 text-slate-600 font-semibold">
-                    <th className="py-3 px-4 w-[20%] text-slate-800 font-bold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[19%] bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10.5px]">
                       Metric / Dimension
                     </th>
-                    <th className="py-3 px-4 w-[32%] text-sky-950 font-bold bg-sky-50/70 border-x border-sky-200/80">
-                      <div className="flex items-center justify-between">
-                        <span className="uppercase tracking-wider text-[11px]">Dual Transformer Architecture</span>
-                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-sky-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_2px_rgba(2,132,199,0.3)]">
-                          ACTIVE SOTA
-                        </span>
-                      </div>
+                    {/* Champion column: wins by weight + tint, not by a saturated badge */}
+                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[32%] bg-sky-100 border-b border-sky-200 text-slate-900 font-extrabold uppercase tracking-wider text-[10.5px] border-x">
+                      <span className="flex items-center gap-1.5">
+                        <Check className="w-3 h-3 stroke-[3] text-emerald-600 shrink-0" />
+                        Dual Transformer Architecture
+                      </span>
                     </th>
-                    <th className="py-3 px-4 w-[24%] text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                      Baseline Architecture (Legacy)
+                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[24%] bg-slate-100 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10.5px]">
+                      Baseline Architecture
                     </th>
-                    <th className="py-3 px-4 w-[24%] text-slate-800 font-bold uppercase tracking-wider text-[11px]">
+                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[25%] bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[10.5px]">
                       Impact on NTRO Forensics
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200/80 text-slate-700">
+                <tbody className="text-slate-700 [&>tr:not(:last-child)>td]:border-b [&>tr:not(:last-child)>td]:border-slate-200">
                   {BENCHMARK_METRICS.map((row, idx) => (
-                    <tr
-                      key={row.dimension}
-                      className={clsx(
-                        "transition-colors",
-                        idx % 2 === 0 ? "bg-white" : "bg-slate-50/40",
-                        "hover:bg-slate-50/90"
-                      )}
-                    >
-                      {/* Dimension Name */}
-                      <td className="py-3.5 px-4 align-top">
-                        <div className="font-bold text-slate-950 text-xs">
-                          {row.dimension}
+                    <tr key={row.dimension}>
+                      {/* Dimension Name — row index anchors scanning on a tall table */}
+                      <td className="py-3 px-4 align-top">
+                        <div className="flex items-start gap-2">
+                          <span className="crypto-mono text-[10px] font-medium text-slate-300 leading-[1.4] shrink-0 tabular-nums">
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-950 text-[12.5px] leading-snug">
+                              {row.dimension}
+                            </div>
+                            <span className="inline-block mt-1 text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded leading-none border border-slate-200">
+                              {row.categoryTag}
+                            </span>
+                          </div>
                         </div>
-                        <span className="inline-block mt-1 text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                          {row.categoryTag}
-                        </span>
                       </td>
 
                       {/* Active Dual Transformer (Champion Column) */}
-                      <td className="py-3.5 px-4 bg-sky-50/40 border-x border-sky-200/70 align-top">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <div className="font-bold text-slate-950 flex items-center gap-1.5">
+                      <td className="py-3 px-4 bg-sky-50/40 border-x border-sky-200/70 align-top">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-bold text-slate-950 flex items-center gap-1.5 min-w-0">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span className="text-[12.5px]">{row.active.title}</span>
+                            <span className="text-[12.5px] leading-snug">{row.active.title}</span>
                           </div>
-                          <span className="text-[10px] font-bold text-sky-800 bg-sky-100/90 px-2 py-0.5 rounded border border-sky-200/80 crypto-mono shrink-0 shadow-[inset_0_1px_0_#ffffff]">
+                          <span className="text-[10px] font-bold text-sky-800 bg-sky-100/90 px-1.5 py-0.5 rounded leading-none border border-sky-200/80 crypto-mono shrink-0 shadow-[inset_0_1px_0_#ffffff]">
                             {row.active.badge}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed font-normal">
+                        <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
                           {row.active.detail}
                         </p>
-                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                        <div className="flex flex-wrap gap-1 mt-1.5">
                           {row.active.chips.map((chip) => (
                             <span
                               key={chip}
-                              className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-white text-slate-800 border border-slate-200/90 shadow-[inset_0_1px_0_#ffffff,0_1px_1px_rgba(15,23,42,0.04)]"
+                              className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200/90 leading-none shadow-[inset_0_1px_0_#ffffff,0_1px_1px_rgba(15,23,42,0.04)]"
                             >
                               {chip}
                             </span>
@@ -525,23 +525,28 @@ export default function ModelProvenanceModal({
                         </div>
                       </td>
 
-                      {/* Baseline Legacy Architecture */}
-                      <td className="py-3.5 px-4 align-top text-slate-500">
-                        <div className="font-semibold text-slate-700 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                          <span>{row.baseline.title}</span>
+                      {/* Baseline Legacy Architecture — recessive, lighter weight, muted marker */}
+                      <td className="py-3 px-4 align-top">
+                        <div className="font-semibold text-slate-600 flex items-center gap-1.5">
+                          <span className="w-4 h-4 shrink-0 flex items-center justify-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                          </span>
+                          <span className="text-[12.5px] leading-snug">{row.baseline.title}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
+                        <p className="text-[11px] text-slate-600 mt-1 leading-relaxed pl-[22px]">
                           {row.baseline.detail}
                         </p>
                       </td>
 
-                      {/* Forensic Impact */}
-                      <td className="py-3.5 px-4 align-top text-slate-800">
-                        <span className="inline-block text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 mb-1.5 shadow-[inset_0_1px_0_#ffffff]">
-                          {row.impact.tag}
-                        </span>
-                        <p className="text-[11px] leading-relaxed text-slate-700">
+                      {/* Forensic Impact — mono label, no chip fill, so it doesn't read as a param chip */}
+                      <td className="py-3 px-4 align-top">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-[2px] bg-slate-400 shrink-0" />
+                          <span className="crypto-mono text-[10px] font-bold uppercase tracking-wide text-slate-600 leading-none">
+                            {row.impact.tag}
+                          </span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-slate-700 mt-1.5">
                           {row.impact.detail}
                         </p>
                       </td>
