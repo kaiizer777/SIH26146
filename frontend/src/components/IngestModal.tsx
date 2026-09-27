@@ -11,6 +11,12 @@ import {
   AlertTriangle,
   ShieldCheck,
   Sliders,
+  Database,
+  Download,
+  Zap,
+  ArrowLeft,
+  FileSpreadsheet,
+  HardDrive,
 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadIngestFile, fetchIngestStatus, syncIngestTask, ApiError } from "@/lib/api";
@@ -39,6 +45,7 @@ export default function IngestModal({
 }: IngestModalProps) {
   const [stage, setStage] = useState<Stage>("idle");
   const [dragOver, setDragOver] = useState(false);
+  const [isDraggingSample, setIsDraggingSample] = useState(false);
   const [progress, setProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [statusText, setStatusText] = useState("");
@@ -201,11 +208,11 @@ export default function IngestModal({
     {
       name: "test_2000.csv",
       title: "Sample 2,000 TXs",
-      tagline: "High-volume stress test dataset",
-      size: "700 KB",
-      rows: "2,000 rows",
+      tagline: "High-volume stress test dataset with multi-hop laundering chains",
+      size: "718 KB",
+      rows: "2,000 Rows",
       badge: "2,000 Rows",
-      badgeStyle: "bg-indigo-50 text-indigo-700 border-indigo-200/90",
+      badgeStyle: "bg-sky-50 text-sky-700 border-sky-200/80",
       url: "/sample_data/test_2000.csv",
     },
   ];
@@ -549,25 +556,33 @@ export default function IngestModal({
       {stage === "idle" && (
         <aside
           aria-label="Sample test dataset"
-          className="fixed z-50 right-8 top-1/2 -translate-y-1/2 w-80 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_12px_36px_rgba(15,23,42,0.18)] p-4 flex flex-col gap-3.5 animate-in fade-in slide-in-from-right-4 duration-200"
+          className="fixed z-50 right-8 top-1/2 -translate-y-1/2 w-84 bg-white/95 backdrop-blur-xl rounded-2xl border-t border-t-white border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_16px_36px_-6px_rgba(15,23,42,0.14),0_4px_12px_rgba(15,23,42,0.06)] p-4 flex flex-col gap-3.5 animate-in fade-in slide-in-from-right-4 duration-200 select-none"
         >
           {/* Header */}
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-gradient-to-b from-sky-50 to-sky-100 border border-sky-200 flex items-center justify-center text-sky-700 shadow-sm">
-                <Sliders className="w-3.5 h-3.5" />
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-b from-sky-500 via-sky-600 to-sky-700 text-white flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_4px_rgba(2,132,199,0.25)] border-t border-t-sky-300/60 border-x border-x-sky-600 border-b border-b-sky-800">
+                <Database className="w-3.5 h-3.5" />
               </div>
-              <span className="text-xs font-bold text-slate-800 tracking-tight">
-                Sample Dataset
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-900 tracking-tight">
+                  Sample Dataset
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Pre-configured test batch
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                Ready
               </span>
             </div>
-            <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-              Drag to upload
-            </span>
           </div>
 
-          <p className="text-[11px] text-slate-500 leading-snug">
-            Drag test batch into the center upload box or click <b>⚡ Ingest</b>:
+          <p className="text-[11px] text-slate-500 leading-relaxed">
+            Drag into the central upload chamber or click <strong className="text-slate-800 font-semibold">Ingest</strong> for instant loading:
           </p>
 
           {/* Cards List */}
@@ -577,22 +592,34 @@ export default function IngestModal({
                 key={sample.name}
                 draggable
                 onDragStart={(e) => {
+                  setIsDraggingSample(true);
                   e.dataTransfer.setData("text/plain", sample.name);
                   e.dataTransfer.setData("application/sample-dataset", sample.url);
                   e.dataTransfer.effectAllowed = "copy";
                 }}
-                className="group relative p-3 rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_6px_rgba(15,23,42,0.06)] hover:border-sky-300 hover:shadow-[0_4px_12px_rgba(2,132,199,0.15)] transition-all cursor-grab active:cursor-grabbing"
+                onDragEnd={() => setIsDraggingSample(false)}
+                className={clsx(
+                  "relative p-3.5 rounded-xl bg-gradient-to-b from-white via-sky-50/40 to-sky-50/20 border border-t-white border-x-sky-200/90 border-b-sky-300/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_4px_16px_rgba(2,132,199,0.12)] cursor-grab active:cursor-grabbing",
+                  isDraggingSample && "opacity-60 scale-[0.98] border-sky-400 shadow-inner"
+                )}
               >
-                <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div className="flex items-center gap-2 min-w-0">
-                    <FileText className="w-4 h-4 text-sky-600 shrink-0" />
-                    <span className="text-xs font-bold text-slate-800 truncate">
-                      {sample.title}
-                    </span>
+                    <div className="w-7 h-7 rounded-md bg-sky-50 border border-sky-200/80 text-sky-600 flex items-center justify-center shrink-0 shadow-xs">
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold text-sky-950 tracking-tight truncate">
+                        {sample.title}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {sample.name}
+                      </span>
+                    </div>
                   </div>
                   <span
                     className={clsx(
-                      "text-[9px] font-mono font-bold px-2 py-0.5 rounded border shrink-0",
+                      "text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
                       sample.badgeStyle
                     )}
                   >
@@ -600,23 +627,27 @@ export default function IngestModal({
                   </span>
                 </div>
 
-                <p className="text-[11px] text-slate-500 leading-tight mb-2.5">
+                <p className="text-[11px] text-slate-500 leading-snug mb-3">
                   {sample.tagline}
                 </p>
 
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                  <span className="crypto-mono text-[10px] font-medium text-slate-400">
-                    {sample.size}
-                  </span>
+                <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-100">
+                  <div className="flex items-center gap-1.5 text-slate-400">
+                    <HardDrive className="w-3 h-3 text-slate-400" />
+                    <span className="crypto-mono text-[10px] font-semibold text-slate-500">
+                      {sample.size}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <a
                       href={sample.url}
                       download={sample.name}
                       onClick={(e) => e.stopPropagation()}
                       title={`Download ${sample.name}`}
-                      className="text-[10px] font-medium text-slate-500 hover:text-slate-900 px-2 py-1 rounded hover:bg-slate-100 transition-colors"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_2px_rgba(15,23,42,0.05)] hover:bg-slate-50 active:translate-y-[0.5px] transition-all cursor-pointer"
                     >
-                      Save CSV
+                      <Download className="w-3 h-3 text-slate-400" />
+                      <span>Save CSV</span>
                     </a>
                     <button
                       type="button"
@@ -624,9 +655,10 @@ export default function IngestModal({
                         e.stopPropagation();
                         loadSampleDataset(sample.url, sample.name);
                       }}
-                      className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_1px_3px_rgba(2,132,199,0.3)] hover:from-sky-600 hover:to-sky-700 active:translate-y-[0.5px] transition-all cursor-pointer flex items-center gap-1"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-md bg-gradient-to-b from-sky-500 via-sky-600 to-sky-700 text-white border-t border-t-sky-300/70 border-x border-x-sky-600 border-b border-b-sky-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_5px_rgba(2,132,199,0.3)] hover:brightness-105 active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] transition-all cursor-pointer"
                     >
-                      <span>⚡ Ingest</span>
+                      <Zap className="w-3 h-3 text-sky-200 fill-sky-200" />
+                      <span>Ingest</span>
                     </button>
                   </div>
                 </div>
@@ -634,8 +666,10 @@ export default function IngestModal({
             ))}
           </div>
 
-          <div className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-sky-700 font-medium bg-sky-50/80 rounded-lg py-1.5 border border-sky-200/70">
-            <span>👈 Drag card across into center box</span>
+          {/* Interactive Drag Affordance Dock Bar */}
+          <div className="flex items-center justify-center gap-2 py-2 px-3 text-[11px] font-semibold text-sky-800 bg-gradient-to-r from-sky-50 via-sky-100/70 to-sky-50 rounded-xl border-t border-t-white border-x border-x-sky-200/80 border-b border-b-sky-300/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(2,132,199,0.06)]">
+            <ArrowLeft className="w-3.5 h-3.5 text-sky-600 animate-pulse shrink-0" />
+            <span className="tracking-tight">Drag card across into center dropzone</span>
           </div>
         </aside>
       )}
