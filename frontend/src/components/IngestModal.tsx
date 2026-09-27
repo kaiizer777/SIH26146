@@ -275,8 +275,8 @@ export default function IngestModal({
         {/* Tactile 3D Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50 to-slate-100/90 shadow-[inset_0_1px_0_rgba(255,255,255,1)]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-b from-sky-50 to-sky-100/90 border border-sky-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_2px_rgba(15,23,42,0.06)] flex items-center justify-center shrink-0">
-              <Upload className="w-4 h-4 text-sky-700" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-b from-sky-500 via-sky-600 to-sky-700 border-t border-t-sky-300/70 border-x border-x-sky-600 border-b border-b-sky-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_5px_rgba(2,132,199,0.25)] flex items-center justify-center shrink-0">
+              <Upload className="w-4 h-4 text-white" />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-slate-900 tracking-tight">
@@ -581,10 +581,6 @@ export default function IngestModal({
             </div>
           </div>
 
-          <p className="text-[11px] text-slate-500 leading-relaxed">
-            Drag into the central upload chamber or click <strong className="text-slate-800 font-semibold">Ingest</strong> for instant loading:
-          </p>
-
           {/* Cards List */}
           <div className="flex flex-col gap-2.5">
             {SAMPLE_DATASETS.map((sample) => (
@@ -644,9 +640,9 @@ export default function IngestModal({
                       download={sample.name}
                       onClick={(e) => e.stopPropagation()}
                       title={`Download ${sample.name}`}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white border-t border-t-white border-x border-x-slate-200 border-b border-b-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_1px_2px_rgba(15,23,42,0.05)] hover:bg-slate-50 active:translate-y-[0.5px] transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-gradient-to-b from-white via-sky-50 to-sky-100 text-sky-900 border-t border-t-white border-x border-x-sky-300/80 border-b border-b-sky-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(2,132,199,0.15)] active:translate-y-[0.5px] active:shadow-[inset_0_1.5px_3px_rgba(2,132,199,0.22)] transition-all cursor-pointer"
                     >
-                      <Download className="w-3 h-3 text-slate-400" />
+                      <Download className="w-3 h-3 text-sky-600" />
                       <span>Save CSV</span>
                     </a>
                     <button
@@ -655,9 +651,9 @@ export default function IngestModal({
                         e.stopPropagation();
                         loadSampleDataset(sample.url, sample.name);
                       }}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-md bg-gradient-to-b from-sky-500 via-sky-600 to-sky-700 text-white border-t border-t-sky-300/70 border-x border-x-sky-600 border-b border-b-sky-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_5px_rgba(2,132,199,0.3)] hover:brightness-105 active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-md bg-gradient-to-b from-white via-sky-50 to-sky-100 text-sky-900 border-t border-t-white border-x border-x-sky-300/80 border-b border-b-sky-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(2,132,199,0.15)] active:translate-y-[0.5px] active:shadow-[inset_0_1.5px_3px_rgba(2,132,199,0.22)] transition-all cursor-pointer"
                     >
-                      <Zap className="w-3 h-3 text-sky-200 fill-sky-200" />
+                      <Zap className="w-3 h-3 text-sky-600 fill-sky-600" />
                       <span>Ingest</span>
                     </button>
                   </div>
