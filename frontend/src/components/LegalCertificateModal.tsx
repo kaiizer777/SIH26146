@@ -129,7 +129,7 @@ export default function LegalCertificateModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-sec65b-title"
-        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] lg:w-[75vw] max-w-5xl h-[92vh] bg-white rounded-2xl border border-slate-300 shadow-3d-modal flex flex-col overflow-hidden transition-all duration-200"
+        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] lg:w-[60vw] max-w-5xl h-[100vh] bg-white rounded-xl border border-slate-300 shadow-3d-modal flex flex-col overflow-hidden transition-all duration-200"
       >
         {/* Modal Top Control Bar */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-200 bg-gradient-to-b from-white via-slate-50 to-slate-100/90 shadow-[inset_0_1px_0_rgba(255,255,255,1)] shrink-0">
@@ -618,19 +618,19 @@ export default function LegalCertificateModal({
               id="legal-modal-json-btn"
               onClick={handleDownloadJson}
               disabled={!cert}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 h-9 rounded-md tactile-btn-secondary text-slate-800 text-xs font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-md tactile-btn-secondary text-slate-800 text-xs font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5 text-slate-600" />
-              <span>Download Certified JSON</span>
+              <span>Download JSON</span>
             </button>
             <button
               id="legal-modal-print-btn"
               onClick={handlePrint}
               disabled={!cert}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 h-9 rounded-md tactile-btn-primary text-white text-xs font-semibold shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 h-9 rounded-md tactile-btn-primary text-white text-xs font-semibold shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               <Printer className="w-3.5 h-3.5 text-sky-300 stroke-[2.2]" />
-              <span>Print / Save PDF Report</span>
+              <span>Print / Save PDF</span>
             </button>
           </div>
         </div>

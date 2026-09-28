@@ -224,7 +224,7 @@ export default function ModelProvenanceModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-provenance-title"
-        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl border border-slate-300/90 shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_0_rgba(255,255,255,1)_inset,0_20px_50px_-12px_rgba(15,23,42,0.22),0_40px_80px_-24px_rgba(15,23,42,0.18)] flex flex-col overflow-hidden transition-all duration-200"
+        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-[100vh] bg-white rounded-lg border border-slate-300/90 shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_0_rgba(255,255,255,1)_inset,0_20px_50px_-12px_rgba(15,23,42,0.22),0_40px_80px_-24px_rgba(15,23,42,0.18)] flex flex-col overflow-hidden transition-all duration-200"
       >
         {/* Header Strip with 3D Light-from-Above */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/90 bg-gradient-to-b from-white via-slate-50/90 to-slate-100/90 shadow-[inset_0_1px_0_#ffffff] shrink-0">
@@ -285,14 +285,14 @@ export default function ModelProvenanceModal({
           {/* Top Summary Cards (4 Core Benchmark Metrics) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Metric 1: Graph F1 Score */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between min-h-[148px]">
               <div>
                 <div className="flex items-center gap-1.5 min-w-0 text-[11px] uppercase font-semibold text-slate-500 tracking-wide leading-none">
                   <Layers className="w-3.5 h-3.5 shrink-0 text-sky-600" />
                   <span className="truncate">Graph F1 Score</span>
                 </div>
-                <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none">
+                <div className="mt-2 flex items-baseline justify-between gap-1.5">
+                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none whitespace-nowrap">
                     0.921
                   </span>
                   <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-emerald-100/90 text-emerald-800 border border-emerald-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
@@ -302,7 +302,7 @@ export default function ModelProvenanceModal({
               </div>
 
               {/* Benchmark Visual Progress Meter */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/70 space-y-1">
+              <div className="mt-3 pt-2 border-t border-slate-200/70 space-y-1">
                 <div className="flex items-center justify-between gap-1 text-[9px] crypto-mono text-slate-500 tracking-tighter">
                   <span className="whitespace-nowrap">Base: 0.870</span>
                   <span className="whitespace-nowrap text-emerald-700 font-semibold">Gate: 0.880 ✓</span>
@@ -328,14 +328,14 @@ export default function ModelProvenanceModal({
             </div>
 
             {/* Metric 2: Peeling Recall */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between min-h-[148px]">
               <div>
                 <div className="flex items-center gap-1.5 min-w-0 text-[11px] uppercase font-semibold text-slate-500 tracking-wide leading-none">
                   <GitBranch className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
                   <span className="truncate">Peeling Recall</span>
                 </div>
-                <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none">
+                <div className="mt-2 flex items-baseline justify-between gap-1.5">
+                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none whitespace-nowrap">
                     94.8%
                   </span>
                   <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-emerald-100/90 text-emerald-800 border border-emerald-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
@@ -345,7 +345,7 @@ export default function ModelProvenanceModal({
               </div>
 
               {/* Benchmark Visual Progress Meter */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/70 space-y-1">
+              <div className="mt-3 pt-2 border-t border-slate-200/70 space-y-1">
                 <div className="flex items-center justify-between gap-1 text-[9px] crypto-mono text-slate-500 tracking-tighter">
                   <span className="whitespace-nowrap">Base: 81.2%</span>
                   <span className="whitespace-nowrap text-emerald-700 font-semibold">Recall: 94.8%</span>
@@ -364,14 +364,14 @@ export default function ModelProvenanceModal({
             </div>
 
             {/* Metric 3: Combined Latency */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between min-h-[148px]">
               <div>
                 <div className="flex items-center gap-1.5 min-w-0 text-[11px] uppercase font-semibold text-slate-500 tracking-wide leading-none">
                   <Clock className="w-3.5 h-3.5 shrink-0 text-sky-600" />
-                  <span className="truncate">Combined Latency</span>
+                  <span className="whitespace-nowrap">Combined Latency</span>
                 </div>
-                <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none">
+                <div className="mt-2 flex items-baseline justify-between gap-1.5">
+                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none whitespace-nowrap">
                     4.8ms
                   </span>
                   <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-sky-100/90 text-sky-800 border border-sky-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
@@ -381,7 +381,7 @@ export default function ModelProvenanceModal({
               </div>
 
               {/* Benchmark Visual Progress Meter */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/70 space-y-1">
+              <div className="mt-3 pt-2 border-t border-slate-200/70 space-y-1">
                 <div className="flex items-center justify-between gap-1 text-[9px] crypto-mono text-slate-500 tracking-tighter">
                   <span className="whitespace-nowrap">CPU base: 8.6ms</span>
                   <span className="whitespace-nowrap text-sky-700 font-semibold">Speedup: 1.79×</span>
@@ -400,14 +400,14 @@ export default function ModelProvenanceModal({
             </div>
 
             {/* Metric 4: Memory Footprint */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-gradient-to-b from-white via-slate-50/50 to-slate-100/60 border-t border-t-slate-200 border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.05),0_4px_6px_-2px_rgba(15,23,42,0.02)] relative flex flex-col justify-between min-h-[148px]">
               <div>
                 <div className="flex items-center gap-1.5 min-w-0 text-[11px] uppercase font-semibold text-slate-500 tracking-wide leading-none">
                   <HardDrive className="w-3.5 h-3.5 shrink-0 text-slate-600" />
-                  <span className="truncate">Memory Footprint</span>
+                  <span className="whitespace-nowrap">Memory Footprint</span>
                 </div>
-                <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none">
+                <div className="mt-2 flex items-baseline justify-between gap-1.5">
+                  <span className="text-2xl font-bold crypto-mono text-slate-900 tracking-tight leading-none whitespace-nowrap">
                     231 KB
                   </span>
                   <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-slate-100 text-slate-700 border border-slate-300/80 crypto-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
@@ -417,7 +417,7 @@ export default function ModelProvenanceModal({
               </div>
 
               {/* Capacity Subtitle */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/70 space-y-1">
+              <div className="mt-3 pt-2 border-t border-slate-200/70 space-y-1">
                 <div className="flex items-center justify-between gap-1 text-[9px] crypto-mono text-slate-500 tracking-tighter">
                   <span className="whitespace-nowrap">Disk: .pt+scalers</span>
                   <span className="whitespace-nowrap text-emerald-700 font-semibold">Cold Boot &lt;120ms</span>
