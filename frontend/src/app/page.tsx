@@ -325,6 +325,7 @@ verdictCounts = {
                 id="view-toggle-graph"
                 onClick={() => {
                   setTargetMode("topology");
+                  setView("graph");
                 }}
               />
             </div>
@@ -333,7 +334,6 @@ verdictCounts = {
               <button
                 id="back-to-alerts-btn"
                 onClick={() => {
-                  setTargetMode("dossier");
                   setView("table");
                   setDossierOpen(false);
                 }}

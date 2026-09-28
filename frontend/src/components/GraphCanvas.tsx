@@ -173,7 +173,6 @@ export default function GraphCanvas({
 
   // Canvas display controls
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("force");
-  const [saliencyMode, setSaliencyMode] = useState<boolean>(false);
   const [frozen, setFrozen] = useState<boolean>(false);
   const [showMinimap, setShowMinimap] = useState<boolean>(true);
 
@@ -811,30 +810,18 @@ export default function GraphCanvas({
       .attr("class", "graph-edge")
       .attr("fill", "none")
       .attr("stroke", (d) => {
-        const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
-        if (saliencyMode && isAttn) return "#0f172a";
         if (d.linkType === "CO_SPEND") return "#475569";
         if (d.linkType === "OBSERVED") return "#0f172a";
         return "#0f172a";
       })
-      .attr("stroke-width", (d) => {
-        const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
-        if (saliencyMode && isAttn) return 3.5;
-        return 2.4;
-      })
+      .attr("stroke-width", () => 2.4)
       .attr("stroke-opacity", (d) => {
-        const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
-        if (saliencyMode && isAttn) return 1.0;
         if (d.linkType === "CO_SPEND") return 0.75;
         if (d.linkType === "OBSERVED") return 0.75;
         return 0.8;
       })
       .attr("stroke-dasharray", (d) => (d.linkType === "CO_SPEND" ? "4,3" : d.linkType === "OBSERVED" ? "3,3" : null))
-      .attr("marker-end", (d) => {
-        const isAttn = (d.attention_score ?? 0) >= 0.8 || d.is_explanatory;
-        if (saliencyMode && isAttn) return "url(#arrow-saliency)";
-        return "url(#arrow-standard)";
-      })
+      .attr("marker-end", () => "url(#arrow-standard)")
       .style("cursor", "pointer")
       .on("click", (ev, d) => {
         ev.stopPropagation();
@@ -1223,7 +1210,7 @@ export default function GraphCanvas({
       clearTimeout(timer);
       sim.stop();
     };
-  }, [nodes, links, inOutDegree, layoutMode, saliencyMode, buildLinkPath, handleCloseInspector, fitToScreen]);
+  }, [nodes, links, inOutDegree, layoutMode, buildLinkPath, handleCloseInspector, fitToScreen]);
 
   // -------------------------------------------------------------------------
   // Dynamic 1-Hop Neighborhood Highlighting & Filtering
@@ -1283,19 +1270,17 @@ export default function GraphCanvas({
         baseColor = "#475569";
       } else if (d.linkType === "OBSERVED") {
         baseColor = "#0f172a";
-      } else if (saliencyMode && isHighSaliency) {
-        baseColor = "#0f172a";
       }
 
-      let marker = saliencyMode && isHighSaliency ? "url(#arrow-saliency)" : "url(#arrow-standard)";
-      let baseWidth = saliencyMode && isHighSaliency ? 3.5 : 2.4;
+      let marker = "url(#arrow-standard)";
+      let baseWidth = 2.4;
       let baseOpacity = d.linkType === "CO_SPEND" || d.linkType === "OBSERVED" ? 0.75 : 0.8;
       let dashArray: string | null = d.linkType === "CO_SPEND" ? "4,3" : d.linkType === "OBSERVED" ? "3,3" : null;
 
       if (hasFocus || selectedLink || isFiltered) {
         if (isEmphasized) {
           baseOpacity = 1.0;
-          if (isHighSaliency || (saliencyMode && isHighSaliency)) {
+          if (isHighSaliency) {
             baseColor = "#0f172a";
             baseWidth = 3.0;
             marker = "url(#arrow-saliency)";
@@ -1338,7 +1323,7 @@ export default function GraphCanvas({
         .attr("marker-end", marker)
         .attr("filter", null);
     });
-  }, [activeFocusId, connectedNodeIds, filteredNodeIds, selectedLink, saliencyMode]);
+  }, [activeFocusId, connectedNodeIds, filteredNodeIds, selectedLink]);
 
   return (
     <div
@@ -1476,24 +1461,6 @@ export default function GraphCanvas({
             )}
           </div>
 
-          {/* Transformer Saliency / Heatmap Toggle */}
-          <div className="flex items-center p-0.5 rounded-lg border border-slate-300/70 bg-slate-200/60 shadow-[inset_0_1px_2px_rgba(15,23,42,0.08)]">
-            <button
-              id="toggle-saliency-mode"
-              onClick={() => setSaliencyMode(!saliencyMode)}
-              aria-label={saliencyMode ? "Disable Attention Saliency" : "Enable Attention Saliency"}
-              title={saliencyMode ? "Multi-Head Attention Flow Active" : "Filter Multi-Head Attention Flow"}
-              className={clsx(
-                "h-7 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer select-none active:translate-y-[0.5px]",
-                saliencyMode
-                  ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white border border-sky-600 shadow-[0_1px_3px_rgba(2,132,199,0.3),inset_0_1px_0_rgba(255,255,255,0.3)]"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
-              )}
-            >
-              <Sparkles className={clsx("w-3.5 h-3.5", saliencyMode ? "text-sky-100 animate-pulse" : "text-slate-500")} />
-              <span>Saliency</span>
-            </button>
-          </div>
 
           {/* Layout Mode Switcher */}
           <div className="flex items-center gap-0.5 p-0.5 rounded-lg border border-slate-300/70 bg-slate-200/60 shadow-[inset_0_1px_2px_rgba(15,23,42,0.08)]">
