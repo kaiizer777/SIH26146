@@ -34,6 +34,7 @@ interface AlertTableProps {
   searchRef?: React.RefObject<HTMLInputElement | null>;
   searchValue: string;
   onSearchChange: (v: string) => void;
+  activeMode?: "dossier" | "topology";
 }
 
 // ---------------------------------------------------------------------------
@@ -257,6 +258,7 @@ interface AlertTableRowProps {
   idx: number;
   isSelected: boolean;
   onSelect: (item: AlertItem) => void;
+  activeMode?: "dossier" | "topology";
 }
 
 const AlertTableRow = memo(
@@ -265,6 +267,7 @@ const AlertTableRow = memo(
     idx,
     isSelected,
     onSelect,
+    activeMode = "dossier",
   }: AlertTableRowProps) {
     const verdict = item.verdict as Verdict;
     const anomalyScore = item.anomaly_score ?? 0;
@@ -275,6 +278,11 @@ const AlertTableRow = memo(
       <tr
         id={`alert-row-${idx}`}
         onClick={() => onSelect(item)}
+        title={
+          activeMode === "topology"
+            ? `Click to launch Cluster #${item.cluster_id ?? "Topology"} in Graph Canvas`
+            : "Click to open NTRO Forensic Dossier"
+        }
         className={clsx(
           "table-row-3d cursor-pointer relative",
           isSelected && "table-row-3d-selected",
@@ -404,6 +412,7 @@ const AlertTableRow = memo(
   (prev, next) => {
     return (
       prev.isSelected === next.isSelected &&
+      prev.activeMode === next.activeMode &&
       prev.item.address === next.item.address &&
       prev.item.composite_score === next.item.composite_score &&
       prev.item.verdict === next.item.verdict &&
@@ -433,6 +442,7 @@ export default function AlertTable({
   searchRef,
   searchValue,
   onSearchChange,
+  activeMode = "dossier",
 }: AlertTableProps) {
   const focusIdxRef = useRef<number>(-1);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -585,6 +595,7 @@ export default function AlertTable({
                     idx={idx}
                     isSelected={item.address === selectedAddress}
                     onSelect={onSelect}
+                    activeMode={activeMode}
                   />
                 ))}
 

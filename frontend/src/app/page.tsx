@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Toaster, toast } from "sonner";
-import { Table, Network } from "lucide-react";
+import { Table, Network, Shield, ArrowLeft } from "lucide-react";
 import { clsx } from "clsx";
 
 import TopNav from "@/components/TopNav";
@@ -63,12 +63,14 @@ export default function SurveillanceDashboard() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [searchValue, setSearchValue] = useState("");
   const [view, setView] = useState<"table" | "graph">("table");
+  const [targetMode, setTargetMode] = useState<"dossier" | "topology">("dossier");
 
   // Selected entity
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [entityData, setEntityData] = useState<EntityExplainResponse | null>(null);
   const [entityLoading, setEntityLoading] = useState(false);
   const [entityError, setEntityError] = useState<string | null>(null);
+  const [dossierOpen, setDossierOpen] = useState(false);
 
   // Graph data
   const [graphNodes, setGraphNodes] = useState<GraphNode[]>([]);
@@ -138,40 +140,70 @@ export default function SurveillanceDashboard() {
   // Entity selection
   // ---------------------------------------------------------------------------
 
-  const handleSelectAlert = useCallback(async (item: AlertItem) => {
-    setSelectedAddress(item.address);
-    setEntityData(null);
-    setEntityError(null);
-    setEntityLoading(true);
+  const handleSelectAlert = useCallback(
+    async (item: AlertItem) => {
+      setSelectedAddress(item.address);
 
-    // Load graph for the cluster
-    if (item.cluster_id != null) {
-      setGraphLoading(true);
-      setGraphClusterId(item.cluster_id);
-      fetchGraph(item.cluster_id, 150)
-        .then((g) => {
-          setGraphNodes(g.nodes);
-          setGraphLinks(g.links);
-        })
-        .catch(() => {
-          setGraphNodes([]);
-          setGraphLinks([]);
-        })
-        .finally(() => setGraphLoading(false));
-    }
+      if (targetMode === "topology") {
+        setDossierOpen(false);
+        const targetCluster = item.cluster_id ?? 516;
+        setGraphLoading(true);
+        setGraphClusterId(targetCluster);
+        setView("graph");
 
-    try {
-      const data = await fetchEntityExplain(item.address);
-      setEntityData(data);
-    } catch (err) {
-      const msg =
-        err instanceof ApiError ? err.detail : "Failed to load entity dossier";
-      setEntityError(msg);
-      toast.error(msg);
-    } finally {
-      setEntityLoading(false);
-    }
-  }, []);
+        fetchGraph(targetCluster, 150)
+          .then((g) => {
+            setGraphNodes(g.nodes);
+            setGraphLinks(g.links);
+          })
+          .catch(() => {
+            setGraphNodes([]);
+            setGraphLinks([]);
+          })
+          .finally(() => setGraphLoading(false));
+
+        fetchEntityExplain(item.address)
+          .then((data) => setEntityData(data))
+          .catch(() => {});
+        return;
+      }
+
+      // Default flow: "NTRO Forensic Dossier"
+      setDossierOpen(true);
+      setEntityData(null);
+      setEntityError(null);
+      setEntityLoading(true);
+
+      // Load graph for the cluster in background
+      if (item.cluster_id != null) {
+        setGraphLoading(true);
+        setGraphClusterId(item.cluster_id);
+        fetchGraph(item.cluster_id, 150)
+          .then((g) => {
+            setGraphNodes(g.nodes);
+            setGraphLinks(g.links);
+          })
+          .catch(() => {
+            setGraphNodes([]);
+            setGraphLinks([]);
+          })
+          .finally(() => setGraphLoading(false));
+      }
+
+      try {
+        const data = await fetchEntityExplain(item.address);
+        setEntityData(data);
+      } catch (err) {
+        const msg =
+          err instanceof ApiError ? err.detail : "Failed to load entity dossier";
+        setEntityError(msg);
+        toast.error(msg);
+      } finally {
+        setEntityLoading(false);
+      }
+    },
+    [targetMode],
+  );
 
   const handleSelectWalletAddress = useCallback(async (address: string) => {
     setSelectedAddress(address);
@@ -193,6 +225,7 @@ export default function SurveillanceDashboard() {
   }, []);
 
   const handleCloseDrawer = useCallback(() => {
+    setDossierOpen(false);
     setSelectedAddress(null);
     setEntityData(null);
     setEntityError(null);
@@ -267,83 +300,114 @@ verdictCounts = {
         />
 
 {/* Center canvas */ }
-<main className="flex flex-col flex-1 overflow-hidden" >
-  {/* Enhanced Command Header Toolbar */ }
-  < div className = "flex items-center justify-between px-4 py-2 border-b border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 shadow-[0_1px_2px_rgba(15,23,42,0.03),inset_0_1px_0_#ffffff] shrink-0" >
-    {/* View switcher segmented control with 3D recessed track */ }
-    < div className = "inline-flex p-1 rounded-lg bg-slate-200/80 border border-slate-300/80 shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.1),0_1px_0_rgba(255,255,255,0.8)]" >
-      <ViewToggle
-                active={ view === "table" }
-icon = {< Table className = "w-3.5 h-3.5 stroke-[2.2]" />}
-label = "Alerts Stream"
-id = "view-toggle-table"
-onClick = {() => setView("table")}
+      {/* Center canvas */}
+      <main className="flex flex-col flex-1 overflow-hidden">
+        {/* Enhanced Command Header Toolbar */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 shadow-[0_1px_2px_rgba(15,23,42,0.03),inset_0_1px_0_#ffffff] shrink-0">
+          {/* View switcher segmented control with 3D recessed track */}
+          <div className="flex items-center gap-3">
+            <div className="inline-flex p-1 rounded-lg bg-slate-200/80 border border-slate-300/80 shadow-[inset_0_1.5px_3px_rgba(15,23,42,0.1),0_1px_0_rgba(255,255,255,0.8)]">
+              <ViewToggle
+                active={targetMode === "dossier" && view === "table"}
+                icon={<Shield className="w-3.5 h-3.5 stroke-[2.2]" />}
+                label="NTRO Forensic Dossier"
+                id="view-toggle-dossier"
+                onClick={() => {
+                  setTargetMode("dossier");
+                  setView("table");
+                  setDossierOpen(false);
+                }}
               />
-  < ViewToggle
-active = { view === "graph"}
-icon = {< Network className = "w-3.5 h-3.5 stroke-[2.2]" />}
-label = "Cluster Topology"
-id = "view-toggle-graph"
-onClick = {() => setView("graph")}
+              <ViewToggle
+                active={targetMode === "topology" || view === "graph"}
+                icon={<Network className="w-3.5 h-3.5 stroke-[2.2]" />}
+                label="Cluster Topology"
+                id="view-toggle-graph"
+                onClick={() => {
+                  setTargetMode("topology");
+                }}
               />
-  </div>
+            </div>
 
-{/* Live stream status + count */ }
-<div className="flex items-center gap-3" >
-  <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-b from-white to-slate-50 border border-slate-300 text-[11px] text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),inset_0_1px_0_#ffffff]" >
-    <span className="w-2 h-2 rounded-full led-3d-low" />
-      <span className="crypto-mono font-bold text-[10px] tracking-wider text-emerald-800" > STREAM SYNCED </span>
-        </div>
-        < span className = "crypto-mono text-xs font-bold text-slate-800 bg-gradient-to-b from-white to-slate-50 border border-slate-300 px-3 py-1 rounded-md shadow-[0_1px_2px_rgba(15,23,42,0.06),inset_0_1px_0_#ffffff]" >
-          { total.toLocaleString() } entities
+            {view === "graph" && (
+              <button
+                id="back-to-alerts-btn"
+                onClick={() => {
+                  setTargetMode("dossier");
+                  setView("table");
+                  setDossierOpen(false);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold text-slate-700 bg-gradient-to-b from-white to-slate-100 border border-slate-300 shadow-[0_1px_2px_rgba(15,23,42,0.05),inset_0_1px_0_#ffffff] hover:bg-slate-50 active:translate-y-[0.5px] cursor-pointer transition-all"
+                title="Return to Alerts Table"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-slate-500 stroke-[2.2]" />
+                <span>Back to Alerts</span>
+              </button>
+            )}
+
+            {view === "table" && targetMode === "topology" && (
+              <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sky-50 border border-sky-200 text-[11px] text-sky-800 font-semibold shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                <span>Topology Mode Active: Click any wallet row to inspect its cluster</span>
+              </div>
+            )}
+          </div>
+
+          {/* Live stream status + count */}
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-b from-white to-slate-50 border border-slate-300 text-[11px] text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),inset_0_1px_0_#ffffff]">
+              <span className="w-2 h-2 rounded-full led-3d-low" />
+              <span className="crypto-mono font-bold text-[10px] tracking-wider text-emerald-800">
+                STREAM SYNCED
+              </span>
+            </div>
+            <span className="crypto-mono text-xs font-bold text-slate-800 bg-gradient-to-b from-white to-slate-50 border border-slate-300 px-3 py-1 rounded-md shadow-[0_1px_2px_rgba(15,23,42,0.06),inset_0_1px_0_#ffffff]">
+              {total.toLocaleString()} entities
             </span>
-            </div>
-            </div>
+          </div>
+        </div>
 
-{/* Table view */ }
-{
-  view === "table" && (
-    <AlertTable
-              items={ items }
-  total = { total }
-  isLoading = { isLoading }
-  error = { error }
-  selectedAddress = { selectedAddress }
-  onSelect = { handleSelectAlert }
-  onLoadMore = { loadMore }
-  hasMore = { hasMore }
-  onResetFilters = { handleResetFilters }
-  searchRef = { searchRef }
-  searchValue = { searchValue }
-  onSearchChange = { setSearchValue }
-    />
-          )
-}
+        {/* Table view */}
+        {view === "table" && (
+          <AlertTable
+            items={items}
+            total={total}
+            isLoading={isLoading}
+            error={error}
+            selectedAddress={selectedAddress}
+            onSelect={handleSelectAlert}
+            onLoadMore={loadMore}
+            hasMore={hasMore}
+            onResetFilters={handleResetFilters}
+            searchRef={searchRef}
+            searchValue={searchValue}
+            onSearchChange={setSearchValue}
+            activeMode={targetMode}
+          />
+        )}
 
-{/* Graph view */ }
-{
-  view === "graph" && (
-    <GraphCanvas
-              nodes={ graphNodes }
-  links = { graphLinks }
-  highlightMode = { hasGnnData && selectedAddress !== null
-}
-isLoading = { graphLoading }
-clusterId = { graphClusterId }
-onSelectWallet = { handleSelectWalletAddress }
-  />
-          )}
-</main>
+        {/* Graph view */}
+        {view === "graph" && (
+          <GraphCanvas
+            nodes={graphNodes}
+            links={graphLinks}
+            highlightMode={hasGnnData && selectedAddress !== null}
+            isLoading={graphLoading}
+            clusterId={graphClusterId}
+            onSelectWallet={handleSelectWalletAddress}
+          />
+        )}
+      </main>
 
-{/* Forensic Dossier Drawer */ }
-<EntityDrawer
-          address={ selectedAddress }
-data = { entityData }
-isLoading = { entityLoading }
-error = { entityError }
-onClose = { handleCloseDrawer }
-onProvenanceClick = {() => setProvenanceOpen(true)}
-        />
+      {/* Forensic Dossier Drawer */}
+      <EntityDrawer
+        address={dossierOpen ? selectedAddress : null}
+        data={entityData}
+        isLoading={entityLoading}
+        error={entityError}
+        onClose={handleCloseDrawer}
+        onProvenanceClick={() => setProvenanceOpen(true)}
+      />
   </div>
 
 {/* Ingest Modal */ }
