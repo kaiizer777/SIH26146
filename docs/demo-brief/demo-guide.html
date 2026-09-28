@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NTRO Bitcoin AML Surveillance — Prototype Demo Guide</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+
+  *{ box-sizing:border-box; }
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    margin:0; background:#f8fafc; color:#0f172a;
+    font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+    font-size:9pt; line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:"JetBrains Mono",Consolas,"SF Mono",monospace; }
+
+  .page{
+    width:210mm; height:297mm; overflow:hidden; position:relative;
+    background:#f8fafc; page-break-after:always; break-after:page;
+    display:flex; flex-direction:column;
+  }
+  .page:last-child{ page-break-after:auto; break-after:auto; }
+
+  /* ── header ── */
+  .hdr{
+    background:#0f172a; color:#fff; padding:8mm 14mm 7mm;
+    display:flex; align-items:flex-end; justify-content:space-between; gap:6mm;
+    flex:0 0 auto;
+  }
+  .hdr-k{
+    font-size:6.8pt; letter-spacing:.2em; text-transform:uppercase;
+    color:#94a3b8; font-weight:600; margin-bottom:1.8mm;
+  }
+  .hdr h1{ margin:0; font-size:15.5pt; font-weight:700; letter-spacing:-.02em; line-height:1.2; }
+  .hdr h1 em{ font-style:normal; color:#60a5fa; }
+  .hdr-sub{ margin-top:2.2mm; font-size:8.4pt; color:#cbd5e1; line-height:1.4; max-width:132mm; }
+  .hdr-tag{
+    flex:0 0 auto; text-align:right; font-size:6.8pt; color:#94a3b8;
+    line-height:1.7; text-transform:uppercase; letter-spacing:.1em;
+  }
+  .hdr-tag b{ display:block; color:#fff; font-size:9pt; letter-spacing:0; text-transform:none; }
+
+  /* ── body ── */
+  .body{ flex:1 1 auto; padding:5mm 13mm 0; display:flex; flex-direction:column; gap:4mm; min-height:0; }
+
+  /* ── part block ── */
+  .part{
+    background:#fff; border:.35mm solid #e2e8f0; border-radius:2.5mm;
+    overflow:hidden; break-inside:avoid; page-break-inside:avoid;
+  }
+  .part-h{
+    display:flex; align-items:center; gap:3mm; padding:2.4mm 4.5mm;
+    background:#f1f5f9; border-bottom:.35mm solid #e2e8f0;
+  }
+  .part-n{
+    flex:0 0 auto; width:6.4mm; height:6.4mm; border-radius:1.5mm;
+    background:#0f172a; color:#fff; font-size:9.2pt; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .part-m{ min-width:0; }
+  .part-t{ font-size:10.4pt; font-weight:700; letter-spacing:-.01em; line-height:1.2; }
+  .part-d{ font-size:7.4pt; color:#64748b; margin-top:.6mm; line-height:1.3; }
+  .part-b{ padding:1.4mm 4.5mm 1.6mm; }
+
+  /* ── feature row ── */
+  .f{ display:flex; gap:2.8mm; padding:.6mm 0; border-bottom:.2mm solid #f1f5f9; }
+  .f:last-child{ border-bottom:0; }
+  .f-i{
+    flex:0 0 auto; width:1.6mm; align-self:stretch; min-height:5.5mm;
+    background:#cbd5e1; border-radius:1mm; margin-top:.5mm;
+  }
+  .f:first-child .f-i{ background:#2563eb; }
+  .f-m{ min-width:0; flex:1 1 auto; }
+  .f-n{ font-size:8.6pt; font-weight:650; letter-spacing:-.005em; line-height:1.32; }
+  .f-n .q{
+    font-family:"JetBrains Mono",Consolas,monospace; font-size:6.8pt;
+    font-weight:600; color:#0369a1; background:#f0f9ff;
+    border:.2mm solid #bae6fd; border-radius:1mm; padding:0 1.1mm; margin-left:1.1mm;
+    white-space:nowrap;
+  }
+  .f-d{ font-size:7.9pt; color:#475569; line-height:1.32; margin-top:.3mm; }
+  .f-d b{ color:#0f172a; font-weight:650; }
+
+  /* ── pill ── */
+  .pill{
+    display:inline-block; font-size:6.8pt; font-weight:650;
+    padding:.3mm 1.5mm; border-radius:1mm; white-space:nowrap;
+  }
+  .p-grn{ background:#ecfdf5; color:#047857; border:.2mm solid #a7f3d0; }
+  .p-amb{ background:#fffbeb; color:#b45309; border:.2mm solid #fde68a; }
+  .p-red{ background:#fef2f2; color:#b91c1c; border:.2mm solid #fecaca; }
+
+  /* ── note ── */
+  .note{
+    padding:2.4mm 3.5mm; background:#f0f9ff;
+    border:.3mm solid #bae6fd; border-left:1mm solid #0284c7;
+    border-radius:1.5mm; font-size:8pt; color:#334155; line-height:1.4;
+  }
+  .note b{ color:#0f172a; font-weight:650; }
+
+  /* ── index ── */
+  .idx{ display:flex; flex-wrap:wrap; gap:2mm; }
+  .idx a{
+    display:flex; align-items:center; gap:1.8mm; text-decoration:none;
+    background:#fff; border:.3mm solid #e2e8f0; border-radius:1.5mm;
+    padding:1.3mm 2.2mm; flex:1 1 auto; color:inherit;
+  }
+  .idx a i{
+    font-style:normal; flex:0 0 auto; width:4.6mm; height:4.6mm; border-radius:1.1mm;
+    background:#0f172a; color:#fff; font-size:7pt; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .idx a span{ font-size:7.4pt; font-weight:600; color:#0f172a; line-height:1.25; white-space:nowrap; }
+
+  .lbl{
+    font-size:7pt; font-weight:700; letter-spacing:.16em;
+    text-transform:uppercase; color:#94a3b8; margin-bottom:1.8mm;
+  }
+
+  /* ── footer ── */
+  .ftr{
+    flex:0 0 auto; margin-top:auto; padding:4mm 14mm 5.5mm;
+    display:flex; justify-content:space-between; align-items:center;
+    border-top:.3mm solid #e2e8f0; background:#fff;
+  }
+  .ftr-l{ font-size:7.2pt; color:#94a3b8; }
+  .ftr-l b{ color:#64748b; font-weight:650; }
+  .ftr-r{ font-size:7.2pt; color:#cbd5e1; font-family:"JetBrains Mono",Consolas,monospace; }
+
+  @media screen {
+    body{ padding:20px 0; background:#cbd5e1; }
+    .page{ margin:0 auto 20px; box-shadow:0 4px 22px rgba(15,23,42,.2); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ PAGE 1 ══════════ -->
+<section class="page">
+  <div class="hdr">
+    <div>
+      <div class="hdr-k">SIH 2026 &nbsp;·&nbsp; Team SIH26146 &nbsp;·&nbsp; Internal</div>
+      <h1>NTRO Bitcoin AML Surveillance<br><em>Prototype Demo Guide</em></h1>
+      <div class="hdr-sub">
+        A plain walkthrough of the six parts of the prototype. Each part lists what it is and what every
+        feature does — written to be read once, then used as a rehearsal reference.
+      </div>
+    </div>
+    <div class="hdr-tag">Runs at<b>localhost:3000</b>6 parts</div>
+  </div>
+
+  <div class="body">
+    <div class="note">
+      <b>What this system does.</b> It watches Bitcoin transaction traffic for NTRO and flags money-laundering
+      activity — linking the network side (IP, ASN, geolocation) to the blockchain side (wallets, transactions), then
+      using ML to group related wallets, spot unusual behaviour, catch laundering patterns and score risk. The whole
+      platform runs <b>offline and air-gapped</b>.
+    </div>
+
+    <div>
+      <div class="lbl">What's inside</div>
+      <div class="idx">
+        <a href="#p1"><i>1</i><span>Dashboard</span></a>
+        <a href="#p2"><i>2</i><span>NTRO Forensic Dossier</span></a>
+        <a href="#p3"><i>3</i><span>Cluster Topology</span></a>
+        <a href="#p4"><i>4</i><span>Sec 65B Court Dossier</span></a>
+        <a href="#p5"><i>5</i><span>Ingest</span></a>
+        <a href="#p6"><i>6</i><span>Model Provenance &amp; Benchmarks</span></a>
+      </div>
+    </div>
+
+    <div class="part" id="p1">
+      <div class="part-h">
+        <div class="part-n">1</div>
+        <div class="part-m">
+          <div class="part-t">Dashboard</div>
+          <div class="part-d">The main screen and the starting point — system status, filters, and the live list of every alert.</div>
+        </div>
+      </div>
+      <div class="part-b">
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Top Status Bar <span class="q">AIR-GAPPED OPERATIONAL</span> <span class="q">15,873 WALLETS INDEXED</span></div>
+          <div class="f-d">The black bar across the very top. It carries the NTRO identity, the green Air-Gapped
+          Operational status showing the system runs with zero internet, and a live count of how many wallets have
+          been indexed. This is the first thing to point at when the demo opens.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Dual Transformer Chip <span class="q">4.8ms CPU</span></div>
+          <div class="f-d">A status pill for the AI engine showing combined inference latency on CPU. Clicking it opens
+          the full benchmark and provenance audit — that is <b>Part 6</b>, and it is the strongest single
+          credibility moment in the build.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Ingest Batch Button</div>
+          <div class="f-d">The button in the top-right corner for uploading new transaction data. Clicking it opens the
+          Ingest flow, which is <b>Part 5</b>. Worth mentioning early, so the audience knows the system is not frozen
+          on a fixed demo dataset.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Stream Telemetry</div>
+          <div class="f-d">The left-hand panel showing how much of the indexed data is currently in view. The progress
+          bar shrinks as filters are applied and the percentage updates live, so the act of narrowing down is visible
+          rather than hidden.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Risk Verdict Filters <span class="pill p-red">CRITICAL</span> <span class="pill p-amb">HIGH</span> <span class="pill p-amb">MEDIUM</span> <span class="pill p-grn">LOW</span></div>
+          <div class="f-d">Four risk levels, each showing a live count of how many wallets sit in it. Clicking CRITICAL
+          instantly cuts the table from roughly fifteen thousand rows down to the 103 most dangerous — the fastest way
+          to show that triage actually works.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Min Anomaly Score</div>
+          <div class="f-d">A slider for hiding anything scoring below a chosen threshold, so you keep only the most
+          behaviourally unusual wallets. Four preset buttons let you jump straight to a useful range on stage without
+          fiddling with the slider.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Laundering Heuristics <span class="pill p-amb">Peeling Chains</span> <span class="pill p-amb">CoinJoin Mixing</span></div>
+          <div class="f-d">Two switches for the deterministic laundering checks: Peeling Chains (linear multi-hop peel
+          transfers) and CoinJoin Mixing (equal-output mixing rounds). Enabling both narrows the alert set down to
+          wallets matching those two specific crime patterns.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Cluster Partition</div>
+          <div class="f-d">A field for jumping directly to a numbered wallet group. Type an ID and the topology view
+          loads that cluster — a fast way to move between a table finding and the graph that explains it.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">View Tabs <span class="q">Alerts Stream</span> <span class="q">Cluster Topology</span></div>
+          <div class="f-d">The switch between the Alerts Stream list and the Cluster Topology graph. This is the main
+          narrative spine of the demo: find a suspicious wallet in the list, then open that same entity in the graph
+          to see who it connects to.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Alerts Table</div>
+          <div class="f-d">One row per suspicious wallet, across seven columns: risk verdict with composite score,
+          truncated address with one-click copy, anomaly score with percentile, cluster partition, the laundering
+          pattern that fired, a known-seed flag, and the telemetry timestamp. Click any row to open its dossier.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Search &amp; Live Status</div>
+          <div class="f-d">Search wallets by address prefix — press <span class="mono">/</span> or
+          <span class="mono">Ctrl+K</span> to jump to the field without touching the mouse. Rows load in batches as you
+          scroll, and the footer carries a live entity counter and a ticking SYS UTC clock.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ftr">
+    <span class="ftr-l"><b>Page 1 of 3</b> — Dashboard</span>
+    <span class="ftr-r">NTRO · SIH26146 · 1/3</span>
+  </div>
+</section>
+
+<!-- ══════════ PAGE 2 ══════════ -->
+<section class="page">
+  <div class="hdr">
+    <div>
+      <div class="hdr-k">Part 2 &amp; 3</div>
+      <h1>Drilling In — <em>Dossier &amp; Graph</em></h1>
+    </div>
+    <div class="hdr-tag">Reached by<b>Clicking an alert</b>Parts 2 &amp; 3</div>
+  </div>
+
+  <div class="body">
+    <div class="part" id="p2">
+      <div class="part-h">
+        <div class="part-n">2</div>
+        <div class="part-m">
+          <div class="part-t">NTRO Forensic Dossier</div>
+          <div class="part-d">Opens when you click a wallet. The full evidence file for that one wallet — the core of the explainability story.</div>
+        </div>
+      </div>
+      <div class="part-b">
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Risk Gauge &amp; Verdict</div>
+          <div class="f-d">The headline number for this wallet: composite risk out of 1.0 and the band it falls into
+          (CRITICAL, HIGH, MEDIUM, LOW). A red seed-family badge appears underneath when the wallet matches known
+          threat intelligence.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Automated Forensic Summary</div>
+          <div class="f-d">A written paragraph in plain English explaining what pattern was found and why it matters. It
+          is generated deterministically by the system, <b>not by an LLM</b>, so it can never invent or embellish a
+          finding the way a chatbot could.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Score Breakdown</div>
+          <div class="f-d">The final score split into its four weighted parts — anomaly, risk, rule bonus and mixing,
+          each shown to five decimal places. This is the direct answer to any "your score is a black box" challenge.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Cluster Co-Spending Analysis</div>
+          <div class="f-d">Which group the wallet belongs to, how large that group is, how close it sits to known bad
+          wallets, and where it ranks on unusualness as a percentile. Concrete, quotable numbers rather than
+          adjectives.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Tabular Anomaly Check</div>
+          <div class="f-d">How unusual this wallet's behaviour is versus normal traffic, shown as a reconstruction error,
+          plus its percentile rank and whether it crossed the calibrated <b>0.0346</b> detection threshold.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Mixing &amp; Laundering Heuristics</div>
+          <div class="f-d">The output of the deterministic laundering checks: mixing detected or not, chain length in
+          hops, and where relevant a pass-through ratio showing how much value moved without changing hands.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Triggered Rules Audit</div>
+          <div class="f-d">Tags naming every individual rule that fired for this wallet, for example
+          <span class="q">COINJOIN_PATTERN_DETECTED</span> or <span class="q">LARGE_CLUSTER</span>. It lets you trace a
+          verdict straight back to the exact rule that produced it.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Explainability — SHAP Waterfall &amp; Attention Matrix</div>
+          <div class="f-d">Two views of the same evidence. The waterfall charts all <b>18 features</b> the model
+          checked and which pushed this wallet towards being flagged; the heatmap shows how the model relates those
+          features to each other, and <b>hovering a cell explains it in plain English</b>.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Topological Subgraph &amp; Export</div>
+          <div class="f-d">The neighbouring wallets the model actually weighed, each with its own risk score, followed
+          by the two export actions — <b>Download JSON</b> for the raw evidence, or <b>Export Legal Dossier</b> for
+          the certified version covered in Part 4.</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="part" id="p3">
+      <div class="part-h">
+        <div class="part-n">3</div>
+        <div class="part-m">
+          <div class="part-t">Cluster Topology</div>
+          <div class="part-d">The network graph — how wallets, transactions and IP addresses connect. The visual payoff of the whole system.</div>
+        </div>
+      </div>
+      <div class="part-b">
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Force Graph Canvas</div>
+          <div class="f-d">The main graph view. Wallets, transactions and IP hosts appear as nodes and their
+          relationships as lines, with node colour driven by composite risk — <b>red is the most dangerous</b>. The
+          stat bar above shows cluster ID, node count and edge count.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Entity Filter Chips <span class="q">Seeds</span> <span class="q">Wallets</span> <span class="q">Txs</span> <span class="q">IPs</span></div>
+          <div class="f-d">Toggle which node types are visible, each with a live count. Selecting <b>IPs</b> is a strong
+          reveal because it exposes the shared infrastructure behind the wallets, not just the money trail.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Search &amp; Click-to-Inspect</div>
+          <div class="f-d">Search an address and press Enter to fly the camera to that node. Clicking any node pins an
+          inspector card showing its type, country, severity, risk score and degree, with a shortcut straight into the
+          full dossier.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Layout Modes <span class="q">Force</span> <span class="q">Concentric</span> <span class="q">Directed Flow</span></div>
+          <div class="f-d">Three arrangements of the same graph: Force Physics (default), Concentric Radar (nodes
+          ringed by risk) and Directed Flow DAG (columns showing value flowing in and out). Switching between them
+          live is one of the most impressive visual moments in the demo.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Saliency Toggle &amp; View Controls</div>
+          <div class="f-d">Saliency highlights only the connections the transformer actually weighted as important,
+          dimming the rest — a direct visual that the graph is driven by the model, not decoration. Alongside it:
+          zoom, fit to screen, and pause physics to stop nodes drifting mid-sentence.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ftr">
+    <span class="ftr-l"><b>Page 2 of 3</b> — Forensic Dossier &amp; Cluster Topology</span>
+    <span class="ftr-r">NTRO · SIH26146 · 2/3</span>
+  </div>
+</section>
+
+<!-- ══════════ PAGE 3 ══════════ -->
+<section class="page">
+  <div class="hdr">
+    <div>
+      <div class="hdr-k">Part 4, 5 &amp; 6</div>
+      <h1>The Closers — <em>Legal, Ingest, Models</em></h1>
+    </div>
+    <div class="hdr-tag">The closers<b>Legal · Data · Model</b></div>
+  </div>
+
+  <div class="body">
+    <div class="part" id="p4">
+      <div class="part-h">
+        <div class="part-n">4</div>
+        <div class="part-m">
+          <div class="part-t">Section 65B &amp; BSA 2023 Forensic Court Dossier</div>
+          <div class="part-d">Turns a finding into a document a court will accept — the answer to "could you actually use this as evidence?"</div>
+        </div>
+      </div>
+      <div class="part-b">
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Official Layout &amp; Statutory Basis</div>
+          <div class="f-d">Rendered as a formal government certificate: NTRO letterhead, a classification marking, and
+          the legal basis under both <b>Section 65B of the Indian Evidence Act 1872</b> and <b>Section 63 of the
+          Bharatiya Sakshya Adhiniyam 2023</b>.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Certificate ID &amp; Statutory Declaration</div>
+          <div class="f-d">A unique certificate reference, the jurisdiction, and the air-gapped device node the document
+          was produced on — followed by the sworn declaration that the records came from this system, unaltered.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Findings &amp; Model Provenance</div>
+          <div class="f-d">The target wallet's verdict, risk score, anomaly error, percentile rank and cluster in a formal
+          findings table, plus SHA-256 checksums of the exact model weight files used to produce them.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">SHA-256 Seal</div>
+          <div class="f-d">A tamper-evident fingerprint over the entire certificate. Alter a single character and the seal
+          no longer validates — this is the strongest answer to "can this really survive as evidence?"</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Print / Save PDF</div>
+          <div class="f-d">Exports a clean, self-contained printable certificate with the interface chrome stripped out.
+          Ending the demo on a produced document is a strong closing beat for the judges.</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="part" id="p5">
+      <div class="part-h">
+        <div class="part-n">5</div>
+        <div class="part-m">
+          <div class="part-t">Ingest</div>
+          <div class="part-d">Uploading new transaction data — the answer to "what happens when fresh data arrives?"</div>
+        </div>
+      </div>
+      <div class="part-b">
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Drag &amp; Drop Upload <span class="q">.CSV .JSON .XML</span></div>
+          <div class="f-d">Accepts CSV, JSON and XML up to 500 MB, by drop or by browsing. The file is fingerprinted
+          with a <b>SHA-256 hash</b> as it lands, before any parsing or processing begins.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Sample Dataset Card</div>
+          <div class="f-d">A pre-loaded 2,000-transaction stress-test file bundled with the app, which you can drag
+          straight into the dropzone. It keeps the upload demo fully offline and removes any risk of hunting for a
+          file on stage.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Background Processing</div>
+          <div class="f-d">A live progress bar while a Celery worker parses, validates, geo-enriches and bulk-loads the
+          data. The upload is queued and processed asynchronously rather than blocking the browser.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Duplicate Detection &amp; Immediate Scoring</div>
+          <div class="f-d">Re-uploading the same file is rejected as a duplicate, which is worth demonstrating on
+          purpose to show the system is idempotent. Newly ingested wallets are also scored inline straight away, so it
+          works on brand-new data without a full retrain.</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="part" id="p6">
+      <div class="part-h">
+        <div class="part-n">6</div>
+        <div class="part-m">
+          <div class="part-t">Dual Transformer Model Provenance &amp; Benchmark Audit</div>
+          <div class="part-d">Opens from the blue chip in the top bar — the answer to "how do you know the AI is any good?"</div>
+        </div>
+      </div>
+      <div class="part-b">
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Four Headline Metrics</div>
+          <div class="f-d">The four numbers that answer "is the model any good": graph F1 of <b>0.921</b> against a
+          0.880 promotion gate, <b>94.8%</b> peeling recall, <b>4.8 ms</b> combined inference latency on CPU, and
+          <b>231 KB</b> of total model weights. Read all four aloud.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Head-to-Head Comparison <span class="q">5 dimensions</span></div>
+          <div class="f-d">Our architecture against the standard baseline across five dimensions: the tabular anomaly
+          engine, the graph proximity engine, edge relations modelled, explainability, and deployment footprint. It
+          shows the improvement is measured rather than claimed.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Model Weight Checksums</div>
+          <div class="f-d">SHA-256 hashes of the exact weight files, with a copy button on each. These tie the numbers
+          on screen to specific files, which is what reproducibility actually means in practice.</div>
+        </div></div>
+        <div class="f"><span class="f-i"></span><div class="f-m">
+          <div class="f-n">Runs on a Basic Laptop</div>
+          <div class="f-d">4.8 ms on CPU with 231 KB of weights and no GPU at all, cold booting in under 120 ms — that
+          lightweight footprint is what makes the air-gapped field deployment claim credible.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ftr">
+    <span class="ftr-l"><b>Page 3 of 3</b> — Sec 65B Court Dossier, Ingest &amp; Model Provenance</span>
+    <span class="ftr-r">NTRO · SIH26146 · 3/3</span>
+  </div>
+</section>
+
+</body>
+</html>

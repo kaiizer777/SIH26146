@@ -30,17 +30,18 @@ interface BenchmarkRow {
   categoryTag: string;
   active: {
     title: string;
-    badge: string;
     detail: string;
     chips: string[];
   };
   baseline: {
     title: string;
     detail: string;
+    chips: string[];
   };
   impact: {
-    tag: string;
+    title: string;
     detail: string;
+    chips: string[];
   };
 }
 
@@ -50,17 +51,18 @@ const BENCHMARK_METRICS: BenchmarkRow[] = [
     categoryTag: "Feature Space",
     active: {
       title: "FT-Transformer",
-      badge: "SOTA Tabular",
       detail: "Feature Tokenizer (18x32d) + Multi-Head Self-Attention + [CLS] head",
       chips: ["18×32d Tokens", "Self-Attention", "[CLS] Head"],
     },
     baseline: {
       title: "Deep MLP Autoencoder",
-      detail: "Feed-forward linear bottleneck (18-12-6-12-18)",
+      detail: "Feed-forward linear bottleneck with static reconstruction (18-12-6-12-18)",
+      chips: ["Dense Linear", "Static Bottleneck", "No Attention"],
     },
     impact: {
-      tag: "Attention Matrix",
+      title: "Cross-Feature Saliency",
       detail: "Native 18×18 cross-feature attention matrix detailing inter-variable correlations and non-linear risk factors.",
+      chips: ["18×18 Heatmap", "Feature Saliency", "Zero Overhead"],
     },
   },
   {
@@ -68,17 +70,18 @@ const BENCHMARK_METRICS: BenchmarkRow[] = [
     categoryTag: "Network Topology",
     active: {
       title: "Relational Graph Transformer",
-      badge: "Multi-Head Conv",
       detail: "TransformerConv with 4 attention heads over heterogeneous multi-relational edges",
       chips: ["4 Attention Heads", "TransformerConv", "Dynamic Weighting"],
     },
     baseline: {
       title: "2-Layer GraphSAGE",
-      detail: "Mean-pooling neighborhood aggregation",
+      detail: "Mean-pooling neighborhood aggregation without multi-relational edge weighting",
+      chips: ["Mean-Pooling", "Single Relation", "Over-smoothing Risk"],
     },
     impact: {
-      tag: "Path Propagation",
+      title: "Path Risk Propagation",
       detail: "4-head relational attention weights propagate risk along Co-Spend & Peeling links without over-smoothing.",
+      chips: ["Relational Weights", "Anti-Oversmooth", "Hop Attenuation"],
     },
   },
   {
@@ -86,17 +89,18 @@ const BENCHMARK_METRICS: BenchmarkRow[] = [
     categoryTag: "Edge Semantics",
     active: {
       title: "3 Heterogeneous Edge Types",
-      badge: "Full Graph",
       detail: "CO_SPEND (input clustering), TX_FLOW (transfer), PEELING_FLOW (mixing splits)",
       chips: ["CO_SPEND", "TX_FLOW", "PEELING_FLOW"],
     },
     baseline: {
       title: "1 Static Relation",
-      detail: "CO_SPEND adjacency only",
+      detail: "CO_SPEND adjacency only — misses transfer flows and peeling-chain structural splits",
+      chips: ["Co-Spend Only", "No Flow Tracking", "No Peeling Edge"],
     },
     impact: {
-      tag: "Mixing Detection",
+      title: "Automated Mixing Audit",
       detail: "Detects rapid mixing hops, UTXO peel chains, and structural laundering paths through automated split tracking.",
+      chips: ["UTXO Peel Chains", "Mixing Hop Audit", "Multi-hop Trace"],
     },
   },
   {
@@ -104,17 +108,18 @@ const BENCHMARK_METRICS: BenchmarkRow[] = [
     categoryTag: "Court Admissibility",
     active: {
       title: "Dual Attribution Engine",
-      badge: "Court Admissible",
       detail: "Multi-Head Relational Attention Saliency + Tabular SHAP Waterfall decomposition",
       chips: ["Relational Saliency", "SHAP Waterfall", "Sub-graph Glow"],
     },
     baseline: {
       title: "SHAP Only",
-      detail: "Global background Tree/Kernel SHAP attribution",
+      detail: "Global background Tree/Kernel SHAP attribution with heavy runtime sampling latency (250ms+)",
+      chips: ["Post-Hoc Kernel", "Sampling Overhead", "No Graph XAI"],
     },
     impact: {
-      tag: "Section 65B Ready",
+      title: "Court Admissibility",
       detail: "Direct visual edge glow on laundering paths and pairwise feature correlation heatmaps compliant with legal standards.",
+      chips: ["Sec 65B Admissible", "Visual Edge Glow", "Deterministic PDF"],
     },
   },
   {
@@ -122,17 +127,18 @@ const BENCHMARK_METRICS: BenchmarkRow[] = [
     categoryTag: "Deployment",
     active: {
       title: "231 KB Total Weights (.pt)",
-      badge: "Zero GPU",
       detail: "Pure CPU PyTorch execution · Zero external CDN · Zero GPU dependency · <120ms cold boot",
       chips: ["Pure CPU", "Zero CDN", "<120ms Cold Boot"],
     },
     baseline: {
-      title: "65 KB Weights",
-      detail: "Legacy MLP + SAGE checkpoints",
+      title: "65 KB Checkpoint",
+      detail: "Legacy MLP + SAGE checkpoints requiring custom runtime wrappers and higher memory buffers",
+      chips: ["65 KB Checkpoint", "Custom Wrappers", "MLP+SAGE"],
     },
     impact: {
-      tag: "Field Laptop Ready",
+      title: "Edge Sovereign Footprint",
       detail: "Instant deterministic execution on low-spec edge field laptops (Acer Aspire Lite) with no network access.",
+      chips: ["Acer Aspire Lite", "Air-Gapped", "Instant Inference"],
     },
   },
 ];
@@ -218,7 +224,7 @@ export default function ModelProvenanceModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-provenance-title"
-        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl border-t border-t-white border-x border-x-slate-300/90 border-b border-b-slate-400/90 shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_0_rgba(255,255,255,1)_inset,0_20px_50px_-12px_rgba(15,23,42,0.22),0_40px_80px_-24px_rgba(15,23,42,0.18)] flex flex-col overflow-hidden transition-all duration-200"
+        className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl border border-slate-300/90 shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_0_rgba(255,255,255,1)_inset,0_20px_50px_-12px_rgba(15,23,42,0.22),0_40px_80px_-24px_rgba(15,23,42,0.18)] flex flex-col overflow-hidden transition-all duration-200"
       >
         {/* Header Strip with 3D Light-from-Above */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/90 bg-gradient-to-b from-white via-slate-50/90 to-slate-100/90 shadow-[inset_0_1px_0_#ffffff] shrink-0">
@@ -431,7 +437,7 @@ export default function ModelProvenanceModal({
           </div>
 
           {/* Forensic Head-to-Head Benchmark Table */}
-          <div className="rounded-xl border-t border-t-white border-x border-x-slate-300/90 border-b border-b-slate-400/80 overflow-hidden bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06),0_4px_14px_-2px_rgba(15,23,42,0.04)]">
+          <div className="rounded-xl border border-slate-300/90 overflow-hidden bg-white shadow-[inset_0_1px_0_#ffffff,0_1px_3px_rgba(15,23,42,0.06),0_4px_14px_-2px_rgba(15,23,42,0.04)]">
             <div className="px-5 py-3 bg-gradient-to-r from-slate-50 via-slate-100/90 to-slate-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
                 <div className="w-6 h-6 rounded-md bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
@@ -461,21 +467,27 @@ export default function ModelProvenanceModal({
               <table className="w-full text-left text-xs border-separate border-spacing-0">
                 <thead>
                   <tr>
-                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[19%] bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10.5px]">
+                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[18%] bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10.5px]">
                       Metric / Dimension
                     </th>
                     {/* Champion column: wins by weight + tint, not by a saturated badge */}
-                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[32%] bg-sky-100 border-b border-sky-200 text-slate-900 font-extrabold uppercase tracking-wider text-[10.5px] border-x">
+                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[28%] bg-sky-100 border-b border-sky-200 text-slate-900 font-extrabold uppercase tracking-wider text-[10.5px] border-x border-sky-200/80">
                       <span className="flex items-center gap-1.5">
                         <Check className="w-3 h-3 stroke-[3] text-emerald-600 shrink-0" />
                         Dual Transformer Architecture
                       </span>
                     </th>
-                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[24%] bg-slate-100 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10.5px]">
-                      Baseline Architecture
+                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[27%] bg-slate-100 border-b border-slate-200 text-slate-900 font-bold uppercase tracking-wider text-[10.5px] border-r border-slate-200">
+                      <span className="flex items-center gap-1.5">
+                        <Layers className="w-3 h-3 text-slate-500 shrink-0" />
+                        Baseline Architecture
+                      </span>
                     </th>
-                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[25%] bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[10.5px]">
-                      Impact on NTRO Forensics
+                    <th className="sticky top-0 z-10 py-2.5 px-4 w-[27%] bg-slate-100 border-b border-slate-200 text-slate-900 font-bold uppercase tracking-wider text-[10.5px]">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                        Impact on NTRO Forensics
+                      </span>
                     </th>
                   </tr>
                 </thead>
@@ -501,14 +513,9 @@ export default function ModelProvenanceModal({
 
                       {/* Active Dual Transformer (Champion Column) */}
                       <td className="py-3 px-4 bg-sky-50/40 border-x border-sky-200/70 align-top">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="font-bold text-slate-950 flex items-center gap-1.5 min-w-0">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span className="text-[12.5px] leading-snug">{row.active.title}</span>
-                          </div>
-                          <span className="text-[10px] font-bold text-sky-800 bg-sky-100/90 px-1.5 py-0.5 rounded leading-none border border-sky-200/80 crypto-mono shrink-0 shadow-[inset_0_1px_0_#ffffff]">
-                            {row.active.badge}
-                          </span>
+                        <div className="font-bold text-slate-950 flex items-center gap-1.5 min-w-0">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="text-[12.5px] leading-snug">{row.active.title}</span>
                         </div>
                         <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
                           {row.active.detail}
@@ -525,30 +532,46 @@ export default function ModelProvenanceModal({
                         </div>
                       </td>
 
-                      {/* Baseline Legacy Architecture — recessive, lighter weight, muted marker */}
-                      <td className="py-3 px-4 align-top">
-                        <div className="font-semibold text-slate-600 flex items-center gap-1.5">
-                          <span className="w-4 h-4 shrink-0 flex items-center justify-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                          </span>
+                      {/* Baseline Legacy Architecture */}
+                      <td className="py-3 px-4 border-r border-slate-200/80 align-top">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5 min-w-0">
+                          <Layers className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                           <span className="text-[12.5px] leading-snug">{row.baseline.title}</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 mt-1 leading-relaxed pl-[22px]">
+                        <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
                           {row.baseline.detail}
                         </p>
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {row.baseline.chips.map((chip) => (
+                            <span
+                              key={chip}
+                              className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-white text-slate-600 border border-slate-200/90 leading-none shadow-[inset_0_1px_0_#ffffff,0_1px_1px_rgba(15,23,42,0.04)]"
+                            >
+                              {chip}
+                            </span>
+                          ))}
+                        </div>
                       </td>
 
-                      {/* Forensic Impact — mono label, no chip fill, so it doesn't read as a param chip */}
+                      {/* Forensic Impact */}
                       <td className="py-3 px-4 align-top">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-[2px] bg-slate-400 shrink-0" />
-                          <span className="crypto-mono text-[10px] font-bold uppercase tracking-wide text-slate-600 leading-none">
-                            {row.impact.tag}
-                          </span>
+                        <div className="font-bold text-slate-950 flex items-center gap-1.5 min-w-0">
+                          <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="text-[12.5px] leading-snug">{row.impact.title}</span>
                         </div>
-                        <p className="text-[11px] leading-relaxed text-slate-700 mt-1.5">
+                        <p className="text-[11px] leading-relaxed text-slate-700 mt-1">
                           {row.impact.detail}
                         </p>
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {row.impact.chips.map((chip) => (
+                            <span
+                              key={chip}
+                              className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-white text-emerald-800 border border-emerald-200/80 leading-none shadow-[inset_0_1px_0_#ffffff,0_1px_1px_rgba(15,23,42,0.04)]"
+                            >
+                              {chip}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -558,7 +581,7 @@ export default function ModelProvenanceModal({
           </div>
 
           {/* Cryptographic Provenance & File Integrity Block */}
-          <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/70 border-t border-t-white border-x border-x-slate-300/80 border-b border-b-slate-300/90 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
+          <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <FileCode className="w-4 h-4 text-slate-700" />
@@ -583,7 +606,7 @@ export default function ModelProvenanceModal({
               {MODEL_WEIGHTS_CHECKSUMS.map((item) => (
                 <div
                   key={item.filename}
-                  className="p-3 rounded-lg bg-white border-t border-t-white border-x border-x-slate-200/90 border-b border-b-slate-300/80 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  className="p-3 rounded-lg bg-white border border-slate-200/90 shadow-[inset_0_1px_0_#ffffff,0_1px_2px_rgba(15,23,42,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">

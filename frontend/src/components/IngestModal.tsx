@@ -530,7 +530,7 @@ export default function IngestModal({
               <button
                 id="ingest-try-another-file-btn"
                 onClick={reset}
-                className="tactile-btn-primary text-xs px-4 py-2 rounded-lg text-white font-medium self-start cursor-pointer"
+                className="tactile-btn-sky text-xs px-4 py-2 rounded-lg text-white font-medium self-start cursor-pointer"
               >
                 Select Another File
               </button>
@@ -546,7 +546,7 @@ export default function IngestModal({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-red-900">
-                    Ingestion Failed
+                     Ingestion Failed
                   </p>
                   <p className="crypto-mono text-xs text-red-700 break-all mt-0.5">
                     {errorMsg}
@@ -555,7 +555,7 @@ export default function IngestModal({
               </div>
               <button
                 onClick={reset}
-                className="tactile-btn-primary text-xs px-4 py-2 rounded-lg text-white font-medium self-start cursor-pointer"
+                className="tactile-btn-sky text-xs px-4 py-2 rounded-lg text-white font-medium self-start cursor-pointer"
               >
                 Try Another File
               </button>
