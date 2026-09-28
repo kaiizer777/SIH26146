@@ -16,6 +16,7 @@ Scores newly ingested transactions in-process using:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -28,6 +29,7 @@ import torch
 import torch.nn as nn
 
 from app.config import settings
+from app.services import risk_thresholds
 from app.services.feature_extractor import FEATURE_DIM, FEATURE_NAMES, extract_features_batch
 
 logger = logging.getLogger(__name__)
@@ -80,9 +82,34 @@ _init_lock = threading.Lock()
 _initialized = False
 # address → existing cluster_id from composite_risk_scores (for inheritance)
 _cluster_known: dict[str, int] = {}
-# Provisional cluster IDs start above any real Louvain ID (max observed: 24636)
+# Provisional cluster IDs live above any real Louvain ID (max observed: 24636).
+# They are derived from a stable hash of the component's member addresses, NOT
+# from a process-global counter: a counter collides across files and across
+# worker processes, which would silently merge two unrelated clusters (and would
+# make a re-ingest of the same file produce different IDs).
 _PROV_CLUSTER_BASE = 50_000
-_prov_cluster_counter: int = _PROV_CLUSTER_BASE
+# Width of the hash-derived suffix. 6 hex digits = 16.7M slots above the base.
+_PROV_CLUSTER_SPAN = 16_777_216
+_PROV_CLUSTER_MOD = 1_000_000
+
+
+def _provisional_cluster_id(members: Sequence[str]) -> int:
+    """Derive a deterministic, collision-resistant provisional cluster ID.
+
+    The ID depends only on the *set* of member addresses, so re-running the
+    scorer over the same file yields the same ID in any process, on any host,
+    in any order.
+
+    Args:
+        members: Every address in the co-spend component.
+
+    Returns:
+        An ID in ``[_PROV_CLUSTER_BASE, _PROV_CLUSTER_BASE + _PROV_CLUSTER_SPAN)``.
+    """
+    # Sort so the digest is independent of the discovery order of the component.
+    digest = hashlib.sha256("\n".join(sorted(members)).encode("utf-8")).hexdigest()
+    offset = int(digest[:12], 16) % _PROV_CLUSTER_SPAN
+    return _PROV_CLUSTER_BASE + offset % _PROV_CLUSTER_MOD
 
 
 def _find_file(pattern: str, base_dir: Path) -> Path | None:
@@ -329,6 +356,34 @@ class _CoSpendUnionFind:
         return out
 
 
+def _row_risk_score(row: dict[str, Any]) -> float | None:
+    """Read the graph-model risk probability carried by an ingest row.
+
+    The ``risk_score`` column is written by the graph risk pipeline
+    (``train_graphsage.write_risk_scores_to_postgres``) and read back here, so
+    the value in the composite record is the real model output rather than a
+    placeholder. It is ``None`` when the graph pass has not yet covered this
+    transaction, which is an honest "not computed" rather than a fake 0.0.
+
+    Args:
+        row: One transaction mapping (parser output or PostgreSQL row).
+
+    Returns:
+        The risk probability clamped to [0, 1], or ``None`` when absent/invalid.
+    """
+    raw = row.get("risk_score")
+    if raw is None:
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        logger.warning("Non-numeric risk_score %r — treating as not computed", raw)
+        return None
+    if value != value:  # NaN
+        return None
+    return max(0.0, min(1.0, value))
+
+
 def _build_cospend_clusters(
     rows: Sequence[dict[str, Any]],
 ) -> dict[str, tuple[int, int]]:
@@ -336,17 +391,38 @@ def _build_cospend_clusters(
 
     Returns:
         {address: (cluster_id, cluster_size)} for every address in the batch.
-        cluster_id is either inherited from the pre-indexed composite_risk_scores baseline
-        (if any member of the component is a known address) or a new provisional ID
-        starting at _PROV_CLUSTER_BASE (50 000), safe from collision with Louvain IDs.
-    """
-    global _prov_cluster_counter
 
+        cluster_id is resolved in this priority order:
+          1. ``row["cluster_id"]`` — the live Louvain ID mirrored onto the
+             transaction by the post-ingest enrichment chain. This is the
+             current truth and always wins.
+          2. A non-negative ID from the pre-indexed baseline
+             (``_cluster_known``). Used only when the row carries no cluster.
+          3. A provisional ID derived deterministically from the component's
+             member addresses (see :func:`_provisional_cluster_id`).
+
+        Falling straight to the baseline is what made a re-ingested wallet keep
+        reporting a cluster that no longer exists: every Louvain re-run
+        renumbers the communities, so a frozen baseline ID goes stale and the
+        Cluster Topology view renders an empty graph.
+    """
     dsu = _CoSpendUnionFind()
+    # Live cluster IDs observed on the rows themselves.
+    row_clusters: dict[str, int] = {}
 
     for row in rows:
         in_addrs = _parse_addresses(row.get("input_addresses"))
         out_addrs = _parse_addresses(row.get("output_addresses"))
+
+        # Record the live Louvain cluster carried by this row, if any.
+        raw_cluster = row.get("cluster_id")
+        try:
+            live_cid = int(raw_cluster) if raw_cluster is not None else None
+        except (TypeError, ValueError):
+            live_cid = None
+        if live_cid is not None and live_cid >= 0:
+            for addr in (*in_addrs, *out_addrs):
+                row_clusters.setdefault(addr, live_cid)
 
         # --- Multi-input heuristic: all inputs co-controlled ---
         if len(in_addrs) > 1:
@@ -378,18 +454,25 @@ def _build_cospend_clusters(
     for root, members in dsu.groups().items():
         size = len(members)
 
-        # Try to inherit an existing cluster_id from baseline
+        # Prefer the live cluster carried on the row (current truth), then a
+        # non-negative baseline ID, then a derived provisional ID.
         inherited: int | None = None
         for m in members:
-            if m in _cluster_known:
-                inherited = _cluster_known[m]
+            live = row_clusters.get(m)
+            if live is not None:
+                inherited = live
                 break
+        if inherited is None:
+            for m in members:
+                known = _cluster_known.get(m)
+                if known is not None and known >= 0:
+                    inherited = known
+                    break
 
         if inherited is not None:
             cid = inherited
         else:
-            cid = _prov_cluster_counter
-            _prov_cluster_counter += 1
+            cid = _provisional_cluster_id(members)
 
         for m in members:
             result[m] = (cid, size)
@@ -439,14 +522,17 @@ def _parse_amounts(val: Any) -> list[float]:
 
 
 def map_verdict(score: float) -> str:
-    """Map composite score to categorical verdict."""
-    if score >= 0.70:
-        return "CRITICAL"
-    if score >= 0.50:
-        return "HIGH"
-    if score >= 0.30:
-        return "MEDIUM"
-    return "LOW"
+    """Map composite score to categorical verdict.
+
+    Re-export of :func:`app.services.risk_thresholds.map_verdict`. The previous
+    local table (0.70 / 0.50 / 0.30) disagreed with the canonical
+    :data:`~app.services.risk_thresholds.VERDICT_TIERS` (0.80 / 0.60 / 0.40),
+    so the same wallet received different verdicts depending on which scoring
+    path produced it. That superseded table is retained in
+    :data:`~app.services.risk_thresholds.LEGACY_INLINE_VERDICT_TIERS` for audit
+    only; nothing labels records with it.
+    """
+    return risk_thresholds.map_verdict(score)
 
 
 def compute_percentile(anomaly_score: float) -> float:
@@ -607,6 +693,7 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                     "seed_proximity": addr_prox,
                     "ts": row_ts,
                     "tx_peers": set(row_peers),
+                    "risk_score": _row_risk_score(row),
                 }
             else:
                 entry = address_map[addr]
@@ -622,6 +709,14 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                 if row_ts is not None and (entry["ts"] is None or str(row_ts) > str(entry["ts"])):
                     entry["ts"] = row_ts
                 entry["tx_peers"].update(row_peers)
+                # Keep the worst (max) graph risk seen across this wallet's
+                # transactions, matching how anomaly_score is aggregated.
+                # risk_score may be None (not yet graph-scored), so compare
+                # only real values — max() on None would raise.
+                row_risk = _row_risk_score(row)
+                if row_risk is not None:
+                    prior = entry["risk_score"]
+                    entry["risk_score"] = row_risk if prior is None else max(prior, row_risk)
 
     # 3. Co-Spend Cluster Assignment (Multi-Input Heuristic + Peeling Chain linkage)
     cospend_clusters = _build_cospend_clusters(rows)  # {addr: (cluster_id, cluster_size)}
@@ -630,16 +725,18 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
 
     for addr, agg in address_map.items():
-        score = float(agg["provisional_score"])
         anomaly = float(agg["anomaly_score"])
         rules_list = sorted(list(agg["rules"]))
-        verdict = map_verdict(score)
         percentile = compute_percentile(anomaly)
         is_peeling = bool(agg["is_peeling"])
         is_coinjoin = bool(agg["is_coinjoin"])
         is_mix = is_peeling or is_coinjoin  # generic mixing flag for XAI store
         seed_prox = float(agg["seed_proximity"])
         ts_str = str(agg["ts"]) if agg["ts"] is not None else None
+        # Real graph risk probability from the row(s) this wallet appeared in.
+        # None (not 0.0) when the graph pass has not scored these rows yet, so
+        # downstream normalization can distinguish "not computed" from "clean".
+        risk = agg["risk_score"]
 
         model_version_stamp = f"{_anomaly_version}+{_risk_version}"
 
@@ -652,10 +749,28 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
         if is_coinjoin:
             mixing_patterns.append("CoinJoin")
 
+        # Canonical composite. The previous ad-hoc "provisional" formula
+        # (0.35*norm_anomaly + 0.15*rule + 0.40*seed_prox) used a different set
+        # of weights from risk_thresholds, so the stored composite_score and the
+        # dossier's recomputed breakdown disagreed — the breakdown could not sum
+        # to the score by construction. Using the single source of truth makes
+        # the invariant hold: anomaly + risk + rule + mixing == composite.
+        canonical = risk_thresholds.compute_composite(
+            anomaly_score=anomaly,
+            risk_score=risk if risk is not None else 0.0,
+            triggered_rules=rules_list,
+            mixing_patterns=mixing_patterns,
+        )
+        score = canonical.score
+        verdict = risk_thresholds.map_verdict(score)
+
         composite_record = {
             "address": addr,
             "anomaly_score": anomaly,
-            "risk_score": 0.0,
+            # Normalized anomaly term (0..1) alongside the raw MSE, so consumers
+            # never re-apply a weight to the unbounded MSE by mistake.
+            "anomaly_normalized": risk_thresholds.normalize_anomaly(anomaly),
+            "risk_score": risk,
             "composite_score": score,
             "verdict": verdict,
             "triggered_rules": rules_list,
@@ -696,7 +811,7 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
         item = {
             "address": addr,
             "anomaly_score": anomaly,
-            "risk_score": 0.0,
+            "risk_score": risk,
             "composite_score": score,
             "verdict": verdict,
             "triggered_rules": rules_list,
@@ -716,7 +831,7 @@ def score_batch(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def reset_scorer_for_tests() -> None:
     """Reset scorer singleton state for testing fallback configurations."""
-    global _model, _scaler, _threshold, _seeds, _baseline_scores, _anomaly_version, _risk_version, _initialized, _cluster_known, _prov_cluster_counter
+    global _model, _scaler, _threshold, _seeds, _baseline_scores, _anomaly_version, _risk_version, _initialized, _cluster_known
     with _init_lock:
         _model = None
         _scaler = None
@@ -727,7 +842,6 @@ def reset_scorer_for_tests() -> None:
         _risk_version = "graph_transformer_20260909"
         _initialized = False
         _cluster_known = {}
-        _prov_cluster_counter = _PROV_CLUSTER_BASE
 
 
 def get_model_info() -> dict[str, Any]:

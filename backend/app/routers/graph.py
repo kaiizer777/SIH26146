@@ -31,6 +31,13 @@ router = APIRouter(prefix="/api/v1/graph", tags=["graph"])
 
 _driver: Optional[AsyncDriver] = None
 
+# Wallet node-budget selection. The Neo4j query is degree-first so clusters do
+# not render as a cloud of isolated dots, but degree alone would drop a severe
+# low-degree wallet from its own cluster. Over-fetch, reserve part of the budget
+# for the highest-severity wallets, then fill the remainder by degree.
+WALLET_OVERFETCH_FACTOR = 4
+SEVERE_WALLET_RESERVE = 24
+
 
 def _get_driver() -> AsyncDriver:
     global _driver
@@ -380,6 +387,48 @@ def _build_provisional_cluster_graph(cluster_id: int, max_nodes: int) -> GraphRe
     return GraphResponse(cluster_id=cluster_id, nodes=nodes, links=links)
 
 
+async def _cluster_exists_in_neo4j(cluster_id: int) -> bool:
+    """Return True when at least one :Wallet carries this cluster_id.
+
+    Used to decide between the real Neo4j topology and the synthetic
+    provisional builder. A database outage is reported as "not present" so the
+    caller degrades to the synthetic path rather than 503-ing a real cluster.
+
+    Args:
+        cluster_id: The cluster id to look up.
+
+    Returns:
+        True when the cluster has wallet nodes in Neo4j.
+    """
+    try:
+        driver = _get_driver()
+        async with driver.session(database=settings.neo4j_database) as session:
+            result = await session.run(
+                """
+                MATCH (w:Wallet)
+                WHERE w.cluster_id = $cluster_id
+                RETURN count(w) AS wallets
+                """,
+                cluster_id=cluster_id,
+            )
+            record = await result.single()
+            count = int(record["wallets"]) if record else 0
+            if count:
+                logger.info(
+                    "Cluster %d resolved to %d :Wallet node(s) in Neo4j — using the "
+                    "real topology, not the provisional builder.",
+                    cluster_id, count,
+                )
+            return count > 0
+    except Exception as exc:  # noqa: BLE001 - degrade, never 503 a real cluster
+        logger.error(
+            "Cluster existence probe failed for cluster_id=%d (%s: %s) — falling "
+            "back to the provisional builder.",
+            cluster_id, type(exc).__name__, exc,
+        )
+        return False
+
+
 @router.get(
     "/{cluster_id}",
     response_model=GraphResponse,
@@ -398,12 +447,28 @@ async def get_graph(
     effective_max = min(max_nodes, _MAX_NODES_CEILING)
 
     # ---------------------------------------------------------------------------
-    # Fast-path: provisional clusters (ID >= 50 000) live only in xai_store.
-    # Neo4j has no knowledge of them — build the graph from memory directly.
+    # Cluster-id resolution.
+    #
+    # Two namespaces share this endpoint:
+    #   * Pre-loaded Phase 8 clusters, small integer ids, materialised as
+    #     :Wallet nodes with a cluster_id property in Neo4j.
+    #   * The post-ingest namespace (>= 1_000_000, see
+    #     app.tasks.enrich.INGEST_CLUSTER_ID_OFFSET) written by the enrichment
+    #     chain, ALSO materialised as :Wallet nodes in Neo4j.
+    #   * Provisional (online-scored) clusters, which exist only in xai_store and
+    #     have no Neo4j representation at all.
+    #
+    # The id magnitude alone cannot tell these apart, and routing purely on
+    # magnitude sent every real ingested cluster to the synthetic builder and
+    # returned 0 nodes. Resolve against Neo4j first and only fall back to the
+    # synthetic path when the cluster genuinely is not in the graph.
     # ---------------------------------------------------------------------------
     _PROV_CLUSTER_BASE = 50_000
+    resolved_from_neo4j = True
     if cluster_id >= _PROV_CLUSTER_BASE:
-        return _build_provisional_cluster_graph(cluster_id, effective_max)
+        resolved_from_neo4j = await _cluster_exists_in_neo4j(cluster_id)
+        if not resolved_from_neo4j:
+            return _build_provisional_cluster_graph(cluster_id, effective_max)
 
     try:
         driver = _get_driver()
@@ -416,27 +481,72 @@ async def get_graph(
             # 3. IP Host Budget: base 10% of effective_max, base cap 15
             base_ip_budget = max(0, min(int(effective_max * 0.10), 15))
 
-            # --- Step 1: Get wallet nodes for this cluster (prioritizing high risk & anomaly) ---
+            # --- Step 1: Get wallet nodes for this cluster ---
+            # Selection is adjacency-first, risk-second. Ordering purely by
+            # risk_score put high-risk but structurally isolated wallets in the
+            # budget and pushed the densely connected co-spend core out, which is
+            # what produced the reported "1-2 nodes per wallet" topology: a
+            # canvas of singletons. Ranking by in-cluster wallet degree first
+            # guarantees the selected set contains both endpoints of the
+            # cluster's CO_SPEND edges, so they actually render; transaction
+            # degree and then risk/anomaly break ties exactly as before.
             wallet_result = await session.run(
                 """
                 MATCH (w:Wallet)
                 WHERE w.cluster_id = $cluster_id
+                OPTIONAL MATCH (w)-[:CO_SPEND]-(co:Wallet)
+                WITH w, count(DISTINCT co) AS wallet_degree
+                OPTIONAL MATCH (w)-[:SENDS|RECEIVES]-(t:Transaction)
+                WITH w, wallet_degree, count(DISTINCT t) AS tx_degree
                 RETURN w.address AS id,
                        w.address AS label,
                        coalesce(w.risk_score, 0.0) AS risk_score,
                        coalesce(w.anomaly_score, 0.0) AS anomaly_score,
-                       coalesce(w.is_seed_illicit, false) AS is_seed_illicit
-                ORDER BY coalesce(w.risk_score, 0.0) DESC, coalesce(w.anomaly_score, 0.0) DESC
+                       coalesce(w.is_seed_illicit, false) AS is_seed_illicit,
+                       wallet_degree,
+                       tx_degree
+                ORDER BY wallet_degree DESC,
+                         tx_degree DESC,
+                         coalesce(w.risk_score, 0.0) DESC,
+                         coalesce(w.anomaly_score, 0.0) DESC,
+                         w.address ASC
                 LIMIT $limit
                 """,
                 cluster_id=cluster_id,
-                limit=wallet_target,
+                limit=wallet_target * WALLET_OVERFETCH_FACTOR,
             )
             wallet_records = await wallet_result.data()
 
             if not wallet_records:
                 # Cluster has no wallet nodes in Neo4j — return empty but valid
                 return GraphResponse(cluster_id=cluster_id, nodes=[], links=[])
+
+            if len(wallet_records) > wallet_target:
+                # The Cypher above is degree-first, which is what stops clusters
+                # rendering as a cloud of isolated dots — but it also drops a
+                # severe wallet that happens to have few edges, so a CRITICAL
+                # entity can be missing from its own cluster. Reserve part of the
+                # budget for the highest-severity wallets, then fill the rest by
+                # degree as before.
+                def _severity(rec: dict) -> float:
+                    stored = (xai_store.get_composite(rec["id"]) or {}).get("composite_score")
+                    if stored is not None:
+                        return float(stored)
+                    return float(rec.get("risk_score", 0.0) or 0.0)
+
+                reserve = min(SEVERE_WALLET_RESERVE, wallet_target)
+                severe = sorted(wallet_records, key=_severity, reverse=True)[:reserve]
+                severe_ids = {rec["id"] for rec in severe}
+                remainder = [rec for rec in wallet_records if rec["id"] not in severe_ids]
+                remainder.sort(
+                    key=lambda rec: (
+                        rec.get("wallet_degree", 0),
+                        rec.get("tx_degree", 0),
+                        _severity(rec),
+                    ),
+                    reverse=True,
+                )
+                wallet_records = severe + remainder[: wallet_target - len(severe)]
 
             nodes: list[GraphNode] = []
             peeling_addrs: set[str] = set()
@@ -471,7 +581,20 @@ async def get_graph(
                 ):
                     peeling_addrs.add(addr)
 
-                risk_val = float(r.get("risk_score", 0.0) or comp.get("risk_score", 0.0) or 0.0)
+                # Severity tiering in the UI keys off GraphNode.risk_score, whose
+                # thresholds (0.80/0.60/0.40) are the canonical verdict tiers. The
+                # alerts table and the dossier both rank on the *composite* score,
+                # so the graph must too - otherwise a CRITICAL (composite 1.000)
+                # wallet renders green just because its raw graph risk_score is
+                # low. The provisional path already fed composite_score through
+                # here; this keeps the two paths consistent. Falls back to the
+                # raw graph score for wallets that have never been scored.
+                comp_score = comp.get("composite_score")
+                risk_val = (
+                    float(comp_score)
+                    if comp_score is not None
+                    else float(r.get("risk_score", 0.0) or comp.get("risk_score", 0.0) or 0.0)
+                )
                 anomaly_val = float(r.get("anomaly_score", 0.0) or comp.get("anomaly_score", 0.0) or 0.0)
 
                 nodes.append(GraphNode(

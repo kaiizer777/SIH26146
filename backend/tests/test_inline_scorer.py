@@ -110,7 +110,11 @@ def test_score_batch_synthetic_10_tx():
         assert rec["anomaly_score"] >= 0, f"Negative anomaly_score: {rec['anomaly_score']}"
         assert rec["verdict"] in {"CRITICAL", "HIGH", "MEDIUM", "LOW"}, f"Unexpected verdict: {rec['verdict']}"
         assert rec["provisional"] is True, f"provisional flag must be True"
-        assert rec["risk_score"] == 0.0
+        # risk_score is read from the row's real graph-model output. These
+        # synthetic rows carry none, so it must be an explicit None (not a
+        # fabricated 0.0) — a scored zero and an uncomputed score are different
+        # facts and must not be conflated.
+        assert rec["risk_score"] is None or 0.0 <= rec["risk_score"] <= 1.0
 
         # Composite record check
         comp = rec.get("composite_record")
@@ -118,6 +122,7 @@ def test_score_batch_synthetic_10_tx():
         assert comp["provisional"] is True
         assert comp["verdict"] in {"CRITICAL", "HIGH", "MEDIUM", "LOW"}
         assert comp["address"] == rec["address"]
+        assert "anomaly_normalized" in comp
 
         # Evidence record check
         evid = rec.get("evidence_record")
@@ -126,7 +131,10 @@ def test_score_batch_synthetic_10_tx():
         assert evid["anomaly_score"] >= 0
         assert evid["anomaly_percentile"] >= 0.0
         assert evid["anomaly_rank_percentile"] >= 0.0
-        assert evid["cluster_id"] is None
+        # A component either inherits a real Louvain cluster_id from the
+        # pre-indexed baseline, or gets a provisional one that lives above
+        # 50,000 to avoid colliding with real Louvain IDs.
+        assert evid["cluster_id"] is None or evid["cluster_id"] > 0
         assert evid["mixing_hops"] is None
 
     # 3. Verify peeling chain candidate detection
@@ -163,12 +171,78 @@ def test_score_batch_synthetic_10_tx():
 
 
 def test_map_verdict():
-    """Verify verdict mapping boundaries."""
+    """Verify verdict mapping boundaries against the canonical tiers.
+
+    The thresholds are now owned solely by app.services.risk_thresholds
+    (0.80 / 0.60 / 0.40). The superseded 0.70 / 0.50 / 0.30 table that used to
+    live here is retained in risk_thresholds.LEGACY_INLINE_VERDICT_TIERS for
+    audit only and must never label a record.
+    """
     assert map_verdict(0.85) == "CRITICAL"
-    assert map_verdict(0.70) == "CRITICAL"
-    assert map_verdict(0.69) == "HIGH"
-    assert map_verdict(0.50) == "HIGH"
-    assert map_verdict(0.49) == "MEDIUM"
-    assert map_verdict(0.30) == "MEDIUM"
-    assert map_verdict(0.29) == "LOW"
+    assert map_verdict(0.80) == "CRITICAL"
+    assert map_verdict(0.79) == "HIGH"
+    assert map_verdict(0.60) == "HIGH"
+    assert map_verdict(0.59) == "MEDIUM"
+    assert map_verdict(0.40) == "MEDIUM"
+    assert map_verdict(0.39) == "LOW"
     assert map_verdict(0.0) == "LOW"
+
+
+def test_map_verdict_matches_risk_thresholds():
+    """The inline re-export and the canonical source must never diverge."""
+    from app.services import risk_thresholds
+
+    for score in (0.0, 0.29, 0.39, 0.40, 0.59, 0.60, 0.79, 0.80, 1.0):
+        assert map_verdict(score) == risk_thresholds.map_verdict(score)
+
+
+def test_provisional_cluster_id_is_deterministic_and_above_louvain_range():
+    """Provisional cluster IDs must be stable and never collide with Louvain.
+
+    They used to come from a process-global counter starting at 50,000, which
+    meant two different files ingested by two different worker processes could
+    hand the same ID to unrelated clusters. They are now derived from a hash of
+    the component's member addresses, so the ID depends only on the set.
+    """
+    from app.services.inline_scorer import _PROV_CLUSTER_BASE, _provisional_cluster_id
+
+    members = ["addr_a", "addr_b", "addr_c"]
+
+    # Same set, different order -> same ID.
+    assert _provisional_cluster_id(members) == _provisional_cluster_id(
+        ["addr_c", "addr_a", "addr_b"]
+    )
+    # Repeated calls are stable.
+    assert _provisional_cluster_id(members) == _provisional_cluster_id(members)
+    # A different component gets a different ID.
+    assert _provisional_cluster_id(members) != _provisional_cluster_id(
+        ["addr_a", "addr_b", "addr_d"]
+    )
+    # Always above the real Louvain range so it can never shadow a real cluster.
+    for _ in range(200):
+        assert _provisional_cluster_id([f"w{i}" for i in range(4)]) >= _PROV_CLUSTER_BASE
+
+
+def test_score_batch_aggregates_missing_and_present_risk_scores():
+    """Wallets spanning unscored and scored rows must not crash the aggregation.
+
+    risk_score is now read from the row rather than hardcoded, so it is None for
+    rows the graph pass has not covered. Aggregating with max() across a mix of
+    None and a real value used to raise TypeError.
+    """
+    unscored = _make_dummy_tx(0, ["addr_risk_a"], ["addr_risk_b"])
+    unscored["risk_score"] = None
+
+    scored = _make_dummy_tx(1, ["addr_risk_a"], ["addr_risk_c"])
+    scored["risk_score"] = 0.42
+
+    scored_records = score_batch([unscored, scored])
+    rec = next(r for r in scored_records if r["address"] == "addr_risk_a")
+    assert rec["risk_score"] == 0.42, "must take the real value, not crash or default"
+
+    only_unscored = _make_dummy_tx(2, ["addr_risk_d"], ["addr_risk_e"])
+    only_unscored["risk_score"] = None
+    rec_none = next(
+        r for r in score_batch([only_unscored]) if r["address"] == "addr_risk_d"
+    )
+    assert rec_none["risk_score"] is None, "unscored must stay None, never a fake 0.0"

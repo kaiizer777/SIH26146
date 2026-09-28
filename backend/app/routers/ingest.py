@@ -9,6 +9,13 @@ POST /ingest:
 
 GET /ingest/status/{task_id}:
   - Returns Celery AsyncResult state plus progress/result/error payload.
+  - On SUCCESS the result carries a `graph` block (Neo4j write outcome) and an
+    `enrichment` block (the dispatched enrichment task id, or why it was
+    skipped). A graph failure is reported there, never hidden.
+
+GET /ingest/enrichment/{task_id}:
+  - Reports the state of the post-ingest enrichment chain for an ingest task,
+    including per-stage results.
 """
 
 import collections
@@ -16,6 +23,7 @@ import hashlib
 import logging
 import pathlib
 import threading
+import time
 from typing import Any
 import uuid
 
@@ -30,12 +38,36 @@ from app.config import settings
 from app.schemas.ingest import IngestResponse, IngestSyncResponse, TaskStatusResponse
 from app.services.db import SessionLocal
 from app.services import inline_scorer
+from app.services import shap_service
 from app.services.parser import detect_format
+from app.tasks.ingest import IngestDataLossError
 import app.services.xai_store as xai_store
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
+
+# ---------------------------------------------------------------------------
+# Real-SHAP budget
+# ---------------------------------------------------------------------------
+# A real shap.PermutationExplainer costs roughly 10 s/transaction on this CPU
+# box at max_evals=2000. Running it across all 2,000 rows of the demo dataset
+# would take ~5.5 hours, which is unacceptable behind an interactive upload.
+#
+# Strategy: attribute only the TOP-N most anomalous transactions of the batch —
+# those are the ones an analyst actually opens a dossier for, and the ones that
+# drive the alert list. N and max_evals are both bounded, so the sync endpoint
+# has a hard, predictable ceiling instead of scaling with the upload size.
+# Everything outside the top-N is left without SHAP, and the entity endpoint
+# reports an explicit unavailable state for it rather than inventing values.
+
+# How many transactions get real SHAP per sync call.
+SHAP_TOP_N = 12
+# Monte-Carlo budget per explained transaction. Lower than the service default
+# of 2000 so the bounded top-N still completes quickly.
+SHAP_MAX_EVALS = 256
+# Ceiling on wall-clock time spent attributing inside one sync request.
+SHAP_TIME_BUDGET_S = 90.0
 
 # Ensure upload directory exists at import time.
 _UPLOAD_DIR = pathlib.Path(settings.upload_dir)
@@ -47,6 +79,27 @@ _MAX_UPLOAD_BYTES = 500 * 1024 * 1024
 # File extensions used for the temp file (cosmetic only; format is detected
 # from content, not from this extension).
 _FORMAT_EXT: dict[str, str] = {"csv": ".csv", "json": ".json", "xml": ".xml"}
+
+# ---------------------------------------------------------------------------
+# Re-ingest policy
+# ---------------------------------------------------------------------------
+# A byte-identical re-upload is short-circuited by the Redis content-hash cache
+# below. A byte-DIFFERENT copy of the same transactions is not, and used to
+# destroy the batch: COPY is all-or-nothing, so one already-stored txid discarded
+# every other row while the task still reported SUCCESS.
+#
+# The policy is SKIP-AND-REPORT, not reject and not replace:
+#   * Rejecting with 409 would make a monitoring ingest non-idempotent and force
+#     an operator to work around the API to re-upload the same chain data.
+#   * Replacing would overwrite already-stored forensic evidence, which a
+#     chain-analysis product must never do silently.
+#   * Skipping already-stored txids and REPORTING the split (inserted vs
+#     duplicate vs invalid) keeps re-ingest safe and the accounting honest.
+# The insert path (app/tasks/ingest.py) enforces this with
+# ``ON CONFLICT (txid) DO NOTHING`` and raises IngestDataLossError when a run
+# stores nothing, so a total no-op upload surfaces as FAILURE rather than a
+# silent success.
+INGEST_REINGEST_POLICY = "skip_and_report"
 
 _redis_client: redis.Redis | None = None
 
@@ -81,7 +134,10 @@ async def post_ingest(file: UploadFile) -> JSONResponse:
     """Accept a multipart file, detect format, enqueue Celery task.
 
     Returns HTTP 202 with task_id immediately. Poll
-    GET /ingest/status/{task_id} for progress.
+    GET /ingest/status/{task_id} for progress; its ``result`` reports
+    ``total_inserted`` / ``total_duplicates`` / ``total_rejected`` so a re-upload
+    of previously ingested transactions is visible rather than silent (see
+    :data:`INGEST_REINGEST_POLICY`).
     """
     # --- Read first chunk for format sniffing ---
     header_chunk = await file.read(512)
@@ -238,10 +294,18 @@ async def get_ingest_status(task_id: str) -> TaskStatusResponse:
 
     if state == "FAILURE":
         error_msg = str(result.result) if result.result else "Unknown error"
+        # A run that durably stored nothing raises IngestDataLossError, which
+        # carries the full summary. Surface the counts alongside the message so
+        # a re-upload reports "N duplicates, 0 inserted" instead of an opaque
+        # failure string.
+        failure_summary: dict[str, Any] | None = None
+        if isinstance(result.result, IngestDataLossError) and result.result.summary:
+            failure_summary = result.result.summary
         return TaskStatusResponse(
             task_id=task_id,
             status="FAILURE",
             error=error_msg,
+            result=failure_summary,
         )
 
     # Covers REVOKED and any other states.
@@ -366,8 +430,150 @@ async def post_ingest_sync(
             detail=f"Scoring/store update failed during sync: {exc}",
         )
 
+    # 6. Real SHAP for the highest-signal transactions, bounded by N and time.
+    shap_stats = _persist_real_shap(rows)
+
     return IngestSyncResponse(
         scored=len(rows),
         upserted=upserted,
         skipped_existing=skipped_existing,
     )
+
+
+def _persist_real_shap(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Run real SHAP on the top-N most anomalous rows and persist it durably.
+
+    Returns a stats dict. Never raises: SHAP is an enrichment, and a failure
+    here must not fail the sync that already persisted the composite records.
+    The stats are logged so the outcome is observable rather than silent.
+    """
+    stats: dict[str, Any] = {
+        "attempted": 0, "explained": 0, "persisted": 0,
+        "status": "skipped", "elapsed_s": 0.0,
+    }
+    if not rows:
+        stats["status"] = "no_rows"
+        return stats
+
+    error = shap_service.availability_error()
+    if error is not None:
+        logger.warning("Real SHAP unavailable, skipping attribution: %s", error)
+        stats["status"] = "unavailable"
+        stats["error"] = str(error)
+        return stats
+
+    # Rank by recorded anomaly, falling back to the scored value when the row
+    # has not been through the anomaly pass yet.
+    def _anomaly(row: dict[str, Any]) -> float:
+        for key in ("anomaly_score",):
+            raw = row.get(key)
+            try:
+                value = float(raw)
+            except (TypeError, ValueError):
+                continue
+            if value == value:  # not NaN
+                return value
+        return 0.0
+
+    ranked = sorted(rows, key=_anomaly, reverse=True)[:SHAP_TOP_N]
+    stats["attempted"] = len(ranked)
+
+    t0 = time.perf_counter()
+    try:
+        background = shap_service.build_background(rows, size=shap_service.DEFAULT_BACKGROUND_SIZE)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not build SHAP background: %s", exc)
+        stats["status"] = "unavailable"
+        stats["error"] = f"background: {type(exc).__name__}: {exc}"
+        return stats
+
+    for row in ranked:
+        if time.perf_counter() - t0 > SHAP_TIME_BUDGET_S:
+            logger.warning(
+                "SHAP time budget of %.0fs exhausted after %d/%d transactions — "
+                "remaining rows are left without attribution and will report an "
+                "explicit unavailable state.",
+                SHAP_TIME_BUDGET_S, stats["explained"], stats["attempted"],
+            )
+            stats["status"] = "budget_exhausted"
+            break
+        txid = str(row.get("txid") or "")
+        if not txid:
+            continue
+        try:
+            explanation, attention = shap_service.explain_row_with_attention(
+                row,
+                background=background,
+                max_evals=SHAP_MAX_EVALS,
+            )
+        except Exception as exc:  # noqa: BLE001 - one row must not abort the rest
+            logger.warning("SHAP failed for txid %s: %s: %s", txid[:12], type(exc).__name__, exc)
+            continue
+
+        xai_store.upsert_shap(txid, explanation.to_store_records())
+        xai_store.upsert_attention(txid, attention)
+        stats["explained"] += 1
+        stats["persisted"] += 1
+
+    if stats["status"] == "skipped":
+        stats["status"] = "ok" if stats["explained"] else "unavailable"
+    stats["elapsed_s"] = round(time.perf_counter() - t0, 2)
+    stats["max_evals"] = SHAP_MAX_EVALS
+    logger.info("Real SHAP sync: %s", stats)
+    return stats
+
+
+@router.get(
+    "/enrichment/{task_id}",
+    summary="Poll the post-ingest enrichment chain for an ingest task",
+)
+async def get_enrichment_status(
+    task_id: str = Path(..., pattern=r"^[0-9a-fA-F-]{36}$"),
+) -> dict[str, Any]:
+    """Report the state of the enrichment chain dispatched by an ingest task.
+
+    Enrichment runs as a separate Celery task so the upload path never blocks.
+    This endpoint resolves the ingest task's own result to find the enrichment
+    task id, then reports that task's state plus the per-stage result.
+
+    Returns 404 when the ingest task is unknown, and reports
+    ``status="not_dispatched"`` when the ingest produced no rows to enrich or
+    skipped enrichment because the graph write failed.
+    """
+    result: AsyncResult = AsyncResult(task_id, app=celery_app)
+    task_data = result.result if isinstance(result.result, dict) else {}
+
+    enrichment = task_data.get("enrichment") or {}
+    if not enrichment:
+        return {
+            "ingest_task_id": task_id,
+            "status": "not_dispatched",
+            "detail": "This ingest has no enrichment chain recorded "
+                      "(no rows inserted, or the task has not finished).",
+        }
+
+    if enrichment.get("status") != "dispatched":
+        return {
+            "ingest_task_id": task_id,
+            "status": enrichment.get("status", "unknown"),
+            "reason": enrichment.get("reason"),
+            "error": enrichment.get("error"),
+        }
+
+    enrich_task_id = enrichment["task_id"]
+    enrich_result: AsyncResult = AsyncResult(enrich_task_id, app=celery_app)
+    state = enrich_result.state
+
+    payload: dict[str, Any] = {
+        "ingest_task_id": task_id,
+        "task_id": enrich_task_id,
+        "status": state,
+    }
+    if state == "PROGRESS":
+        payload["progress"] = enrich_result.info
+    elif state == "SUCCESS":
+        payload["result"] = enrich_result.result
+    elif state == "FAILURE":
+        payload["error"] = str(enrich_result.result)
+
+    return payload

@@ -17,6 +17,7 @@ import {
   FileText,
   BarChart3,
   Brain,
+  CircleDashed,
   Cpu,
   ShieldCheck,
 } from "lucide-react";
@@ -26,7 +27,21 @@ import AttentionHeatmap from "./AttentionHeatmap";
 import ModelProvenanceModal from "./ModelProvenanceModal";
 import LegalCertificateModal from "./LegalCertificateModal";
 
-type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+// Mirrors the backend verdict vocabulary: the four risk tiers defined by
+// `app/services/risk_thresholds.py::VERDICT_TIERS`, plus "UNKNOWN"
+// (`app/routers/entity.py::UNKNOWN_VERDICT`). "UNKNOWN" is NOT a fifth risk
+// tier — it is the explicit "has telemetry, was never scored" state, and it is
+// deliberately kept out of the four-tier colour language so it can never be
+// misread as a measured LOW.
+type Verdict = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+
+const VERDICT_VALUES: readonly Verdict[] = [
+  "CRITICAL",
+  "HIGH",
+  "MEDIUM",
+  "LOW",
+  "UNKNOWN",
+];
 
 interface EntityDrawerProps {
   address: string | null;
@@ -58,21 +73,53 @@ const VERDICT_CLASSES: Record<Verdict, { pill: string; gauge: string }> = {
     pill: "pill-low text-emerald-800",
     gauge: "#16a34a",
   },
+  UNKNOWN: {
+    pill: "pill-unknown text-slate-600",
+    gauge: "#94a3b8",
+  },
 };
+
+/**
+ * Narrow a wire verdict onto the known vocabulary.
+ *
+ * `verdict` crosses the wire as a string, so it is narrowed by lookup rather
+ * than by assertion. An unrecognised value degrades to the neutral UNKNOWN
+ * treatment instead of falling through to an unkeyed lookup. Because this
+ * returns `Verdict` rather than a cast, `VERDICT_CLASSES[verdict]` stays total:
+ * every union member has an entry, so no verdict can yield `undefined.pill`.
+ */
+function toVerdict(value: string | null | undefined): Verdict {
+  return VERDICT_VALUES.find((v) => v === value) ?? "UNKNOWN";
+}
 
 // ---------------------------------------------------------------------------
 // Composite gauge (SVG arc)
 // ---------------------------------------------------------------------------
 
-function RiskGauge({ score, verdict }: { score: number; verdict: string }) {
-  const v = verdict as Verdict;
+function RiskGauge({
+  score,
+  verdict,
+  unscored,
+}: {
+  score: number;
+  verdict: Verdict;
+  unscored: boolean;
+}) {
+  const v = verdict;
   const r = 36;
   const cx = 45;
   const cy = 44;
   const startAngle = -Math.PI * 0.75;
   const endAngle = Math.PI * 0.75;
   const range = endAngle - startAngle;
-  const angle = startAngle + range * Math.min(score, 1);
+  // An unscored entity carries composite_score 0.0 as a placeholder, not as a
+  // measurement, so it is never plotted: a zero-length arc reads as a
+  // confident "measured, and it came out zero".
+  const plottedScore =
+    unscored || !Number.isFinite(score)
+      ? null
+      : Math.min(Math.max(score, 0), 1);
+  const angle = startAngle + range * (plottedScore ?? 0);
 
   const arcPath = (from: number, to: number, radius: number) => {
     const x1 = cx + radius * Math.cos(from);
@@ -83,10 +130,14 @@ function RiskGauge({ score, verdict }: { score: number; verdict: string }) {
     return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`;
   };
 
-  const fillColor = VERDICT_CLASSES[v]?.gauge ?? "#94a3b8";
+  const fillColor = VERDICT_CLASSES[v].gauge;
+  const gaugeLabel =
+    plottedScore === null
+      ? "Risk gauge: no score available"
+      : `Risk gauge: ${plottedScore.toFixed(3)}`;
 
   return (
-    <svg width={90} height={66} viewBox="0 0 90 66" aria-label={`Risk gauge: ${score.toFixed(3)}`}>
+    <svg width={90} height={66} viewBox="0 0 90 66" aria-label={gaugeLabel}>
       {/* Track */}
       <path
         d={arcPath(startAngle, endAngle, r)}
@@ -96,13 +147,15 @@ function RiskGauge({ score, verdict }: { score: number; verdict: string }) {
         strokeLinecap="round"
       />
       {/* Fill */}
-      <path
-        d={arcPath(startAngle, angle, r)}
-        fill="none"
-        stroke={fillColor}
-        strokeWidth={8}
-        strokeLinecap="round"
-      />
+      {plottedScore !== null && (
+        <path
+          d={arcPath(startAngle, angle, r)}
+          fill="none"
+          stroke={fillColor}
+          strokeWidth={8}
+          strokeLinecap="round"
+        />
+      )}
       {/* Score text */}
       <text
         x={cx}
@@ -113,7 +166,7 @@ function RiskGauge({ score, verdict }: { score: number; verdict: string }) {
         fill="#0f172a"
         fontFamily="monospace"
       >
-        {score.toFixed(3)}
+        {plottedScore === null ? "—" : plottedScore.toFixed(3)}
       </text>
     </svg>
   );
@@ -240,7 +293,15 @@ export default function EntityDrawer({
     URL.revokeObjectURL(url);
   };
 
-  const verdict = (data?.verdict ?? "LOW") as Verdict;
+  // An address can have transaction telemetry in PostgreSQL and still never
+  // have been scored. The backend reports that explicitly via
+  // `extra.scored === false` (with `extra.verdict_stored === "UNKNOWN"`) rather
+  // than fabricating a verdict — but it still emits composite_score 0.0, which
+  // map_verdict() would tier as a real "LOW". Trust the explicit flag, not the
+  // numeric placeholder, so the dossier can never present an unassessed wallet
+  // as a confirmed low-risk one.
+  const isUnscored = data?.evidence_trail.extra?.scored === false;
+  const verdict: Verdict = isUnscored ? "UNKNOWN" : toVerdict(data?.verdict);
   const isProvisional = data?.provisional === true;
 
   return (
@@ -334,8 +395,33 @@ export default function EntityDrawer({
           {/* Data */}
           {!isLoading && !error && data && (
             <div className="flex flex-col gap-4 p-5">
+              {/* Unscored Notice. Deliberately takes precedence over the
+                  provisional banner below, whose claim that "anomaly score and
+                  rule detections are live" is false for an entity that was
+                  never assessed. */}
+              {isUnscored && (
+                <div
+                  id="drawer-unscored-banner"
+                  role="status"
+                  className="bg-slate-50 border border-slate-300 text-slate-700 rounded-lg p-3.5 flex items-start gap-3"
+                >
+                  <CircleDashed className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Not Scored
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      This address has transaction telemetry but no completed risk
+                      assessment, so there is no composite score and no verdict. The
+                      component values below are placeholders, not measurements —
+                      run a post-ingest scoring pass before relying on any risk
+                      conclusion for this wallet.
+                    </p>
+                  </div>
+                </div>
+              )}
               {/* Provisional Warning Banner */}
-              {isProvisional && (
+              {isProvisional && !isUnscored && (
                 <div
                   id="drawer-provisional-banner"
                   role="status"
@@ -398,15 +484,22 @@ export default function EntityDrawer({
                 <div className="flex flex-col items-center shrink-0 pl-2">
                   <RiskGauge
                     score={data.composite_score}
-                    verdict={data.verdict}
+                    verdict={verdict}
+                    unscored={isUnscored}
                   />
                   <span
+                    id="drawer-verdict-pill"
+                    title={
+                      isUnscored
+                        ? "No risk assessment was completed for this address"
+                        : undefined
+                    }
                     className={clsx(
                       "mt-1 px-3 py-0.5 rounded text-xs font-bold tracking-wide",
                       VERDICT_CLASSES[verdict].pill,
                     )}
                   >
-                    {data.verdict}
+                    {verdict}
                   </span>
                 </div>
               </div>

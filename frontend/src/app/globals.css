@@ -58,6 +58,14 @@
   --low-bg: #f0fdf4;
   --low-border: #bbf7d0;
   --low-indicator: #16a34a;
+
+  /* Severity: UNKNOWN (address has telemetry but was never scored).
+     Deliberately neutral slate: this is an ABSENCE of a risk conclusion,
+     not a low one, so it must not read as any of the four risk hues. */
+  --unknown-text: #475569;
+  --unknown-bg: #f8fafc;
+  --unknown-border: #cbd5e1;
+  --unknown-indicator: #94a3b8;
 }
 
 /* Force light mode — no dark theme */
@@ -174,6 +182,13 @@ body {
   background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
   border: 1px solid var(--low-border);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(22, 163, 74, 0.08);
+}
+
+.pill-unknown {
+  color: var(--unknown-text);
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid var(--unknown-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(100, 116, 139, 0.1);
 }
 
 /* =========================================================

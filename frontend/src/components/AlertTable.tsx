@@ -373,8 +373,16 @@ const AlertTableRow = memo(
               </span>
             </span>
           ) : (
-            <span className="crypto-mono text-xs px-2.5 py-0.5 rounded-md bg-gradient-to-b from-white to-slate-50 border border-slate-200 text-slate-600 font-semibold shadow-[0_1px_2px_rgba(15,23,42,0.04),inset_0_1px_0_#ffffff]">
-              Clean
+            /* Not "Clean" - this cell only reports whether the address matched
+               the ransomware seed-intelligence list. A CRITICAL wallet with a
+               7-hop peel chain can legitimately have no seed hit, and labelling
+               that "Clean" reads as "nothing to see here" to an analyst, which
+               is the opposite of what the evidence says. */
+            <span
+              title="No match against the known ransomware seed-address intelligence list. This does not indicate the absence of suspicious activity."
+              className="crypto-mono text-xs px-2.5 py-0.5 rounded-md bg-gradient-to-b from-white to-slate-50 border border-slate-200 text-slate-600 font-semibold shadow-[0_1px_2px_rgba(15,23,42,0.04),inset_0_1px_0_#ffffff]"
+            >
+              No seed hit
             </span>
           )}
         </td>

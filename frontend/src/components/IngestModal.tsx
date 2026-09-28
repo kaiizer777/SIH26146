@@ -49,6 +49,7 @@ export default function IngestModal({
   const [progress, setProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [statusText, setStatusText] = useState("");
+  const [warningTitle, setWarningTitle] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,6 +66,7 @@ export default function IngestModal({
     setProgress(0);
     setSelectedFile(null);
     setStatusText("");
+    setWarningTitle("");
     setErrorMsg("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
@@ -118,9 +120,17 @@ export default function IngestModal({
             const received = Number(
               result?.total_received ?? result?.received ?? (inserted + rejected)
             );
+            // The ingest task never raises on a Neo4j failure — the rows are
+            // durable in PostgreSQL, so the task still reports SUCCESS and puts
+            // the mirror outcome in the result's `graph` block.
+            const graph = result?.graph as
+              | { status?: string; error?: string }
+              | undefined;
+            const graphFailed = graph?.status === "failed";
 
             if (inserted === 0 && (rejected > 0 || received > 0)) {
               // DUP-2b: All rows rejected as duplicates (txid already exists in Postgres)
+              setWarningTitle("Duplicate Transactions Detected");
               setStage("warning");
               const count = rejected > 0 ? rejected : received;
               const warnMsg = `No new transactions inserted — all ${count.toLocaleString()} rows were rejected as duplicates (txid already exists). The alert table reflects existing data.`;
@@ -133,10 +143,6 @@ export default function IngestModal({
               setErrorMsg(emptyMsg);
               toast.error(emptyMsg);
             } else {
-              setStage("success");
-              setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
-              toast.success(`Batch ingested: ${inserted} rows processed`);
-
               // Sub-task 11.4: Post-ingest online inference sync (fail-open)
               try {
                 await syncIngestTask(taskId);
@@ -147,6 +153,26 @@ export default function IngestModal({
                   "— proceeding anyway",
                 );
               }
+
+              // A failed graph mirror is a real, partial failure: clustering,
+              // co-spend edges and the whole enrichment chain are skipped by the
+              // backend. Report it instead of a clean success.
+              if (graphFailed) {
+                const graphMsg =
+                  `Ingested ${inserted.toLocaleString()} rows into PostgreSQL, but the ` +
+                  `Neo4j graph write failed (${graph?.error ?? "unknown error"}). ` +
+                  `Clustering, co-spend edges and the enrichment chain were skipped.`;
+                setWarningTitle("Graph Write Failed");
+                setStatusText(graphMsg);
+                setStage("warning");
+                toast.warning(graphMsg);
+                onSuccess();
+                return;
+              }
+
+              setStage("success");
+              setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
+              toast.success(`Batch ingested: ${inserted} rows processed`);
 
               pollTimerRef.current = setTimeout(() => {
                 onSuccess();
@@ -209,7 +235,7 @@ export default function IngestModal({
       name: "test_2000.csv",
       title: "Sample 2,000 TXs",
       tagline: "High-volume stress test dataset with multi-hop laundering chains",
-      size: "718 KB",
+      size: "1.1 MB",
       rows: "2,000 Rows",
       badge: "2,000 Rows",
       badgeStyle: "bg-sky-50 text-sky-700 border-sky-200/80",
@@ -456,7 +482,7 @@ export default function IngestModal({
                 </div>
                 <div className="space-y-1 flex-1">
                   <p className="text-xs font-bold text-amber-900">
-                    Duplicate Transactions Detected
+                    {warningTitle}
                   </p>
                   <p className="text-xs text-amber-800 leading-relaxed">
                     {statusText}

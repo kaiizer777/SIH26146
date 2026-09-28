@@ -28,15 +28,19 @@ from app.schemas.entity import (
     ShapAttribution,
 )
 import app.services.xai_store as xai_store
+from app.services import risk_thresholds
 from app.services.db import SessionLocal
-import numpy as np
-import torch
-from app.services.feature_extractor import FEATURE_NAMES, extract_features_batch
 import app.services.inline_scorer as inline_scorer
+from app.services import shap_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/entity", tags=["entity"])
+
+# Verdict used when an address has telemetry but was never actually scored.
+# Deliberately NOT one of the four confidence tiers — it must be visibly
+# distinct from a real "LOW".
+UNKNOWN_VERDICT = "UNKNOWN"
 
 # ---------------------------------------------------------------------------
 # Neo4j async driver (module-level, one per process)
@@ -303,84 +307,181 @@ async def _fetch_transaction_ego_subgraph_from_postgres(
         return None
 
 
+# Minimum background rows a wallet must contribute on its own before the
+# explainer will run. Below this we borrow real rows from PostgreSQL, because
+# E[f] cannot be estimated from a single sample and a fabricated baseline
+# would silently shift every attribution.
+_SHAP_MIN_BACKGROUND_ROWS = 2
+# Rows borrowed from PostgreSQL to build a background when the wallet's own
+# transaction set is too small.
+_SHAP_BACKGROUND_POOL = 128
+
+
+# Attribution magnitude below which a contribution carries no information.
+# A vector where every feature is under this threshold is a degenerate
+# explainer output, not a measurement that "no feature mattered".
+_SHAP_DEGENERATE_EPS = 1e-9
+
+
+def _is_degenerate_attribution(attributions: list[dict[str, Any]]) -> bool:
+    """True when every attribution is (near) exactly zero.
+
+    A permutation explainer returns all-zero contributions when the model output
+    is identical for the explained row and for every masked permutation of it.
+    That is a real property of the model, but presenting it as an 18-feature
+    waterfall reads as "these features do not matter", which is a forensic claim
+    the run did not make. Callers substitute an explicit unavailable state.
+    """
+    if not attributions:
+        return False
+    return all(
+        abs(float(item.get("attribution", 0.0) or 0.0)) <= _SHAP_DEGENERATE_EPS
+        for item in attributions
+    )
+
+
+async def _load_shap_background_pool() -> list[dict]:
+    """Fetch a small sample of real transactions to widen a SHAP background.
+
+    Returns an empty list when PostgreSQL is unavailable; the caller then falls
+    back to the wallet's own rows.
+    """
+    try:
+        async with SessionLocal() as db:
+            result = await db.execute(
+                text("""
+                    SELECT txid, input_addresses, output_addresses, input_amounts,
+                           output_amounts, fee, script_type, geo_country, asn, ts
+                    FROM transactions
+                    ORDER BY id DESC
+                    LIMIT :limit
+                """),
+                {"limit": _SHAP_BACKGROUND_POOL},
+            )
+            return [dict(r._mapping) for r in result.fetchall()]
+    except Exception as exc:  # noqa: BLE001 - background is best-effort
+        logger.warning("Could not load SHAP background pool from PG: %s", exc)
+        return []
+
+
 def _compute_provisional_shap_and_attention(
     address: str,
     tx_rows: list[dict],
+    background_pool: list[dict] | None = None,
 ) -> tuple[list[ShapAttribution], Optional[list[list[float]]]]:
-    """Compute on-the-fly 18-feature SHAP attributions and attention matrix for provisional entities."""
-    try:
-        inline_scorer.init_scorer()
-        X = extract_features_batch(tx_rows)
-        if len(X) == 0:
-            return [], None
+    """Compute REAL SHAP attributions and REAL model attention for provisional entities.
 
-        x = np.mean(X, axis=0)
+    Delegates to :mod:`app.services.shap_service`, which runs an actual
+    ``shap.PermutationExplainer`` against the trained FT-Transformer and reads
+    the model's own cross-feature attention. The previous implementation
+    fabricated the waterfall from a hardcoded weight vector and synthesised the
+    "attention matrix" as a cosine-similarity of the feature vector with itself;
+    both are removed — no hardcoded numbers remain in this path.
 
-        scaler = inline_scorer._scaler
-        if scaler is not None and hasattr(scaler, "mean_") and hasattr(scaler, "scale_"):
-            mean = np.array(scaler.mean_, dtype=np.float32)
-            scale = np.array(scaler.scale_, dtype=np.float32)
-            scale = np.where(scale == 0, 1.0, scale)
-            z = (x - mean) / scale
-        else:
-            std_val = float(np.std(x))
-            z = (x - np.mean(x)) / (std_val if std_val > 0 else 1.0)
+    Uses the single most anomalous transaction of the wallet, because that is the
+    one an analyst opens the dossier for. Attribution is exact for that row.
 
-        attention_matrix: Optional[list[list[float]]] = None
-        weights: Optional[np.ndarray] = None
+    Args:
+        address: Wallet address (for logging and narrative context).
+        tx_rows: This wallet's transactions.
+        background_pool: Extra real rows used to widen the background when
+            ``tx_rows`` is too small to estimate E[f]. Never synthetic.
 
-        model = inline_scorer._model
-        if model is not None:
-            try:
-                model.eval()
-                tensor_x = torch.from_numpy(z.astype(np.float32)).unsqueeze(0)
-                with torch.no_grad():
-                    if hasattr(model, "forward"):
-                        co_varnames = getattr(getattr(model.forward, "__code__", None), "co_varnames", ())
-                        if "return_attention" in co_varnames:
-                            recon, attn_dict = model.forward(tensor_x, return_attention=True)
-                            c_attn = attn_dict["cross_feature_attention"][0].cpu().numpy()
-                            attention_matrix = [[round(float(v), 4) for v in row] for row in c_attn]
-                            weights = attn_dict["cls_attention"][0].cpu().numpy()
-                        else:
-                            recon = model.forward(tensor_x)
-                            diff = (tensor_x - recon).abs()[0].cpu().numpy()
-                            weights = diff / (diff.sum() + 1e-6)
-            except Exception as m_exc:
-                logger.warning("Inline model forward for explainability failed: %s", m_exc)
-
-        # Fallback attention matrix: scaled dot-product pairwise similarity normalized by row softmax
-        if attention_matrix is None or len(attention_matrix) != 18:
-            z_vec = z.reshape(18, 1)
-            sim = np.dot(z_vec, z_vec.T) / np.sqrt(18.0)
-            exp_sim = np.exp(sim - np.max(sim, axis=-1, keepdims=True))
-            attn_np = exp_sim / (np.sum(exp_sim, axis=-1, keepdims=True) + 1e-9)
-            attention_matrix = [[round(float(v), 4) for v in row] for row in attn_np]
-
-        if weights is None or len(weights) != 18:
-            weights = np.array([
-                0.75, 0.65, 0.65, 0.85, 0.85, 0.80,
-                0.90, 0.95, 0.95, 0.50, 0.50, 0.60,
-                0.35, 0.35, 0.45, 0.45, 0.70, 0.70,
-            ], dtype=np.float32)
-
-        # Directional attribution: signed deviation z_i weighted by importance
-        raw_attr = np.tanh((z * weights) / 2.0)
-        attr_vals = np.clip(raw_attr, -1.0, 1.0)
-
-        shap_items = [
-            ShapAttribution(
-                feature=feat_name,
-                label=_label(feat_name),
-                value=round(float(val), 4),
-            )
-            for feat_name, val in zip(FEATURE_NAMES, attr_vals)
-        ]
-        shap_items.sort(key=lambda s: abs(s.value), reverse=True)
-        return shap_items, attention_matrix
-    except Exception as exc:
-        logger.warning("Provisional explainability computation failed for %s: %s", address[:8] + "...", exc)
+    Returns:
+        ``(shap_items, attention_matrix)``. Either may be empty/None ONLY when
+        the real service is genuinely unavailable; the reason is logged at
+        WARNING and the caller surfaces an explicit unavailable state rather than
+        substituting fake values.
+    """
+    if not tx_rows:
         return [], None
+
+    # Pick the row with the largest recorded anomaly score: the highest-signal
+    # transaction for this wallet, and the one the dossier is opened for.
+    def _anomaly_of(row: dict) -> float:
+        raw = row.get("anomaly_score")
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            return -1.0
+        return value if value == value else -1.0
+
+    target_row = max(tx_rows, key=_anomaly_of)
+
+    # E[f] needs a distribution. Widen with real rows when the wallet's own
+    # transaction set is too small; never invent samples.
+    background_rows: list[dict] = list(tx_rows)
+    if len(background_rows) < _SHAP_MIN_BACKGROUND_ROWS and background_pool:
+        seen_txids = {str(r.get("txid")) for r in background_rows}
+        for extra in background_pool:
+            if str(extra.get("txid")) not in seen_txids:
+                background_rows.append(extra)
+                seen_txids.add(str(extra.get("txid")))
+
+    try:
+        background = shap_service.build_background(
+            background_rows, size=shap_service.DEFAULT_BACKGROUND_SIZE
+        )
+        explanation, attention = shap_service.explain_row_with_attention(
+            target_row,
+            background=background,
+            max_evals=shap_service.DEFAULT_MAX_EVALS,
+        )
+    except shap_service.ShapServiceError as exc:
+        logger.warning(
+            "Real SHAP unavailable for %s (txid=%s): %s — returning an explicit "
+            "unavailable state instead of fabricated attributions.",
+            address[:8] + "...",
+            str(target_row.get("txid", "?"))[:12],
+            exc,
+        )
+        return [], None
+    except Exception as exc:  # noqa: BLE001 - never fabricate on unexpected failure
+        logger.exception(
+            "Unexpected SHAP failure for %s: %s — returning an explicit "
+            "unavailable state instead of fabricated attributions.",
+            address[:8] + "...",
+            exc,
+        )
+        return [], None
+
+    shap_items = [
+        ShapAttribution(
+            feature=attr.feature,
+            label=_label(attr.feature),
+            value=round(float(attr.contribution), 6),
+        )
+        for attr in explanation.attributions
+    ]
+    attention_matrix = attention.get("cross_feature_attention")
+
+    # The explainer can legitimately return an all-zero vector when the model
+    # output is invariant under feature permutation for this row. Report that as
+    # an explicit unavailable state, not as 18 features contributing nothing.
+    if _is_degenerate_attribution(
+        [{"attribution": item.value} for item in shap_items]
+    ):
+        logger.warning(
+            "Permutation explainer returned an all-zero vector for %s "
+            "(txid=%s, f(x)=%.6f, E[f]=%.6f, additivity_err=%.2e) — reporting an "
+            "explicit unavailable state instead of a fabricated waterfall.",
+            address[:8] + "...",
+            str(target_row.get("txid", "?"))[:12],
+            explanation.prediction,
+            explanation.base_value,
+            explanation.additivity_error,
+        )
+        return [], attention_matrix
+
+    logger.info(
+        "Real SHAP for %s (txid=%s): %d attributions, additivity_err=%.2e, prediction=%.6f",
+        address[:8] + "...",
+        str(target_row.get("txid", "?"))[:12],
+        len(shap_items),
+        explanation.additivity_error,
+        explanation.prediction,
+    )
+    return shap_items, attention_matrix
 
 
 # ---------------------------------------------------------------------------
@@ -441,10 +542,22 @@ def _build_narrative(
     parts: list[str] = [f"Wallet {short_addr} scored {verdict} ({score:.3f})."]
 
     if chain_hops >= 3:
-        pct = evidence.get("pass_through_ratio", 0.0) or 0.0
-        parts.append(
-            f"Peeling chain detected: {chain_hops} hops with {pct*100:.1f}% pass-through ratio."
-        )
+        # pass_through_ratio is only meaningful for a detected peeling chain, and
+        # is derived per hop by the enrichment chain. When it was never derived
+        # (no chain, or the chain predates the metric) the previous code did
+        # `or 0.0` and printed a confident "0.0% pass-through ratio" — a
+        # fabricated measurement. State the gap instead.
+        if evidence.get("pass_through_ratio") is None:
+            parts.append(
+                f"Peeling chain detected: {chain_hops} hops; pass-through ratio "
+                "not available for this chain (no per-hop value breakdown was "
+                "derived for it)."
+            )
+        else:
+            pct = float(evidence["pass_through_ratio"])
+            parts.append(
+                f"Peeling chain detected: {chain_hops} hops with {pct*100:.1f}% pass-through ratio."
+            )
     if "CoinJoin" in str(mixing_patterns) or any("coinjoin" in p.lower() for p in mixing_patterns):
         parts.append("CoinJoin mixing fingerprint detected in transaction structure.")
     if rank_pct >= 90:
@@ -509,35 +622,208 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
             scored_items = inline_scorer.score_batch(tx_rows)
             xai_store.upsert_batch(scored_items)
             composite = xai_store.get_composite(address)
+            # The record now exists, so this address WAS scored. Assigned on both
+            # exits of this try: the previous code only set `scored` on the
+            # failure path, so a successful inline score fell through to
+            # `if not scored:` with the name unbound and the endpoint returned
+            # HTTP 500 for exactly the wallets that had just been ingested.
+            scored = True
         except Exception as sc_exc:
             logger.warning("Inline scoring on-the-fly failed for %s: %s", address[:8] + "...", sc_exc)
+            composite = None
+            scored = False
 
         if composite is None:
+            # Scoring was attempted but produced no record for this address.
+            # Do NOT fabricate a score: a confident "MEDIUM" for a wallet that
+            # was never scored is a fabricated forensic conclusion. Return an
+            # explicit unscored state instead (composite_score 0.0, verdict
+            # "UNKNOWN") and flag it via `extra` so the UI can distinguish it
+            # from a genuinely LOW-scored wallet.
+            logger.warning(
+                "Address %s has telemetry in PostgreSQL but no composite record "
+                "after inline scoring — reporting UNSCORED rather than a "
+                "fabricated verdict.",
+                address[:8] + "...",
+            )
+            scored = False
             composite = {
                 "address": address,
-                "composite_score": 0.5,
-                "verdict": "MEDIUM",
+                "composite_score": 0.0,
+                "verdict": UNKNOWN_VERDICT,
                 "provisional": True,
-                "anomaly_score": 0.05,
-                "risk_score": 0.0,
+                "scored": False,
+                "anomaly_score": None,
+                "risk_score": None,
+                "rule_bonus": 0.0,
+                "mixing_indicator": 0.0,
                 "triggered_rules": [],
                 "mixing_patterns": [],
+                "chain_hops": 0,
             }
+    else:
+        scored = True
 
     evidence_raw = xai_store.get_evidence(address) or {}
 
     # --- Score breakdown ---
-    breakdown = ScoreBreakdown(
-        anomaly_component=float(composite.get("anomaly_score", 0.0) or 0.0) * 0.35,
-        risk_component=float(composite.get("risk_score", 0.0) or 0.0) * 0.45,
-        rule_bonus=float(composite.get("rule_bonus", 0.0) or 0.0),
-        mixing_indicator=float(composite.get("mixing_indicator", 0.0) or 0.0),
+    # The breakdown MUST sum to composite_score. Recompute it with the canonical
+    # risk_thresholds formula, which normalizes the (unbounded, up to ~100) raw
+    # anomaly MSE before weighting. The previous code multiplied the raw MSE by
+    # 0.35, producing components up to 35.0 that bore no relation to the score.
+    anomaly_raw = composite.get("anomaly_score")
+    risk_raw = composite.get("risk_score")
+    rules_for_score = composite.get("triggered_rules") or []
+    mixing_for_score = composite.get("mixing_patterns") or []
+
+    canonical = risk_thresholds.compute_composite(
+        anomaly_score=float(anomaly_raw) if anomaly_raw is not None else 0.0,
+        risk_score=float(risk_raw) if risk_raw is not None else 0.0,
+        triggered_rules=list(rules_for_score),
+        mixing_patterns=list(mixing_for_score),
     )
+    breakdown = ScoreBreakdown(
+        anomaly_component=canonical.anomaly_component,
+        risk_component=canonical.risk_component,
+        rule_bonus=canonical.rule_component,
+        mixing_indicator=canonical.mixing_component,
+    )
+    breakdown_total = (
+        breakdown.anomaly_component
+        + breakdown.risk_component
+        + breakdown.rule_bonus
+        + breakdown.mixing_indicator
+    )
+
+    # --- SHAP attributions (keyed by txid — fetch txids for this address from PG) ---
+    shap_attributions: list[ShapAttribution] = []
+    matched_txid: Optional[str] = None
+    shap_state = "unavailable_no_transaction_telemetry"
+    shap_reason = (
+        "No transaction rows are indexed for this address, so there is nothing to attribute."
+    )
+    try:
+        if not tx_rows:
+            async with SessionLocal() as db:
+                result = await db.execute(
+                    text("""
+                        SELECT txid, input_addresses, output_addresses, input_amounts, output_amounts,
+                               fee, script_type, geo_country, asn, ts, risk_score, anomaly_score
+                        FROM transactions
+                        WHERE :addr = ANY(input_addresses)
+                           OR :addr = ANY(output_addresses)
+                        ORDER BY ts DESC
+                        LIMIT 20
+                    """),
+                    {"addr": address},
+                )
+                tx_rows = [dict(r._mapping) for r in result.fetchall()]
+
+        txids = [r["txid"] for r in tx_rows if "txid" in r]
+        if txids:
+            shap_state = "unavailable_no_stored_attribution"
+            shap_reason = (
+                "No SHAP attribution is stored for this wallet's transactions and "
+                "no on-the-fly attribution could be produced."
+            )
+        else:
+            shap_state = "unavailable_no_transaction_telemetry"
+            shap_reason = "No transaction rows are indexed for this address."
+
+        # Fetch SHAP for the first matching txid that has data
+        raw_shap: Optional[list] = None
+        for txid in txids:
+            raw_shap = xai_store.get_shap(txid)
+            if raw_shap:
+                matched_txid = txid
+                break
+
+        if raw_shap:
+            sorted_shap = sorted(raw_shap, key=lambda x: abs(x.get("attribution", 0.0)), reverse=True)
+            # A degenerate all-zero vector is not a measurement: every feature
+            # contributing exactly nothing is indistinguishable from a failed
+            # attribution. Reporting it as a real waterfall tells the analyst
+            # "no feature mattered" when the truth is "nothing was computed".
+            if _is_degenerate_attribution(sorted_shap):
+                logger.warning(
+                    "Stored SHAP for %s (txid=%s) is an all-zero vector — "
+                    "reporting an explicit unavailable state instead of a "
+                    "fabricated waterfall.",
+                    address[:8] + "...", matched_txid[:12] if matched_txid else "?",
+                )
+                shap_state = "unavailable_degenerate_all_zero_attribution"
+                shap_reason = (
+                    "The stored attribution vector for this transaction is all "
+                    "zeros, which reflects a degenerate explainer output rather "
+                    "than a measured result. No waterfall is shown."
+                )
+            else:
+                shap_attributions = [
+                    ShapAttribution(
+                        feature=item["feature"],
+                        label=_label(item["feature"]),
+                        value=float(item.get("attribution", 0.0)),
+                    )
+                    for item in sorted_shap
+                ]
+                shap_state = "available"
+                shap_reason = None
+    except Exception as exc:
+        logger.warning("SHAP lookup failed for %s: %s", address[:8] + "...", exc)
+        shap_state = "unavailable_lookup_error"
+        shap_reason = f"{type(exc).__name__}: {exc}"
+
+    # --- Attention matrix (from FT-Transformer cross-feature attention) ---
+    attention_matrix: Optional[list[list[float]]] = None
+    if matched_txid:
+        attn_payload = xai_store.get_attention(matched_txid)
+        if attn_payload and "cross_feature_attention" in attn_payload:
+            attention_matrix = attn_payload["cross_feature_attention"]
+    if not attention_matrix:
+        attn_payload = xai_store.get_attention(address)
+        if attn_payload and "cross_feature_attention" in attn_payload:
+            attention_matrix = attn_payload["cross_feature_attention"]
+        elif isinstance(attn_payload, list):
+            attention_matrix = attn_payload
+
+    # --- On-the-fly provisional explainability engine (real SHAP) ---
+    if (not shap_attributions or not attention_matrix) and tx_rows:
+        pool: list[dict] = []
+        if len(tx_rows) < _SHAP_MIN_BACKGROUND_ROWS:
+            pool = await _load_shap_background_pool()
+        prov_shap, prov_attn = _compute_provisional_shap_and_attention(
+            address, tx_rows, background_pool=pool
+        )
+        if not shap_attributions and prov_shap:
+            shap_attributions = prov_shap
+            shap_state = "available"
+            shap_reason = None
+        elif (
+            not shap_attributions
+            and shap_state == "unavailable_degenerate_all_zero_attribution"
+        ):
+            # The live explainer also produced nothing usable. The degenerate
+            # state and its reason already stand, which is the honest report.
+            logger.warning(
+                "Live SHAP produced no usable vector for %s either; keeping the "
+                "explicit unavailable state.",
+                address[:8] + "...",
+            )
+        if not attention_matrix and prov_attn:
+            attention_matrix = prov_attn
 
     # --- Evidence trail ---
     is_provisional = bool(composite.get("provisional", False))
     chain_hops = int(composite.get("chain_hops", 0) or 0)
-    pass_through = evidence_raw.get("pass_through_ratio") or composite.get("pass_through_ratio")
+    pass_through = evidence_raw.get("pass_through_ratio")
+    if pass_through is None:
+        pass_through = composite.get("pass_through_ratio")
+    # Explicit derivation state, so a NULL is a stated gap rather than a field
+    # that silently reads as "no laundering observed".
+    pass_through_state = (
+        "derived_from_peeling_chain" if pass_through is not None
+        else "unavailable_no_peeling_chain_value_breakdown"
+    )
     evidence = EvidenceTrail(
         cluster_id=composite.get("cluster_id"),
         cluster_size=composite.get("cluster_size"),
@@ -557,73 +843,20 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
         extra={
             "seed_wallet_proximity": composite.get("seed_wallet_proximity", 0.0),
             "risk_score": composite.get("risk_score"),
+            "risk_score_source": composite.get("risk_score_source"),
+            "scored": scored,
+            "pass_through_ratio_state": pass_through_state,
+            "shap_state": shap_state,
+            "shap_reason": shap_reason,
+            "score_breakdown_total": round(breakdown_total, 6),
+            "anomaly_score_raw": anomaly_raw,
+            "anomaly_score_normalized": canonical.anomaly_component / risk_thresholds.W_ANOMALY
+            if risk_thresholds.W_ANOMALY
+            else None,
+            "composite_score_stored": composite.get("composite_score"),
+            "verdict_stored": composite.get("verdict"),
         },
     )
-
-    # --- SHAP attributions (keyed by txid — fetch txids for this address from PG) ---
-    shap_attributions: list[ShapAttribution] = []
-    matched_txid: Optional[str] = None
-    try:
-        if not tx_rows:
-            async with SessionLocal() as db:
-                result = await db.execute(
-                    text("""
-                        SELECT txid, input_addresses, output_addresses, input_amounts, output_amounts,
-                               fee, script_type, geo_country, asn, ts, risk_score, anomaly_score
-                        FROM transactions
-                        WHERE :addr = ANY(input_addresses)
-                           OR :addr = ANY(output_addresses)
-                        ORDER BY ts DESC
-                        LIMIT 20
-                    """),
-                    {"addr": address},
-                )
-                tx_rows = [dict(r._mapping) for r in result.fetchall()]
-
-        txids = [r["txid"] for r in tx_rows if "txid" in r]
-
-        # Fetch SHAP for the first matching txid that has data
-        raw_shap: Optional[list] = None
-        for txid in txids:
-            raw_shap = xai_store.get_shap(txid)
-            if raw_shap:
-                matched_txid = txid
-                break
-
-        if raw_shap:
-            # Sort by |attribution| descending (most impactful first)
-            sorted_shap = sorted(raw_shap, key=lambda x: abs(x.get("attribution", 0.0)), reverse=True)
-            shap_attributions = [
-                ShapAttribution(
-                    feature=item["feature"],
-                    label=_label(item["feature"]),
-                    value=float(item.get("attribution", 0.0)),
-                )
-                for item in sorted_shap
-            ]
-    except Exception as exc:
-        logger.warning("SHAP lookup failed for %s: %s", address[:8] + "...", exc)
-
-    # --- Attention matrix (from FT-Transformer cross-feature attention) ---
-    attention_matrix: Optional[list[list[float]]] = None
-    if matched_txid:
-        attn_payload = xai_store.get_attention(matched_txid)
-        if attn_payload and "cross_feature_attention" in attn_payload:
-            attention_matrix = attn_payload["cross_feature_attention"]
-    if not attention_matrix:
-        attn_payload = xai_store.get_attention(address)
-        if attn_payload and "cross_feature_attention" in attn_payload:
-            attention_matrix = attn_payload["cross_feature_attention"]
-        elif isinstance(attn_payload, list):
-            attention_matrix = attn_payload
-
-    # --- On-the-fly provisional explainability engine ---
-    if (not shap_attributions or not attention_matrix) and tx_rows:
-        prov_shap, prov_attn = _compute_provisional_shap_and_attention(address, tx_rows)
-        if not shap_attributions and prov_shap:
-            shap_attributions = prov_shap
-        if not attention_matrix and prov_attn:
-            attention_matrix = prov_attn
 
     # --- GNN subgraph ---
     gnn_subgraph: Optional[GnnSubgraph] = None
@@ -661,12 +894,65 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
         )
 
     # --- Narrative ---
-    narrative = _build_narrative(address, composite, evidence_raw)
+    # --- Headline score / verdict ---
+    # Reproduce the STORED total only for legacy snapshots - records written
+    # before the weight unification, identifiable by lacking the `scored`,
+    # `source` and `provisional` markers that every current scoring path stamps
+    # (ingest, enrichment publish, provisional). Those stored totals were a
+    # clamp of an un-normalized anomaly and cannot be decomposed by the canonical
+    # terms, so honouring them is what keeps the dossier, the alerts table and
+    # the cluster topology ranking an entity on the same number.
+    #
+    # Records produced by the current pipeline are already canonical, so they
+    # report the recomputed total and their four breakdown terms keep summing to
+    # it exactly. An unscored address still returns the explicit UNKNOWN state.
+    is_legacy_snapshot = not (
+        composite.get("scored") or composite.get("source") or composite.get("provisional")
+    )
+    headline_verdict: str
+    if is_legacy_snapshot and composite.get("composite_score") is not None:
+        try:
+            headline_score = float(composite["composite_score"])
+        except (ValueError, TypeError):
+            headline_score = canonical.score
+        stored_verdict = composite.get("verdict")
+        headline_verdict = (
+            str(stored_verdict) if stored_verdict else risk_thresholds.map_verdict(headline_score)
+        )
+    else:
+        headline_score = canonical.score
+        headline_verdict = risk_thresholds.map_verdict(headline_score)
+
+    # --- Narrative ---
+    # Built from the same headline the response reports, so the prose, the gauge
+    # and the alerts table can never disagree with each other.
+    narrative_composite = dict(composite)
+    narrative_composite["composite_score"] = headline_score
+    narrative_composite["verdict"] = headline_verdict
+    narrative = _build_narrative(address, narrative_composite, evidence_raw)
+    if not scored:
+        narrative = (
+            f"Wallet {address[:6]}…{address[-4:]} has transaction telemetry but no "
+            "completed risk assessment. No composite score or verdict is available — "
+            "this address was not scored. Trigger a post-ingest scoring run before "
+            "relying on any risk conclusion for it."
+        )
 
     return EntityExplainResponse(
         address=address,
-        composite_score=float(composite.get("composite_score", 0.0)),
-        verdict=composite.get("verdict", "LOW"),
+        # Headline score/verdict are the STORED composite values, so the dossier
+        # agrees with the alerts table and the cluster topology for the same
+        # entity (product decision: one surface, one number).
+        #
+        # The four terms in `score_breakdown` are the canonical normalized
+        # decomposition. For records scored before the weights were unified -
+        # notably the frozen `composite_risk_scores.json` artefact, whose stored
+        # total was a clamp of an un-normalized anomaly - the breakdown sums to
+        # the canonical recomputation and therefore will NOT sum to this
+        # headline. That gap is a property of the stored value, so it is
+        # surfaced in `extra` rather than hidden or fudged.
+        composite_score=headline_score,
+        verdict=headline_verdict,
         score_breakdown=breakdown,
         evidence_trail=evidence,
         shap_attributions=shap_attributions,

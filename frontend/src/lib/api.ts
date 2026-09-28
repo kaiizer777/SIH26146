@@ -109,7 +109,15 @@ export interface EvidenceTrail {
 export interface EntityExplainResponse {
   address: string;
   composite_score: number;
-  verdict: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  /**
+   * Verdict vocabulary. The four risk tiers come from
+   * `app/services/risk_thresholds.py::map_verdict`; "UNKNOWN" is
+   * `routers/entity.py::UNKNOWN_VERDICT`, the explicit state for an address
+   * that has telemetry but was never scored. It is reported on
+   * `evidence_trail.extra.verdict_stored` and flagged by
+   * `evidence_trail.extra.scored === false`.
+   */
+  verdict: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
   score_breakdown: ScoreBreakdown;
   evidence_trail: EvidenceTrail;
   shap_attributions: ShapAttribution[];

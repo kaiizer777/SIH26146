@@ -28,6 +28,9 @@ data/synthetic_transactions.xml
 data/synthetic_data.csv
 # Ransomwhere seeds — downloaded at runtime via download_ransomwhere.py
 data/ransomwhere_seeds.json
+# XAI runtime overlay — written by xai_store on every post-ingest enrichment run.
+# Durable by design, but generated state: ~20MB rewritten per run, not source.
+data/xai/runtime/
 
 # Node.js / Frontend
 node_modules/

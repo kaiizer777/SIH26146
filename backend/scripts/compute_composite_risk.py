@@ -18,25 +18,23 @@ Output:
 
 Scoring formula
 ---------------
-composite_score = clip(
-    w_anomaly * anomaly_score
-    + w_risk   * risk_score
-    + w_rules  * min(len(triggered_rules), 5) / 5
-    + w_mixing * mixing_indicator
-    , 0.0, 1.0
-)
+composite_score =
+    w_anomaly * normalize_anomaly(anomaly_score)
+  + w_risk    * risk_score
+  + w_rules   * min(len(triggered_rules), 5) / 5
+  + w_mixing  * mixing_indicator
 
-Weights (tunable via CLI):
-    w_anomaly = 0.35
-    w_risk    = 0.45
-    w_rules   = 0.15
-    w_mixing  = 0.05
+Weights, anomaly normalization, and verdict tiers are NOT defined here. They
+live in app/services/risk_thresholds.py, the single source of truth shared with
+the live scoring path (app/services/inline_scorer.py). Do not re-declare them
+in this script: two divergent tables is the bug this module was created to fix.
 
-Verdict tiers:
-    CRITICAL  composite_score >= 0.80
-    HIGH      composite_score >= 0.60
-    MEDIUM    composite_score >= 0.40
-    LOW       composite_score <  0.40
+Canonical values (see risk_thresholds.py for full justification):
+    w_anomaly = 0.35, w_risk = 0.45, w_rules = 0.15, w_mixing = 0.05
+    normalize_anomaly: x / 0.10906335711479187 clamped to [0, 1], where the
+        denominator is 3x the FT-Transformer calibrated threshold of
+        0.03635445237159729 (data/models/ft_threshold_20260909.json).
+    Verdict tiers: CRITICAL >= 0.80, HIGH >= 0.60, MEDIUM >= 0.40, else LOW.
 
 Usage:
     backend/venv/Scripts/python backend/scripts/compute_composite_risk.py
@@ -64,29 +62,46 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 from app.config import settings
+from app.services.risk_thresholds import (
+    ANOMALY_FULL_SCALE,
+    ANOMALY_SATURATION_FACTOR,
+    FT_TRANSFORMER_CALIBRATED_THRESHOLD,
+    MAX_RULE_BONUS,
+    VERDICT_TIERS,
+    W_ANOMALY,
+    W_MIXING,
+    W_RISK,
+    W_RULES,
+    compute_composite,
+    map_verdict,
+    normalize_anomaly,
+)
+
+# Absolute tolerance when comparing a CLI-supplied weight against the
+# canonical one, so 0.4500000001 is not treated as a conflict.
+WEIGHT_TOLERANCE: float = 1e-9
 
 # ---------------------------------------------------------------------------
-# Scoring weights & thresholds
+# Re-exported for backward compatibility
 # ---------------------------------------------------------------------------
-W_ANOMALY: float = 0.35
-W_RISK: float = 0.45
-W_RULES: float = 0.15
-W_MIXING: float = 0.05
-MAX_RULE_BONUS: int = 5
-
-VERDICT_TIERS = [
-    (0.80, "CRITICAL"),
-    (0.60, "HIGH"),
-    (0.40, "MEDIUM"),
-    (0.00, "LOW"),
+# External callers (and any test) historically imported these names from this
+# script. They are now aliases of the canonical values in risk_thresholds.py
+# rather than independent definitions.
+__all__ = [
+    "W_ANOMALY",
+    "W_RISK",
+    "W_RULES",
+    "W_MIXING",
+    "MAX_RULE_BONUS",
+    "VERDICT_TIERS",
+    "assemble",
+    "main",
 ]
 
 
 def _verdict(score: float) -> str:
-    for threshold, label in VERDICT_TIERS:
-        if score >= threshold:
-            return label
-    return "LOW"
+    """Backward-compatible alias for risk_thresholds.map_verdict."""
+    return map_verdict(score)
 
 
 # ---------------------------------------------------------------------------
@@ -170,11 +185,35 @@ def assemble(
     evidence_trails: Dict[str, dict],
     shap_attributions: Dict[str, dict],
     gnn_subgraphs: Optional[Dict[str, dict]],
-    w_anomaly: float,
-    w_risk: float,
-    w_rules: float,
-    w_mixing: float,
+    w_anomaly: Optional[float] = None,
+    w_risk: Optional[float] = None,
+    w_rules: Optional[float] = None,
+    w_mixing: Optional[float] = None,
 ) -> Dict[str, dict]:
+    """Assemble one composite record per evidence trail.
+
+    The ``w_*`` arguments are retained for backward compatibility with the
+    previous CLI signature but are no longer authoritative. The composite is
+    computed by :func:`app.services.risk_thresholds.compute_composite`, which
+    uses the canonical weights. Passing values that disagree with the canonical
+    set raises ``ValueError`` rather than silently scoring with weights that do
+    not match the ones displayed on the CLI and persisted downstream.
+    """
+    overrides = {
+        "w_anomaly": (w_anomaly, W_ANOMALY),
+        "w_risk": (w_risk, W_RISK),
+        "w_rules": (w_rules, W_RULES),
+        "w_mixing": (w_mixing, W_MIXING),
+    }
+    for name, (supplied, canonical) in overrides.items():
+        if supplied is not None and abs(supplied - canonical) > WEIGHT_TOLERANCE:
+            raise ValueError(
+                f"{name}={supplied} conflicts with the canonical weight "
+                f"{canonical} in app/services/risk_thresholds.py. The canonical "
+                "module is the single source of truth for composite weights; "
+                "edit it there instead of overriding on the CLI."
+            )
+
     results: Dict[str, dict] = {}
     t0 = time.time()
     total = len(evidence_trails)
@@ -184,17 +223,30 @@ def assemble(
         risk_score: float = float(trail.get("risk_score", 0.0))
         triggered_rules: List[str] = trail.get("triggered_rules", [])
         mixing_patterns: List[str] = trail.get("mixing_patterns", [])
-        mixing_indicator: float = 1.0 if mixing_patterns else 0.0
 
-        rule_bonus = min(len(triggered_rules), MAX_RULE_BONUS) / MAX_RULE_BONUS
-        raw_score = (
-            w_anomaly * anomaly_score
-            + w_risk * risk_score
-            + w_rules * rule_bonus
-            + w_mixing * mixing_indicator
+        # anomaly_score is a raw FT-Transformer reconstruction MSE (unbounded,
+        # observed 0.0 - 99.9999), NOT a [0, 1] probability. It is normalized
+        # inside compute_composite before being weighted -- that was the
+        # calibration bug: the raw value was weighted directly and then the
+        # whole sum was clamped to 1.0, manufacturing CRITICAL verdicts.
+        composite = compute_composite(
+            anomaly_score=anomaly_score,
+            risk_score=risk_score,
+            triggered_rules=triggered_rules,
+            mixing_patterns=mixing_patterns,
         )
-        composite_score = float(max(0.0, min(1.0, raw_score)))
+        composite_score: float = composite.score
         verdict = _verdict(composite_score)
+        # Persisted schema fields keep their original meaning:
+        #   rule_bonus       -> saturating rule-count fraction in [0, 1]
+        #   mixing_indicator -> 1.0 if any mixing pattern detected, else 0.0
+        # Both are unchanged from the pre-fix behaviour; only the anomaly term
+        # feeding composite_score is different.
+        rule_bonus = round(
+            min(len(triggered_rules), MAX_RULE_BONUS) / MAX_RULE_BONUS, 4
+        )
+        mixing_indicator: float = 1.0 if mixing_patterns else 0.0
+        anomaly_normalized: float = normalize_anomaly(anomaly_score)
 
         shap_rec = shap_attributions.get(addr)
         top_features = top_shap_features(shap_rec, n=3)
@@ -215,9 +267,16 @@ def assemble(
             "address": addr,
             "composite_score": composite_score,
             "verdict": verdict,
+            # anomaly_score keeps its ORIGINAL meaning: the raw FT-Transformer
+            # reconstruction MSE in MSE units (unbounded, up to ~100 on this
+            # dataset). routers/alerts.py (min_anomaly filter) and the entity
+            # dossier read it directly. Do not repurpose it as a [0, 1] value.
             "anomaly_score": anomaly_score,
+            # NEW additive field: the [0, 1] value actually weighted into
+            # composite_score. Additive only -- existing consumers ignore it.
+            "anomaly_normalized": round(anomaly_normalized, 6),
             "risk_score": risk_score,
-            "rule_bonus": round(rule_bonus, 4),
+            "rule_bonus": rule_bonus,
             "mixing_indicator": mixing_indicator,
             "triggered_rules": triggered_rules,
             "mixing_patterns": mixing_patterns,
@@ -262,19 +321,15 @@ def print_verdict_distribution(results: Dict[str, dict]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Phase 8 XAI-D: Composite Risk Score Assembly.")
-    parser.add_argument("--w-anomaly", type=float, default=W_ANOMALY)
-    parser.add_argument("--w-risk",    type=float, default=W_RISK)
-    parser.add_argument("--w-rules",   type=float, default=W_RULES)
-    parser.add_argument("--w-mixing",  type=float, default=W_MIXING)
+    parser.add_argument("--w-anomaly", type=float, default=W_ANOMALY,
+                        help="Deprecated. Must match the canonical weight in app/services/risk_thresholds.py.")
+    parser.add_argument("--w-risk",    type=float, default=W_RISK,
+                        help="Deprecated. Must match the canonical weight in app/services/risk_thresholds.py.")
+    parser.add_argument("--w-rules",   type=float, default=W_RULES,
+                        help="Deprecated. Must match the canonical weight in app/services/risk_thresholds.py.")
+    parser.add_argument("--w-mixing",  type=float, default=W_MIXING,
+                        help="Deprecated. Must match the canonical weight in app/services/risk_thresholds.py.")
     args = parser.parse_args()
-
-    total_w = args.w_anomaly + args.w_risk + args.w_rules + args.w_mixing
-    if abs(total_w - 1.0) > 0.001:
-        print(
-            f"WARNING: weights sum to {total_w:.3f} (expected ~1.0). "
-            "composite_score will be clipped to [0,1].",
-            flush=True,
-        )
 
     xai_dir = Path(settings.xai_dir)
     out_path = Path(settings.composite_risk_scores_path)
@@ -283,8 +338,20 @@ def main() -> None:
     print("Phase 8 XAI-D -- Composite Risk Score Assembly", flush=True)
     print("=" * 60, flush=True)
     print(
-        f"  Weights: anomaly={args.w_anomaly} risk={args.w_risk} "
-        f"rules={args.w_rules} mixing={args.w_mixing}",
+        f"  Weights (canonical, from app/services/risk_thresholds.py): "
+        f"anomaly={W_ANOMALY} risk={W_RISK} rules={W_RULES} mixing={W_MIXING}",
+        flush=True,
+    )
+    print(
+        f"  Anomaly full-scale: {ANOMALY_FULL_SCALE:.12f} "
+        f"(= {ANOMALY_SATURATION_FACTOR} x FT-Transformer calibrated threshold "
+        f"{FT_TRANSFORMER_CALIBRATED_THRESHOLD})",
+        flush=True,
+    )
+    print(
+        "  Verdict tiers: "
+        + ", ".join(f"{label}>={thr:.2f}" for thr, label in VERDICT_TIERS if thr > 0.0)
+        + ", else LOW",
         flush=True,
     )
     print()
