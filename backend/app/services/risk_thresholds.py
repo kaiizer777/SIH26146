@@ -14,26 +14,31 @@ Why the module exists
    clamped the sum. Every weight term was therefore unbounded and the
    resulting CRITICAL verdicts were an artefact of the clamp, not of the
    risk evidence. :func:`normalize_anomaly` fixes that at the source.
-2. Two tier sets (0.80/0.60/0.40 vs 0.70/0.50/0.30) disagreed, so a
-   batch-built wallet and an ingested wallet with an identical score could
-   receive different verdicts. Only one table is defined here.
+2. Several tier sets existed side by side (0.80/0.60/0.40, 0.70/0.50/0.30
+   and per-call-site copies), so a batch-built wallet, an ingested wallet and
+   a dossier view of the same wallet could each report a different verdict
+   for one identical score. Only one table is defined here, and every read
+   path derives its label from it.
 
-Canonical tier set: CRITICAL >= 0.80, HIGH >= 0.60, MEDIUM >= 0.40, LOW < 0.40
+Canonical tier set: CRITICAL >= 0.65, HIGH >= 0.60, MEDIUM >= 0.40, LOW < 0.40
 ----------------------------------------------------------------------------
-:data:`VERDICT_TIERS` is the 0.80/0.60/0.40 table. It is canonical for two
-reasons:
+:data:`VERDICT_TIERS` is the 0.65/0.60/0.40 table, and it is the only table
+any surface may label a record with. Three properties make it canonical:
 
-* It is the table under which the shipped artefact
-  ``data/xai/composite_risk_scores.json`` (15,873 records) was produced, and
-  it is the table the alerts feed and entity dossiers already expose. The
-  verdict vocabulary and its meaning are therefore unchanged.
-* It is the only table consistent with the provisional-score design in
-  ``inline_scorer.score_batch``, which caps non-seed-contact provisional
-  scores at exactly 0.65 and documents that cap as "HIGH max"
-  (``inline_scorer.py`` ``_prov_cap``). 0.65 is the ceiling of the HIGH band
-  under this table; under the 0.70/0.50/0.30 table the same cap would leave
-  a dead 0.65-0.70 gap and would label a maximal non-seed provisional record
-  as CRITICAL-adjacent HIGH.
+* One ladder for both populations. Pre-loaded entities and ingested wallets
+  are labelled by the same function from the same score, so an equal score
+  always yields an equal verdict no matter which path produced it.
+* CRITICAL is reachable. Under the superseded 0.80 cut the tier was
+  unreachable for ingested wallets: the highest composite score any of the
+  8,137 demo wallets reached was 0.7812, so a genuine CRITICAL could not be
+  expressed at all. Moving the cut to 0.65 puts that population at 116
+  CRITICAL (1.43%).
+* Labels are derived, never stored. The ``verdict`` string persisted on a
+  record was written under the superseded cut, so reading it back silently
+  ignores the current ladder - that is exactly what let the alerts table, the
+  entity dossier and the cluster topology each report a different severity
+  for one wallet. A record's label must be a pure function of its score:
+  :func:`map_verdict`.
 
 The superseded inline table (>=0.70 CRITICAL / >=0.50 HIGH / >=0.30 MEDIUM)
 is retained as :data:`LEGACY_INLINE_VERDICT_TIERS` for audit/reporting only.
@@ -135,7 +140,18 @@ Verdict = str
 
 # Canonical tiers, highest first. See module docstring for the justification.
 VERDICT_TIERS: Final[tuple[tuple[float, Verdict], ...]] = (
-    (0.80, "CRITICAL"),
+    # CRITICAL moved 0.80 -> 0.65. At 0.80 the tier was unreachable for
+    # ingested wallets: the highest score any of the 8,137 demo wallets
+    # reached was 0.7812, so a genuine CRITICAL could not be expressed at
+    # all. 0.65 puts the demo population at 116 CRITICAL (1.43%).
+    #
+    # One ladder is shared by ingested and pre-loaded entities, so equal
+    # scores always produce equal verdicts regardless of which path scored
+    # them. Both `entity.py` and `alerts.py` now derive the label from this
+    # table rather than reading a `verdict` string persisted under the old
+    # cut - that stored string is what let the alerts table, the dossier and
+    # the cluster topology each report a different severity for one wallet.
+    (0.65, "CRITICAL"),
     (0.60, "HIGH"),
     (0.40, "MEDIUM"),
     (0.00, "LOW"),

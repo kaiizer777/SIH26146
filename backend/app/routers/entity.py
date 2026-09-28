@@ -905,22 +905,30 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
     #
     # Records produced by the current pipeline are already canonical, so they
     # report the recomputed total and their four breakdown terms keep summing to
-    # it exactly. An unscored address still returns the explicit UNKNOWN state.
+    # it exactly.
     is_legacy_snapshot = not (
         composite.get("scored") or composite.get("source") or composite.get("provisional")
     )
-    headline_verdict: str
     if is_legacy_snapshot and composite.get("composite_score") is not None:
         try:
             headline_score = float(composite["composite_score"])
         except (ValueError, TypeError):
             headline_score = canonical.score
-        stored_verdict = composite.get("verdict")
-        headline_verdict = (
-            str(stored_verdict) if stored_verdict else risk_thresholds.map_verdict(headline_score)
-        )
     else:
         headline_score = canonical.score
+
+    # The LABEL is always derived from the score, never read back from the
+    # record. The persisted `verdict` string was written under the superseded
+    # 0.80 cut, so echoing it means the reported severity silently ignores the
+    # current ladder - that is what let the alerts table, the dossier and the
+    # cluster topology each show a different label for one wallet. A record's
+    # label is a pure function of its score.
+    if not scored:
+        # Never fabricated. An address with telemetry but no completed
+        # assessment has no verdict at all, and UNKNOWN is deliberately outside
+        # the four tiers so it can never be read as a real LOW.
+        headline_verdict = UNKNOWN_VERDICT
+    else:
         headline_verdict = risk_thresholds.map_verdict(headline_score)
 
     # --- Narrative ---
@@ -940,9 +948,13 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
 
     return EntityExplainResponse(
         address=address,
-        # Headline score/verdict are the STORED composite values, so the dossier
-        # agrees with the alerts table and the cluster topology for the same
-        # entity (product decision: one surface, one number).
+        # Headline score is the STORED composite value for legacy snapshot
+        # records, so the dossier agrees with the alerts table and the cluster
+        # topology for the same entity (product decision: one surface, one
+        # number). The headline verdict is ALWAYS the canonical
+        # `map_verdict(headline_score)` - a pure function of that score - so
+        # this surface and the alerts table can never report two severities
+        # for one wallet. An address that was never scored reports UNKNOWN.
         #
         # The four terms in `score_breakdown` are the canonical normalized
         # decomposition. For records scored before the weights were unified -

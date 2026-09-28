@@ -64,6 +64,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from app.config import settings
+from app.services import risk_thresholds
 
 logger = logging.getLogger(__name__)
 
@@ -694,15 +695,56 @@ def composite_count() -> int:
         return len(_composite)
 
 
+def _record_score(record: dict[str, Any]) -> float:
+    """Numeric composite score of a stored record, 0.0 when absent/unusable.
+
+    Same coercion as ``routers.alerts._record_score``: a record may carry a
+    null score (never scored) and a null must not raise out of the count loop.
+    """
+    raw = record.get("composite_score")
+    if raw is None:
+        return 0.0
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def verdict_counts() -> dict[str, int]:
-    """Return {verdict: count} across all indexed wallets."""
-    counts: dict[str, int] = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    """Return {verdict: count} across all indexed wallets.
+
+    The label is DERIVED from ``composite_score`` via
+    :func:`risk_thresholds.map_verdict`, exactly as ``routers.alerts`` and
+    ``routers.entity`` do. The ``verdict`` string persisted on a record is
+    audit data written under the superseded 0.80 CRITICAL cut and is
+    deliberately NOT read here - reading it made this histogram disagree with
+    the labels the API actually serves.
+
+    Records with a missing or unparseable ``composite_score`` were never
+    scored; they are treated as score 0.0 and therefore land in LOW, matching
+    ``routers.alerts._record_score``. That is a deliberate, not accidental,
+    placement, so the count of such records is logged rather than folded in
+    silently.
+    """
+    counts: dict[str, int] = {label: 0 for _, label in risk_thresholds.VERDICT_TIERS}
     with _store_lock:
         records = list(_composite.values())
+    unscored = 0
     for record in records:
-        v = record.get("verdict", "LOW")
-        if v in counts:
-            counts[v] += 1
+        # "Unscored" == no numeric value to derive a label from (absent or
+        # non-numeric). Tracked so the LOW bucket cannot absorb them without a
+        # trace. Numeric-but-odd values (e.g. a bool) are left to
+        # ``_record_score``/``map_verdict`` exactly as the alerts path does.
+        if not isinstance(record.get("composite_score"), (int, float)):
+            unscored += 1
+        counts[risk_thresholds.map_verdict(_record_score(record))] += 1
+    if unscored:
+        logger.warning(
+            "verdict_counts: %d/%d records have no usable composite_score; "
+            "counted as score 0.0 (LOW), same as the alerts read path",
+            unscored,
+            len(records),
+        )
     return counts
 
 

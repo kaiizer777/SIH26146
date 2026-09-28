@@ -48,7 +48,7 @@ class Transaction(Base):
     geo_country = Column(String(2), nullable=True)
     asn = Column(Integer, nullable=True)
     cluster_id = Column(Integer, nullable=True)
-    anomaly_score = Column(Numeric(6, 4), nullable=True)
+    anomaly_score = Column(Numeric(12, 4), nullable=True)
     risk_score = Column(Numeric(6, 4), nullable=True)
     is_flagged = Column(Boolean, default=False, nullable=False)
     # Phase 6: F3 peeling-chain / mixing detection

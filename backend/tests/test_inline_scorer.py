@@ -173,14 +173,17 @@ def test_score_batch_synthetic_10_tx():
 def test_map_verdict():
     """Verify verdict mapping boundaries against the canonical tiers.
 
-    The thresholds are now owned solely by app.services.risk_thresholds
-    (0.80 / 0.60 / 0.40). The superseded 0.70 / 0.50 / 0.30 table that used to
-    live here is retained in risk_thresholds.LEGACY_INLINE_VERDICT_TIERS for
-    audit only and must never label a record.
+    The thresholds are owned solely by app.services.risk_thresholds
+    (0.65 / 0.60 / 0.40). The superseded tables (0.80/0.60/0.40 and
+    0.70/0.50/0.30) are retained in risk_thresholds.LEGACY_INLINE_VERDICT_TIERS
+    for audit only and must never label a record. The 0.80 cut made CRITICAL
+    unreachable for ingested wallets - the highest score any of the 8,137 demo
+    wallets reached was 0.7812 - so CRITICAL is now 0.65.
     """
+    assert map_verdict(1.0) == "CRITICAL"
     assert map_verdict(0.85) == "CRITICAL"
-    assert map_verdict(0.80) == "CRITICAL"
-    assert map_verdict(0.79) == "HIGH"
+    assert map_verdict(0.65) == "CRITICAL"
+    assert map_verdict(0.6499) == "HIGH"
     assert map_verdict(0.60) == "HIGH"
     assert map_verdict(0.59) == "MEDIUM"
     assert map_verdict(0.40) == "MEDIUM"
@@ -192,7 +195,7 @@ def test_map_verdict_matches_risk_thresholds():
     """The inline re-export and the canonical source must never diverge."""
     from app.services import risk_thresholds
 
-    for score in (0.0, 0.29, 0.39, 0.40, 0.59, 0.60, 0.79, 0.80, 1.0):
+    for score in (0.0, 0.29, 0.39, 0.40, 0.59, 0.60, 0.6499, 0.65, 0.79, 0.80, 1.0):
         assert map_verdict(score) == risk_thresholds.map_verdict(score)
 
 

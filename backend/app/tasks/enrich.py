@@ -110,8 +110,10 @@ RISK_FLAG_THRESHOLD = 0.5
 # Calibrated FT-Transformer anomaly threshold. Mirrors
 # risk_thresholds.FT_TRANSFORMER_CALIBRATED_THRESHOLD.
 ANOMALY_FLAG_THRESHOLD = 0.03635445237159729
-# anomaly_score is NUMERIC(6,4) in PostgreSQL, so it saturates just below 100.
-PG_ANOMALY_MAX = 99.9999
+# The FT-Transformer reconstruction error is an unbounded MSE and real rows
+# reach ~326, which the old NUMERIC(6,4) column silently saturated at 99.9999.
+# Widened to NUMERIC(12,4) (see models/transaction.py) so the raw score is kept.
+PG_ANOMALY_MAX = 999999.9999
 
 
 # ---------------------------------------------------------------------------
@@ -1681,7 +1683,7 @@ def _write_anomaly_to_pg() -> int:
                 buf.write(f"{txid}\t{min(max(score, 0.0), PG_ANOMALY_MAX):.4f}\n")
             buf.seek(0)
             cur.execute(
-                "CREATE TEMP TABLE _tx_anomaly (txid TEXT NOT NULL, anomaly_score NUMERIC(6,4)) ON COMMIT DROP"
+                "CREATE TEMP TABLE _tx_anomaly (txid TEXT NOT NULL, anomaly_score NUMERIC(12,4)) ON COMMIT DROP"
             )
             cur.copy_expert(
                 "COPY _tx_anomaly (txid, anomaly_score) FROM STDIN WITH (FORMAT text, DELIMITER E'\\t')",
@@ -1711,7 +1713,69 @@ def _write_anomaly_to_pg() -> int:
                 pass
 
     logger.info("[enrich] pg: wrote anomaly_score to %d transactions", updated)
+
+    # The xai-store publish stage reads per-transaction and per-wallet anomaly
+    # from NEO4J, not from Postgres. Writing anomaly to PG alone left every
+    # published composite at 0.0, which zeroed the W_ANOMALY term and capped
+    # every ingested wallet at 0.521 - below the HIGH threshold - so CRITICAL
+    # and HIGH were mathematically unreachable. Mirror the same scores onto the
+    # graph so the publish query returns real model output.
+    mirrored = _mirror_anomaly_to_graph(per_tx)
+    logger.info(
+        "[enrich] graph: mirrored anomaly to %d transaction nodes", mirrored
+    )
     return updated
+
+
+def _mirror_anomaly_to_graph(per_tx: dict[str, float]) -> int:
+    """Write per-transaction FT-Transformer anomaly onto ``:Transaction`` nodes.
+
+    Batched UNWIND over the same ``{txid: score}`` map the Postgres write uses,
+    so both stores receive identical values. Failures are logged and swallowed:
+    a graph-mirror problem must not abort the enrichment run, and the Postgres
+    column is still authoritative for anything reading the database directly.
+    """
+    if not per_tx:
+        return 0
+    try:
+        import asyncio
+
+        from neo4j import AsyncGraphDatabase
+
+        from app.config import settings
+
+        async def _run() -> int:
+            driver = AsyncGraphDatabase.driver(
+                settings.neo4j_uri,
+                auth=(settings.neo4j_user, settings.neo4j_password),
+            )
+            try:
+                items = [
+                    {"txid": txid, "score": float(min(max(score, 0.0), PG_ANOMALY_MAX))}
+                    for txid, score in per_tx.items()
+                ]
+                written = 0
+                async with driver.session() as session:
+                    for i in range(0, len(items), PG_BATCH):
+                        chunk = items[i : i + PG_BATCH]
+                        result = await session.run(
+                            """
+                            UNWIND $rows AS row
+                            MATCH (t:Transaction {txid: row.txid})
+                            SET t.anomaly_score = row.score
+                            RETURN count(t) AS n
+                            """,
+                            rows=chunk,
+                        )
+                        written += (await result.single())["n"]
+                return written
+            finally:
+                await driver.close()
+
+        return asyncio.run(_run())
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[enrich] graph: anomaly mirror failed: %s", exc)
+        return 0
 
 
 def _score_per_transaction_anomaly(rows: list[dict[str, Any]]) -> dict[str, float]:
@@ -1858,7 +1922,11 @@ def _build_publish_record(rec: dict[str, Any]) -> dict[str, Any]:
     if chain_hops > 0:
         triggered_rules.append("PEELING_CHAIN")
     mixing_patterns: list[str] = []
-    if is_mixing and chain_hops == 0:
+    # Any wallet the detector flagged as mixing contributes a pattern. The
+    # previous `and chain_hops == 0` guard meant the 420 is_mixing wallets that
+    # DO sit in a peel chain contributed nothing here - their signal only
+    # reached `triggered_rules`, never the mixing term.
+    if is_mixing:
         mixing_patterns.append("STRUCTURAL_MIXING")
 
     composite = risk_thresholds.compute_composite(
@@ -1886,7 +1954,11 @@ def _build_publish_record(rec: dict[str, Any]) -> dict[str, Any]:
         "risk_score": risk_score,
         "risk_score_source": rec.get("risk_score_source"),
         "rule_bonus": composite.rule_component,
-        "mixing_indicator": composite.mixing_component,
+        # The 0/1 indicator, matching compute_composite_risk.py:248 - NOT the
+        # weighted component. `composite.mixing_component` is already
+        # W_MIXING-multiplied (0.05 max), so persisting it here stored a value
+        # that was off by the weight and could never read as "mixing detected".
+        "mixing_indicator": 1.0 if mixing_patterns else 0.0,
         "triggered_rules": triggered_rules,
         "mixing_patterns": mixing_patterns,
         "chain_hops": chain_hops,

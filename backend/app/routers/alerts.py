@@ -30,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.schemas.alerts import AlertItem, AlertsResponse
 import app.services.xai_store as xai_store
+from app.services import risk_thresholds
 from app.services.db import get_db
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,45 @@ _SORT_KEY = {
     "anomaly_desc": (lambda r: r.get("anomaly_score", 0.0), True),
     "ts_desc":      (lambda r: r.get("ts") or "", True),
 }
+
+
+def _record_score(rec: dict) -> float:
+    """Numeric composite score of a stored record, 0.0 when absent/unusable.
+
+    A record may legitimately carry a null score (never scored); the verdict
+    must still be derivable, and a null must not raise out of the filter loop.
+    """
+    raw = rec.get("composite_score")
+    if raw is None:
+        return 0.0
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _record_verdict(rec: dict) -> str:
+    """Canonical verdict for a record, derived from its score.
+
+    The persisted ``verdict`` string is deliberately NOT read: it was written
+    under the superseded 0.80 cut, so trusting it lets the alerts table report
+    a different severity than the entity dossier for the same wallet. The
+    label is a pure function of the score via the single shared ladder.
+    """
+    return risk_thresholds.map_verdict(_record_score(rec))
+
+
+def _derived_verdict_counts(records: dict[str, dict]) -> dict[str, int]:
+    """Histogram of canonical verdicts across the index.
+
+    Computed with the same ``map_verdict`` call the rows and the verdict filter
+    use, so the counts in this payload can never disagree with the labels in
+    its own ``items``.
+    """
+    counts: dict[str, int] = {label: 0 for _, label in risk_thresholds.VERDICT_TIERS}
+    for rec in records.values():
+        counts[_record_verdict(rec)] += 1
+    return counts
 
 
 @router.get("", response_model=AlertsResponse, summary="Paginated, filterable alert feed")
@@ -93,11 +133,11 @@ async def get_alerts(
     search_lower = search.lower() if search else None
 
     for addr, rec in all_records.items():
-        # verdict filter
-        if target_verdicts and rec.get("verdict") not in target_verdicts:
+        # verdict filter - same derived label the rows will carry
+        if target_verdicts and _record_verdict(rec) not in target_verdicts:
             continue
         # min_risk filter
-        if min_risk is not None and rec.get("composite_score", 0.0) < min_risk:
+        if min_risk is not None and _record_score(rec) < min_risk:
             continue
         # min_anomaly filter
         if min_anomaly is not None and rec.get("anomaly_score", 0.0) < min_anomaly:
@@ -204,8 +244,8 @@ async def get_alerts(
             anomaly_score=rec.get("anomaly_score"),
             anomaly_rank_percentile=None,  # available in evidence_trails
             risk_score=rec.get("risk_score"),
-            composite_score=rec.get("composite_score", 0.0),
-            verdict=rec.get("verdict", "LOW"),
+            composite_score=_record_score(rec),
+            verdict=_record_verdict(rec),
             is_mixing=rec_mixing,
             is_peeling_chain=rec_peeling,
             chain_hops=chain_hops if rec_peeling else None,
@@ -223,5 +263,5 @@ async def get_alerts(
         limit=limit,
         items=items,
         total_indexed=xai_store.composite_count(),
-        verdict_counts=xai_store.verdict_counts(),
+        verdict_counts=_derived_verdict_counts(all_records),
     )
