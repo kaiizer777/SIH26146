@@ -51,4 +51,6 @@ Thumbs.db
 !26146.md
 **/*.md
 !**/README.md
+# Handoff doc for the next agent session — must survive a fresh clone.
+!context-transfer.md
 
