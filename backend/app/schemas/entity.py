@@ -92,6 +92,10 @@ class EntityExplainResponse(BaseModel):
     score_breakdown: ScoreBreakdown = Field(..., description="Component breakdown of composite risk score")
     evidence_trail: EvidenceTrail = Field(..., description="Detailed forensic evidence trail")
     shap_attributions: list[ShapAttribution] = Field(..., description="Feature attribution contributions")
+    shap_available: bool = Field(
+        False,
+        description="True if valid non-degenerate SHAP feature attributions are available for this entity.",
+    )
     attention_matrix: Optional[list[list[float]]] = Field(None, description="18x18 FT-Transformer cross-feature attention matrix")
     gnn_subgraph: Optional[GnnSubgraph] = Field(None, description="Topological subgraph and relational attention network")
     summary_narrative: str = Field(..., description="Automated natural language forensic summary")

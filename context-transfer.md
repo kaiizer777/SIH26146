@@ -37,17 +37,17 @@
 
 ---
 
-## 2. Database state (ingested data was deliberately deleted at handoff)
+## 2. Database state (updated post 2k test ingest & enrichment)
 
 | Store | Count |
 | :--- | :--- |
-| PG `transactions` | **99,990** |
-| Neo4j `:Wallet` | **24,659** |
-| Neo4j `:Transaction` | **99,999** |
-| Neo4j `:IP` | **2,540** |
-| Dashboard entities | **15,873** → CRITICAL 111 · HIGH 2 · MEDIUM 3,112 · LOW 12,648 |
-| `data/xai/runtime/` | **empty** (gitignored generated overlay) |
-| Redis `file_hash:*` | **cleared** |
+| PG `transactions` | **101,990** (99,990 baseline + 2,000 ingested) |
+| Neo4j `:Wallet` | **32,796** (24,659 baseline + 8,137 ingested) |
+| Neo4j `:Transaction` | **101,999** (99,999 baseline + 2,000 ingested) |
+| Neo4j `:IP` | **2,701** (2,540 baseline + 161 newly observed) |
+| Dashboard entities | **32,804** → CRITICAL 231 · HIGH 643 · MEDIUM 6,993 · LOW 24,937 |
+| `data/xai/runtime/` | **populated** (32,804 records generated & cached from post-ingest enrichment) |
+| Redis `file_hash:*` | **contains active upload hashes** (e.g. `test_2000.csv` 24h dedup key) |
 
 Ingested data is identified by `cluster_id >= 1000000`. **Important trap:** freshly-ingested PG rows have `cluster_id IS NULL` *until enrichment finishes* — the boundary only works after the chain completes.
 
@@ -66,6 +66,9 @@ Ingested data is identified by `cluster_id >= 1000000`. **Important trap:** fres
 | 7 | `graph.py`: colour by composite_score, not raw `risk_score`; reserve 24 node-budget slots for highest severity | A CRITICAL (1.000) wallet rendered **green** because its raw graph risk was 0.202, and was cut from its own cluster by degree-first ordering |
 | 8 | `"Clean"` → `"No seed hit"` | The column reports seed-intelligence match only. "Clean" next to `CRITICAL 1.000` + `7-hop peel` read as "nothing to see" |
 | 9 | `setup.md` updated | Counts, restart requirement, 24h dedup, SHAP caveat, baseline numbers |
+| 10 | **P1: Live Enrichment Progress UI** (`enrich.py`, `IngestModal.tsx`, `api.ts`) | Implemented rich per-stage enrichment progress metadata (`elapsed_total`, `stage_elapsed`, `stages_completed`, `stages_total=7`, `counts`), wired live polling and stage list UI in modal. Real-time stage timers and counters replace dead-air waiting screens |
+| 11 | **P2: XAI Store Hot-Reload** (`xai_store.py`, `ingest.py`) | Added thread-safe `force_reload()` to `xai_store.py` and `POST /ingest/enrichment/{task_id}/reload` endpoint in `ingest.py` to enable hot-reload without container restart. Hot-reloaded 32,804 records instantly into active API memory |
+| 12 | **P3a: SHAP Honesty Flag & Degenerate Waterfall Defense** (`entity.py`, `EntityDrawer.tsx`, `ShapWaterfall.tsx`, `test_shap_honesty.py`) | Added `shap_available: bool` to `EntityExplainResponse` schema, filtered degenerate all-zero SHAP attributions in `entity.py`, added honesty guards & fallbacks in `EntityDrawer.tsx` and `ShapWaterfall.tsx`, and added 13 deterministic tests in `test_shap_honesty.py`. Prevents deceptive flat-zero waterfalls |
 
 ### Verified on a clean-slate run (deleted all ingested data → re-ingested → re-enriched)
 
@@ -80,54 +83,22 @@ ingested cluster topology: 150 nodes / 377-478 links, mean degree 5.03-6.37
                              (pre-loaded baseline cluster = 1.59)
 ```
 
-Backend suite: **8 failed / 240 passed / 2 skipped** — all 8 pre-existing (fixture paths resolving `/data` vs `/app/data`, hardcoded row counts now seeing 101,990, stale model thresholds). None introduced.
+### Verified on Live Docker Environment (P1, P2, P3a verification)
+
+- **Live docker run**: 2,000 tx upload (`test_2000.csv`), verified all 7 stages emitted live progress (`stage_elapsed`, `elapsed_total`, item counts).
+- **XAI hot-reload**: `POST /ingest/enrichment/{task_id}/reload` hot-reloaded 32,804 records into `xai_store` memory without container restart.
+- **SHAP honesty suite**: 13/13 passed in `test_shap_honesty.py`.
+- **Full backend test suite**: 253 passed, 8 failed (clean baseline, 0 regressions).
+- **Live Forensic API**: `GET /api/v1/entity/{address}/explain` verified returning `shap_available: true/false`.
+- **Frontend build**: `npm run build` compiled cleanly with 0 TypeScript/build errors.
 
 ---
 
 ## 4. NEXT WORK — priority order
 
-### P1 · Live progress UI during enrichment *(do first — most demo-visible per hour)*
+### P3b · SHAP compute/gating for ingested wallets *(NEXT UP — the real correctness hole)*
 
-**Why:** the enrichment chain takes **6–7 minutes** of dead air. Its per-stage output is the most persuasive thing the system produces and is currently buried in `docker compose logs`.
-
-**Current state:** `GET /ingest/enrichment/{task_id}` exists but is *after-the-fact* only. `enrich.py` runs ~9 stages, logs to stdout, returns one stats dict at the end. **There is no live progress plumbing.** (That is why the endpoint returned `not_dispatched` when probed mid-run.)
-
-**Stage timings (lopsided — matters for design):**
-
-| Stage | Time |
-| :--- | ---: |
-| cluster (Louvain) | ~6s |
-| **peel** | **~73s** |
-| coinjoin | ~0.5s |
-| **risk (wallet_attributes)** | **~90s** |
-| seed | ~9s |
-| pg anomaly + mirror | ~20s |
-| **publish** | **~157s** |
-| schema_contract | ~1s |
-
-**Deliverable:**
-1. `enrich.py` publishes `{stage, status, elapsed, counts}` to Redis after each stage.
-2. `/ingest/enrichment/{task_id}` returns partial state.
-3. Frontend polls ~1.5s and renders a **stage list with real counts** — NOT a naive percentage bar.
-4. On completion, trigger an XAI-store reload (see P2).
-
-**⚠️ The trap:** a percentage bar sits frozen at ~47% for three minutes (risk + publish) and reads as a hang. Must be per-stage. `publish` is already batched so it can honestly show `12,400 / 16,923`; `peel` and `risk` need intermediate checkpoints or at minimum a live elapsed counter.
-
-**Est: 5–7 hrs.**
-
----
-
-### P2 · XAI store staleness *(same code area as P1 — bundle them)*
-
-`xai_store` loads into memory at process start. New entities are written to disk during enrichment but the running API serves the old snapshot. **Ingest → immediately film dashboard → count has not moved.**
-
-Today the manual fix is `docker compose restart fastapi` mid-demo. Make the P1 completion handler reload the store instead, so ingest→dashboard becomes one click.
-
-**Est: 0.5–1 hr once P1 exists.**
-
----
-
-### P3 · SHAP is degenerate for ingested wallets *(the real correctness hole)*
+**Why:** P3a resolved the honesty issue by clearly marking `shap_available: false` and rendering informative fallback notices instead of drawing flat zero waterfalls. However, newly ingested wallets currently lack actual non-zero SHAP feature attributions because the full permutation explainer is computationally expensive. P3b closes this gap by calculating valid attributions for prioritized wallets.
 
 **Measured: 48 of 48 sampled ingested wallets — 12 each from CRITICAL/HIGH/MEDIUM/LOW — have `contribution == 0.0` on all 18 attributions.**
 
@@ -152,9 +123,11 @@ Important nuance: the payload is **present and correct** — 18 entries with rea
 
 **Design guidance:** gate on **rank by `composite_score`, not on the verdict label.** The label is derived and threshold-dependent (it already moved once this session); gating on it re-creates the exact bug being fixed — "explanation exists only for some wallets" — at a different boundary. Pair a precomputed top-N with **on-read compute as a backstop** so no wallet ever hits a hard "unavailable" wall.
 
-**P3a — do regardless of P3b, ship first (~1–2 hrs, low risk):** never present a degenerate vector as real. Add an explicit `shap_available` flag; UI says *"explanation unavailable"* instead of drawing a flat waterfall; add a test that fails if zeros are returned as real. This is not a performance decision — it is the dossier telling the truth.
+**Status:**
+- [x] **P3a (Done)**: Honest UI defense shipped (`shap_available: bool` schema field, all-zero vector suppression, fallback UI banner, 13 unit tests).
+- [ ] **P3b (Next)**: Active compute engine / rank-gated pipeline for ingested wallets.
 
-**Est: P3a 1–2 hrs · P3b 4–8 hrs · total 4.5–10 hrs.**
+**Est: P3b 4–8 hrs.**
 
 ---
 
@@ -168,7 +141,7 @@ Important nuance: the payload is **present and correct** — 18 entries with rea
 | **8 failing backend tests** | All pre-existing. Don't fix by weakening assertions |
 | `docs/demo-brief/` | Untracked, 3.19 MB of demo PDFs/PNGs. User's material — do not commit without asking |
 | `risk_score_source` in alerts payload | Deferred as cosmetic; not rendered in the UI |
-| `frontend/src/{app/globals.css,components/IngestModal.tsx}` | Uncommitted. Adds a `.tactile-btn-sky` class and switches two retry buttons to it. Also has a stray leading space in `" Ingestion Failed"` |
+| `frontend/src/{app/globals.css,components/IngestModal.tsx}` | Uncommitted. Enhanced `IngestModal.tsx` with P1 live enrichment stage polling, elapsed timers, counts, tactile sky retry buttons, and fixed leading space in failure banner. |
 
 ---
 

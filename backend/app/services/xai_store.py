@@ -371,6 +371,18 @@ def load() -> None:
         )
 
 
+def force_reload() -> None:
+    """Reset load flag and reload all stores from disk. Thread-safe.
+
+    Call after enrichment completes so the running FastAPI process picks up
+    newly written XAI files without a restart.
+    """
+    global _loaded
+    with _store_lock:
+        _loaded = False
+    load()
+
+
 def get_provenance() -> dict[str, str]:
     """Return dictionary of active model architectures and checkpoint provenance."""
     use_legacy_anomaly = getattr(settings, "use_legacy_anomaly_model", getattr(settings, "use_legacy_models", False))

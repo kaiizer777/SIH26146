@@ -1755,7 +1755,7 @@ export default function GraphCanvas({
                 <span>Click node to pin forensic inspector</span>
               </span>
             )}
-            <span className="crypto-mono text-slate-400">Cluster #{clusterId}</span>
+            <span className="crypto-mono text-slate-400">Cluster #{clusterId ?? "—"}</span>
           </div>
         </div>
       )}
@@ -1878,7 +1878,7 @@ export default function GraphCanvas({
               <Pin className="w-3 h-3 rotate-45" />
               <span>Edge Pinned • Click canvas to unpin</span>
             </span>
-            <span className="crypto-mono text-slate-400">Cluster #{clusterId}</span>
+            <span className="crypto-mono text-slate-400">Cluster #{clusterId ?? "—"}</span>
           </div>
         </div>
       )}
@@ -1899,13 +1899,15 @@ export default function GraphCanvas({
       )}
 
       {/* Empty State */}
-      {!isLoading && nodes.length === 0 && clusterId != null && (
+      {!isLoading && nodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="p-6 rounded-2xl border border-slate-200 shadow-card text-center max-w-sm bg-white/95">
             <Network className="w-6 h-6 text-slate-400 mx-auto mb-2" />
             <p className="text-xs font-bold crypto-mono mb-1">No Topology Data</p>
             <p className="text-[11px] text-slate-500">
-              No graph partition found for cluster #{clusterId}. Select an alert row from the stream.
+              {clusterId != null
+                ? `No graph partition found for cluster #${clusterId}. Select an alert row from the stream.`
+                : "No cluster selected. Select any wallet row from the alert stream to explore its cluster topology."}
             </p>
           </div>
         </div>

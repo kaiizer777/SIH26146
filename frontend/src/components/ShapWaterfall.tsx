@@ -41,10 +41,18 @@ export default function ShapWaterfall({ attributions }: ShapWaterfallProps) {
     [attributions],
   );
 
-  if (sorted.length === 0) {
+  if (
+    sorted.length === 0 ||
+    sorted.every(
+      (item) =>
+        typeof item.value !== "number" ||
+        isNaN(item.value) ||
+        Math.abs(item.value) <= 1e-9,
+    )
+  ) {
     return (
       <div className="flex items-center justify-center h-24 text-xs text-slate-400 crypto-mono">
-        No SHAP data available for this entity
+        No SHAP feature attribution available for this entity
       </div>
     );
   }

@@ -323,3 +323,46 @@ export async function syncIngestTask(
 
   return res.json() as Promise<IngestSyncResult>;
 }
+
+// ---------------------------------------------------------------------------
+// Enrichment
+// ---------------------------------------------------------------------------
+
+export interface EnrichmentProgressPayload {
+  stage: string;
+  status: "running" | "ok" | "failed";
+  elapsed_total: number;
+  stage_elapsed: number;
+  stages_completed: string[];
+  stages_total: number;
+  counts: Record<string, number>;
+}
+
+export interface EnrichmentStatusResponse {
+  status: string; // "not_dispatched" | "PROGRESS" | "SUCCESS" | "FAILURE"
+  progress?: EnrichmentProgressPayload;
+  result?: Record<string, unknown>;
+  error?: string;
+}
+
+export interface EnrichmentReloadResult {
+  status: string;
+  composite_count: number;
+}
+
+export async function fetchEnrichmentStatus(
+  taskId: string,
+): Promise<EnrichmentStatusResponse> {
+  return apiFetch<EnrichmentStatusResponse>(
+    `/ingest/enrichment/${encodeURIComponent(taskId)}`,
+  );
+}
+
+export async function reloadXaiStore(
+  taskId: string,
+): Promise<EnrichmentReloadResult> {
+  return apiFetch<EnrichmentReloadResult>(
+    `/ingest/enrichment/${encodeURIComponent(taskId)}/reload`,
+    { method: "POST" },
+  );
+}

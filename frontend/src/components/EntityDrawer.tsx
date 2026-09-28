@@ -22,6 +22,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { EntityExplainResponse } from "@/lib/api";
+import "@/lib/types";
 import ShapWaterfall from "./ShapWaterfall";
 import AttentionHeatmap from "./AttentionHeatmap";
 import ModelProvenanceModal from "./ModelProvenanceModal";
@@ -250,6 +251,18 @@ export default function EntityDrawer({
   const [copied, setCopied] = useState(false);
   const [mlRowOpen, setMlRowOpen] = useState(true);
   const [explainView, setExplainView] = useState<"shap" | "attention">("shap");
+
+  useEffect(() => {
+    if (data) {
+      const shapUnavailable = !data.shap_available || data.shap_attributions.length === 0;
+      const attentionAvailable = Boolean(data.attention_matrix && data.attention_matrix.length > 0);
+      if (shapUnavailable && attentionAvailable) {
+        setExplainView("attention");
+      } else if (!shapUnavailable) {
+        setExplainView("shap");
+      }
+    }
+  }, [data]);
   const [internalProvenanceOpen, setInternalProvenanceOpen] = useState(false);
   const [legalModalOpen, setLegalModalOpen] = useState(false);
 
@@ -303,6 +316,8 @@ export default function EntityDrawer({
   const isUnscored = data?.evidence_trail.extra?.scored === false;
   const verdict: Verdict = isUnscored ? "UNKNOWN" : toVerdict(data?.verdict);
   const isProvisional = data?.provisional === true;
+  const isShapUnavailable = Boolean(!data?.shap_available || (data?.shap_attributions?.length ?? 0) === 0);
+  const hasAttention = Boolean(data?.attention_matrix && data.attention_matrix.length > 0);
 
   return (
     <>
@@ -734,9 +749,13 @@ export default function EntityDrawer({
                   title="Feature Explainability & Attention"
                   subtitle="Pairwise transformer cross-attention matrix & 1D SHAP attribution waterfall"
                   icon={<Activity className="w-4 h-4 text-sky-600" />}
-                  defaultOpen={isProvisional || data.shap_attributions.length > 0}
+                  defaultOpen={
+                    isProvisional ||
+                    Boolean(data.shap_available && data.shap_attributions.length > 0) ||
+                    hasAttention
+                  }
                 >
-                  {data.shap_attributions.length === 0 ? (
+                  {(!data.shap_available || data.shap_attributions.length === 0) && !hasAttention ? (
                     <div
                       id="shap-provisional-placeholder"
                       className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
@@ -744,7 +763,7 @@ export default function EntityDrawer({
                       <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
                         {isProvisional
                           ? "SHAP attribution and attention weights are unavailable for newly ingested provisional entities — run full pipeline retraining to compute."
-                          : "No SHAP attribution data available for this entity."}
+                          : "No SHAP feature attribution data available for this entity."}
                       </p>
                     </div>
                   ) : (
@@ -757,14 +776,30 @@ export default function EntityDrawer({
                         <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-xs shadow-inner">
                           <button
                             type="button"
-                            onClick={() => setExplainView("shap")}
+                            disabled={!data.shap_available || data.shap_attributions.length === 0}
+                            onClick={() => {
+                              if (data.shap_available && data.shap_attributions.length > 0) {
+                                setExplainView("shap");
+                              }
+                            }}
                             className={clsx(
                               "flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all duration-150",
-                              explainView === "shap"
-                                ? "bg-sky-600 text-white shadow-xs"
-                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                              (!data.shap_available || data.shap_attributions.length === 0)
+                                ? "text-slate-400 opacity-50 cursor-not-allowed"
+                                : explainView === "shap"
+                                  ? "bg-sky-600 text-white shadow-xs"
+                                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                             )}
-                            aria-pressed={explainView === "shap"}
+                            aria-pressed={
+                              Boolean(data.shap_available && data.shap_attributions.length > 0) &&
+                              explainView === "shap"
+                            }
+                            aria-disabled={!data.shap_available || data.shap_attributions.length === 0}
+                            title={
+                              (!data.shap_available || data.shap_attributions.length === 0)
+                                ? "No SHAP feature attribution data available for this entity."
+                                : undefined
+                            }
                           >
                             <BarChart3 className="w-3.5 h-3.5" />
                             <span>SHAP Waterfall</span>
@@ -788,7 +823,20 @@ export default function EntityDrawer({
 
                       {/* Smooth View Rendering */}
                       {explainView === "shap" ? (
-                        <ShapWaterfall attributions={data.shap_attributions} />
+                        (!data.shap_available || data.shap_attributions.length === 0) ? (
+                          <div
+                            id="shap-provisional-placeholder"
+                            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
+                          >
+                            <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
+                              {isProvisional
+                                ? "SHAP attribution and attention weights are unavailable for newly ingested provisional entities — run full pipeline retraining to compute."
+                                : "No SHAP feature attribution data available for this entity."}
+                            </p>
+                          </div>
+                        ) : (
+                          <ShapWaterfall attributions={data.shap_attributions} />
+                        )
                       ) : (
                         <AttentionHeatmap
                           attentionMatrix={data.attention_matrix}

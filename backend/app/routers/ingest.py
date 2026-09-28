@@ -18,6 +18,7 @@ GET /ingest/enrichment/{task_id}:
     including per-stage results.
 """
 
+import asyncio
 import collections
 import hashlib
 import logging
@@ -577,3 +578,39 @@ async def get_enrichment_status(
         payload["error"] = str(enrich_result.result)
 
     return payload
+
+
+@router.post(
+    "/enrichment/{task_id}/reload",
+    summary="Trigger XAI store hot-reload after enrichment completes",
+)
+async def reload_xai_store_after_enrichment(
+    task_id: str = Path(..., pattern=r"^[0-9a-fA-F-]{36}$"),
+) -> dict[str, Any]:
+    # Resolve ingest task → enrichment task_id
+    ingest_result: AsyncResult = AsyncResult(task_id, app=celery_app)
+    task_data = ingest_result.result if isinstance(ingest_result.result, dict) else {}
+    enrichment = task_data.get("enrichment") or {}
+    enrich_task_id = enrichment.get("task_id")
+    if not enrich_task_id:
+        raise HTTPException(status_code=400, detail="No enrichment task recorded for this ingest.")
+
+    # Guard: only reload if enrichment actually succeeded
+    enrich_result: AsyncResult = AsyncResult(enrich_task_id, app=celery_app)
+    if enrich_result.state != "SUCCESS":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Enrichment not complete (state={enrich_result.state}). Cannot reload.",
+        )
+
+    # force_reload does blocking file I/O → run off the event loop
+    try:
+        await asyncio.get_event_loop().run_in_executor(None, xai_store.force_reload)
+    except Exception as exc:
+        logger.exception("[reload] XAI store reload failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Reload failed: {exc}")
+
+    count = xai_store.composite_count()
+    logger.info("[reload] XAI store reloaded after enrichment %s — %d records", enrich_task_id, count)
+    return {"status": "reloaded", "composite_count": count}
+

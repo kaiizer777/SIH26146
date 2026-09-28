@@ -2184,8 +2184,10 @@ def run_enrichment_chain(
             (peeling, CoinJoin) still operate over the whole graph, as the
             manual scripts do, so a chain spanning an ingest boundary is still
             detected.
-        progress_callback: Optional callable invoked with
-            ``{"stage": name, "status": ...}`` after each stage.
+        progress_callback: Optional callable invoked as
+            ``callback(stage, status, result)`` where ``stage`` is the stage
+            name, ``status`` is ``"running"`` / ``"ok"`` / ``"failed"``, and
+            ``result`` is the stage's return dict (or ``None`` on "running").
 
     Returns:
         A report dict with one key per stage plus ``wall_seconds``.
@@ -2213,17 +2215,17 @@ def run_enrichment_chain(
 
         for name, fn in stages:
             if progress_callback is not None:
-                progress_callback({"stage": name, "status": "running"})
+                progress_callback(name, "running", None)
             try:
                 result = fn(svc)
                 report[name] = result
                 if progress_callback is not None:
-                    progress_callback({"stage": name, "status": "ok"})
+                    progress_callback(name, "ok", result)
             except Exception as exc:  # noqa: BLE001 - report, never silently pass
                 logger.exception("[enrich] stage %s FAILED: %s", name, exc)
                 report[name] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
                 if progress_callback is not None:
-                    progress_callback({"stage": name, "status": "failed"})
+                    progress_callback(name, "failed", report[name])
 
     report["wall_seconds"] = round(time.perf_counter() - t0, 2)
     return report
@@ -2232,6 +2234,23 @@ def run_enrichment_chain(
 # ---------------------------------------------------------------------------
 # Celery task
 # ---------------------------------------------------------------------------
+
+# Total number of enrichment stages — kept as a named constant so the meta
+# shape and the stage list always agree.
+_STAGES_TOTAL = 7
+
+# Declarative per-stage count extractors. Each tuple is:
+#   (stage_name, counts_key_to_set, result_key_path)
+# key_path navigates nested dicts (up to two levels). Only int or
+# whole-float values are stored; missing or non-numeric values are silently
+# skipped — never invented. postgres_mirror is handled inline (summed).
+_STAGE_COUNT_EXTRACTORS: list[tuple[str, str, tuple[str, ...]]] = [
+    ("cluster",           "cluster_scope_wallets", ("scope_wallets",)),
+    ("peeling",           "peeling_flagged",        ("txids_flagged",)),
+    ("coinjoin",          "coinjoin_flagged",        ("txids_flagged",)),
+    ("wallet_attributes", "wallets_scored",          ("risk", "wallets_written")),
+    ("xai_publish",       "xai_published",           ("published",)),
+]
 
 
 @celery_app.task(
@@ -2247,10 +2266,88 @@ def enrich_ingested_transactions(self, txids: list[str] | None = None) -> dict[s
     automatically after every ingest. Reports per-stage progress to Redis so
     the client can poll an observable state.
     """
-    self.update_state(state="STARTED", meta={"stage": "starting", "txids": len(txids or [])})
+    chain_start: float = time.time()
+    stages_completed: list[str] = []
+    cumulative_counts: dict[str, int] = {}
+    # Single-element list so the closure can rebind it without nonlocal.
+    stage_start: list[float] = [chain_start]
 
-    def _progress(meta: dict[str, Any]) -> None:
-        self.update_state(state="PROGRESS", meta=meta)
+    self.update_state(
+        state="STARTED",
+        meta={
+            "stage": "starting",
+            "status": "running",
+            "elapsed_total": 0.0,
+            "stage_elapsed": 0.0,
+            "stages_completed": [],
+            "stages_total": _STAGES_TOTAL,
+            "counts": {},
+        },
+    )
+
+    def _progress(stage: str, status: str, result: dict[str, Any] | None) -> None:
+        now = time.time()
+
+        if status == "running":
+            stage_start[0] = now
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "stage": stage,
+                    "status": "running",
+                    "elapsed_total": round(now - chain_start, 3),
+                    "stage_elapsed": 0.0,
+                    "stages_completed": list(stages_completed),
+                    "stages_total": _STAGES_TOTAL,
+                    "counts": dict(cumulative_counts),
+                },
+            )
+            return
+
+        # status == "ok" or "failed".
+        if status == "ok" and isinstance(result, dict):
+            # Declarative single-key-path extractors.
+            for ext_stage, counts_key, key_path in _STAGE_COUNT_EXTRACTORS:
+                if ext_stage != stage:
+                    continue
+                node: Any = result
+                for k in key_path:
+                    if not isinstance(node, dict):
+                        node = None
+                        break
+                    node = node.get(k)
+                if isinstance(node, int):
+                    cumulative_counts[counts_key] = node
+                elif isinstance(node, float) and node == int(node):
+                    cumulative_counts[counts_key] = int(node)
+                # Non-numeric or missing: skip, never invent a value.
+
+            # postgres_mirror: sum all four sub-counters into pg_rows_written.
+            if stage == "postgres_mirror":
+                cumulative_counts["pg_rows_written"] = sum(
+                    int(result.get(k) or 0)
+                    for k in (
+                        "mixing_rows_updated",
+                        "cluster_rows_updated",
+                        "risk_rows_updated",
+                        "anomaly_rows_updated",
+                    )
+                )
+
+        stages_completed.append(stage)
+
+        self.update_state(
+            state="PROGRESS",
+            meta={
+                "stage": stage,
+                "status": status,
+                "elapsed_total": round(now - chain_start, 3),
+                "stage_elapsed": round(now - stage_start[0], 3),
+                "stages_completed": list(stages_completed),
+                "stages_total": _STAGES_TOTAL,
+                "counts": dict(cumulative_counts),
+            },
+        )
 
     try:
         report = run_enrichment_chain(txids=txids, progress_callback=_progress)

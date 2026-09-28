@@ -118,23 +118,6 @@ export default function SurveillanceDashboard() {
     hasMore,
   } = useAlerts({ ...alertParams, pageSize: 50 });
 
-  // Auto-populate Prime Cluster #516 when entering graph view with no cluster active
-  useEffect(() => {
-    if (view === "graph" && graphClusterId === null && !graphLoading) {
-      setGraphLoading(true);
-      setGraphClusterId(516);
-      fetchGraph(516, 150)
-        .then((g) => {
-          setGraphNodes(g.nodes);
-          setGraphLinks(g.links);
-        })
-        .catch(() => {
-          setGraphNodes([]);
-          setGraphLinks([]);
-        })
-        .finally(() => setGraphLoading(false));
-    }
-  }, [view, graphClusterId, graphLoading]);
 
   // ---------------------------------------------------------------------------
   // Entity selection
@@ -325,7 +308,11 @@ verdictCounts = {
                 id="view-toggle-graph"
                 onClick={() => {
                   setTargetMode("topology");
-                  setView("graph");
+                  if (graphClusterId !== null) {
+                    setView("graph");
+                  } else {
+                    setView("table");
+                  }
                 }}
               />
             </div>

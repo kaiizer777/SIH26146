@@ -812,6 +812,24 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
         if not attention_matrix and prov_attn:
             attention_matrix = prov_attn
 
+    # --- SHAP availability and honesty guard ---
+    # Ensure degenerate or empty vectors are never presented as real.
+    is_avail = len(shap_attributions) > 0 and any(
+        abs(item.value) > _SHAP_DEGENERATE_EPS for item in shap_attributions
+    )
+    if not is_avail:
+        shap_attributions = []
+        shap_available = False
+        if shap_state == "available":
+            shap_state = "unavailable_degenerate_all_zero_attribution"
+            shap_reason = (
+                "The stored attribution vector for this transaction is all "
+                "zeros, which reflects a degenerate explainer output rather "
+                "than a measured result. No waterfall is shown."
+            )
+    else:
+        shap_available = True
+
     # --- Evidence trail ---
     is_provisional = bool(composite.get("provisional", False))
     chain_hops = int(composite.get("chain_hops", 0) or 0)
@@ -946,6 +964,16 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
             "relying on any risk conclusion for it."
         )
 
+    # Ensure that before instantiating EntityExplainResponse, attributions are honest
+    is_avail = len(shap_attributions) > 0 and any(
+        abs(item.value) > _SHAP_DEGENERATE_EPS for item in shap_attributions
+    )
+    if not is_avail:
+        shap_attributions = []
+        shap_available = False
+    else:
+        shap_available = True
+
     return EntityExplainResponse(
         address=address,
         # Headline score is the STORED composite value for legacy snapshot
@@ -968,6 +996,7 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
         score_breakdown=breakdown,
         evidence_trail=evidence,
         shap_attributions=shap_attributions,
+        shap_available=shap_available,
         attention_matrix=attention_matrix,
         gnn_subgraph=gnn_subgraph,
         summary_narrative=narrative,

@@ -17,9 +17,20 @@ import {
   ArrowLeft,
   FileSpreadsheet,
   HardDrive,
+  Loader2,
+  XCircle,
+  Circle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { uploadIngestFile, fetchIngestStatus, syncIngestTask, ApiError } from "@/lib/api";
+import {
+  uploadIngestFile,
+  fetchIngestStatus,
+  syncIngestTask,
+  fetchEnrichmentStatus,
+  reloadXaiStore,
+  ApiError,
+  type EnrichmentProgressPayload,
+} from "@/lib/api";
 
 interface IngestModalProps {
   isOpen: boolean;
@@ -31,12 +42,26 @@ type Stage =
   | "idle"
   | "uploading"
   | "polling"
+  | "enriching"
   | "success"
   | "warning"
   | "error"
   | "duplicate";
 
 const ACCEPTED = ".csv,.json,.xml";
+/** Max enrichment poll attempts: 600 × 1500 ms ≈ 15 minutes. */
+const ENRICHMENT_MAX_ATTEMPTS = 600;
+
+const ENRICHMENT_STAGES = [
+  { key: "cluster",           label: "Entity Clustering" },
+  { key: "peeling",           label: "Peel Chain Detection" },
+  { key: "coinjoin",          label: "CoinJoin Detection" },
+  { key: "wallet_attributes", label: "Wallet Risk Scoring" },
+  { key: "schema_contract",   label: "Schema Verification" },
+  { key: "postgres_mirror",   label: "PostgreSQL Mirror" },
+  { key: "xai_publish",       label: "XAI Store Publishing" },
+] as const;
+
 
 export default function IngestModal({
   isOpen,
@@ -51,23 +76,29 @@ export default function IngestModal({
   const [statusText, setStatusText] = useState("");
   const [warningTitle, setWarningTitle] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [enrichProgress, setEnrichProgress] =
+    useState<EnrichmentProgressPayload | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const enrichTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+      if (enrichTimerRef.current) clearTimeout(enrichTimerRef.current);
     };
   }, []);
 
   const reset = useCallback(() => {
     if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    if (enrichTimerRef.current) clearTimeout(enrichTimerRef.current);
     setStage("idle");
     setProgress(0);
     setSelectedFile(null);
     setStatusText("");
     setWarningTitle("");
     setErrorMsg("");
+    setEnrichProgress(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
@@ -78,13 +109,90 @@ export default function IngestModal({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && stage !== "uploading" && stage !== "polling") {
+      if (
+        e.key === "Escape" &&
+        stage !== "uploading" &&
+        stage !== "polling" &&
+        stage !== "enriching"
+      ) {
         handleClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleClose, stage]);
+
+  const startEnrichmentPoll = useCallback(
+    function pollEnrichment(taskId: string, attempts: number, insertedRows: number) {
+      if (attempts > ENRICHMENT_MAX_ATTEMPTS) {
+        setErrorMsg("Enrichment timed out after 15 minutes");
+        setStage("error");
+        return;
+      }
+
+      enrichTimerRef.current = setTimeout(async () => {
+        try {
+          const res = await fetchEnrichmentStatus(taskId);
+
+          if (res.status === "not_dispatched" || res.status === "PENDING" || res.status === "STARTED") {
+            // Enrichment not yet dispatched — keep polling.
+            pollEnrichment(taskId, attempts + 1, insertedRows);
+          } else if (res.status === "PROGRESS" && res.progress) {
+            const ep = res.progress;
+            const completed = ep.stages_completed.length;
+            // Cap at 95% until SUCCESS flips to 100%.
+            const pct = Math.min(Math.round((completed / 7) * 100), 95);
+            setProgress(pct);
+
+            const currentStage = ENRICHMENT_STAGES.find((s) => s.key === ep.stage);
+            setStatusText(
+              `Enriching — ${currentStage?.label ?? ep.stage}`,
+            );
+            setEnrichProgress(ep);
+            pollEnrichment(taskId, attempts + 1, insertedRows);
+          } else if (res.status === "SUCCESS") {
+            setProgress(100);
+            setStatusText("Enrichment complete");
+            setEnrichProgress(null);
+
+            // Reload XAI store — fail-open: don't block success display.
+            try {
+              await reloadXaiStore(taskId);
+            } catch (reloadErr) {
+              console.warn(
+                "[IngestModal] reloadXaiStore failed:",
+                reloadErr,
+                "— proceeding to success",
+              );
+            }
+
+            setStage("success");
+            setStatusText(
+              `Successfully ingested ${insertedRows.toLocaleString()} rows and completed enrichment`,
+            );
+            toast.success(`Batch enriched: ${insertedRows} rows processed`);
+
+            pollTimerRef.current = setTimeout(() => {
+              onSuccess();
+              handleClose();
+            }, 1500);
+          } else if (res.status === "FAILURE") {
+            const errMsg = res.error ?? "Enrichment pipeline failed";
+            setErrorMsg(errMsg);
+            setStage("error");
+            toast.error(`Enrichment failed: ${errMsg}`);
+          } else {
+            // Unknown status — keep polling.
+            pollEnrichment(taskId, attempts + 1, insertedRows);
+          }
+        } catch {
+          setErrorMsg("Failed to poll enrichment status");
+          setStage("error");
+        }
+      }, 1500);
+    },
+    [onSuccess, handleClose],
+  );
 
   const pollStatus = useCallback(
     function poll(taskId: string, attempts: number) {
@@ -143,7 +251,9 @@ export default function IngestModal({
               setErrorMsg(emptyMsg);
               toast.error(emptyMsg);
             } else {
-              // Sub-task 11.4: Post-ingest online inference sync (fail-open)
+              // Sub-task 11.4: Post-ingest online inference sync (fail-open).
+              // Runs before enrichment phase so the alert table has a snapshot
+              // even if the enrichment chain later fails.
               try {
                 await syncIngestTask(taskId);
               } catch (syncErr) {
@@ -170,14 +280,11 @@ export default function IngestModal({
                 return;
               }
 
-              setStage("success");
-              setStatusText(`Successfully ingested ${inserted.toLocaleString()} rows`);
-              toast.success(`Batch ingested: ${inserted} rows processed`);
-
-              pollTimerRef.current = setTimeout(() => {
-                onSuccess();
-                handleClose();
-              }, 1500);
+              // Transition to enrichment phase.
+              setProgress(0);
+              setStatusText("Enriching — starting…");
+              setStage("enriching");
+              startEnrichmentPoll(taskId, 0, inserted);
             }
           } else if (status.status === "FAILURE") {
             setErrorMsg(status.error ?? "Celery task failed");
@@ -194,7 +301,7 @@ export default function IngestModal({
         }
       }, 2000);
     },
-    [onSuccess, handleClose],
+    [onSuccess, startEnrichmentPoll],
   );
 
   const startUpload = useCallback(
@@ -281,7 +388,7 @@ export default function IngestModal({
 
   if (!isOpen) return null;
 
-  const isWorking = stage === "uploading" || stage === "polling";
+  const isWorking = stage === "uploading" || stage === "polling" || stage === "enriching";
 
   return (
     <>
@@ -422,7 +529,11 @@ export default function IngestModal({
                 </p>
               </div>
               <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-medium uppercase bg-sky-50 border border-sky-200 text-sky-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                {stage === "uploading" ? "Uploading" : "Processing"}
+                {stage === "uploading"
+                  ? "Uploading"
+                  : stage === "enriching"
+                  ? "Enriching"
+                  : "Processing"}
               </span>
             </div>
           )}
@@ -451,6 +562,80 @@ export default function IngestModal({
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Enrichment Stage Progress List */}
+          {stage === "enriching" && enrichProgress && (
+            <div className="rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden">
+              <div className="px-4 pt-3 pb-2 border-b border-slate-200/70">
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-500">
+                  Enrichment Pipeline
+                </span>
+              </div>
+              <ol className="flex flex-col divide-y divide-slate-100/80">
+                {ENRICHMENT_STAGES.map(({ key, label }) => {
+                  const isDone = enrichProgress.stages_completed.includes(key);
+                  const isRunning =
+                    enrichProgress.stage === key &&
+                    enrichProgress.status === "running";
+                  const isFailed =
+                    enrichProgress.stage === key &&
+                    enrichProgress.status === "failed";
+                  const count = enrichProgress.counts[key];
+
+                  return (
+                    <li
+                      key={key}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs"
+                    >
+                      {/* State icon */}
+                      {isDone && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      )}
+                      {isRunning && (
+                        <Loader2 className="w-3.5 h-3.5 text-sky-500 animate-spin shrink-0" />
+                      )}
+                      {isFailed && (
+                        <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                      )}
+                      {!isDone && !isRunning && !isFailed && (
+                        <Circle className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                      )}
+
+                      {/* Label */}
+                      <span
+                        className={clsx(
+                          "flex-1 font-medium",
+                          isDone && "text-emerald-700",
+                          isRunning && "text-sky-700",
+                          isFailed && "text-red-700",
+                          !isDone && !isRunning && !isFailed && "text-slate-400",
+                        )}
+                      >
+                        {label}
+                      </span>
+
+                      {/* Trailing metadata */}
+                      {isDone && count != null && (
+                        <span className="crypto-mono text-[10px] text-slate-500 tabular-nums">
+                          {count.toLocaleString()}
+                        </span>
+                      )}
+                      {isRunning && (
+                        <span className="crypto-mono text-[10px] text-sky-600 tabular-nums">
+                          {enrichProgress.stage_elapsed.toFixed(0)}s
+                        </span>
+                      )}
+                      {isFailed && (
+                        <span className="text-[10px] text-red-500 font-semibold">
+                          failed
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           )}
 
