@@ -614,3 +614,114 @@ async def reload_xai_store_after_enrichment(
     logger.info("[reload] XAI store reloaded after enrichment %s — %d records", enrich_task_id, count)
     return {"status": "reloaded", "composite_count": count}
 
+
+def _sync_purge_blocking() -> int:
+    """Synchronous cleanup for Neo4j, Redis, runtime XAI files, and store reload."""
+    from app.services.graph_writer import GraphService
+
+    # 1. Neo4j graph cleanup
+    wallets_deleted = 0
+    with GraphService() as svc:
+        with svc.driver.session(database=settings.neo4j_database) as session:
+            w_res = session.run(
+                "MATCH (w:Wallet) WHERE w.cluster_id >= 1000000 DETACH DELETE w RETURN count(w) as cnt;"
+            )
+            record = w_res.single() if w_res else None
+            wallets_deleted = record["cnt"] if record and "cnt" in record else 0
+            session.run("MATCH (t:Transaction) WHERE NOT (t)-[:SENDS|RECEIVES]-() DETACH DELETE t;")
+            session.run("MATCH (ip:IP) WHERE NOT (ip)-[:OBSERVED|OBSERVED_AT]-() DETACH DELETE ip;")
+
+    # 2. Redis key cleanup
+    redis_cli = get_redis_client()
+    if redis_cli is not None:
+        try:
+            for pattern in ("file_hash:*", "sync_done:*"):
+                keys = redis_cli.keys(pattern)
+                if keys:
+                    redis_cli.delete(*keys)
+        except Exception as r_exc:
+            logger.warning("Redis purge failed: %s", r_exc)
+
+    # 3. Runtime XAI cache files cleanup
+    runtime_dir = (
+        pathlib.Path(settings.xai_dir) / "runtime"
+        if hasattr(settings, "xai_dir")
+        else pathlib.Path("data/xai/runtime")
+    )
+    if runtime_dir.exists():
+        for f in runtime_dir.glob("*.json"):
+            try:
+                f.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+    # 4. XAI Store Hot Reload
+    xai_store.force_reload()
+
+    return wallets_deleted
+
+
+@router.post(
+    "/purge",
+    summary="Purge all ingested transactions and graph nodes back to clean baseline",
+)
+async def purge_ingested_data() -> dict[str, Any]:
+    """Delete all ingested data from PostgreSQL, Neo4j, Redis, and runtime XAI cache.
+
+    Resets the database back to the clean 99,990 baseline and reloads xai_store.
+    """
+    try:
+        # PostgreSQL deletion
+        session_cm = SessionLocal()
+        if hasattr(session_cm, "__aenter__"):
+            async with session_cm as db:
+                result = await db.execute(
+                    text(
+                        "DELETE FROM transactions WHERE cluster_id IS NULL OR cluster_id >= 1000000;"
+                    )
+                )
+                await db.commit()
+                pg_deleted = (
+                    result.rowcount
+                    if hasattr(result, "rowcount") and result.rowcount is not None
+                    else 0
+                )
+        else:
+            with session_cm as db:
+                result = db.execute(
+                    text(
+                        "DELETE FROM transactions WHERE cluster_id IS NULL OR cluster_id >= 1000000;"
+                    )
+                )
+                db.commit()
+                pg_deleted = (
+                    result.rowcount
+                    if hasattr(result, "rowcount") and result.rowcount is not None
+                    else 0
+                )
+
+        # Offload blocking I/O (Neo4j, Redis, FS unlinks, xai_store reload) off the event loop
+        loop = asyncio.get_event_loop()
+        wallets_deleted = await loop.run_in_executor(None, _sync_purge_blocking)
+
+        composite_cnt = xai_store.composite_count()
+        logger.info(
+            "Purge completed successfully: pg_deleted=%d, wallets_deleted=%d, composite_count=%d",
+            pg_deleted,
+            wallets_deleted,
+            composite_cnt,
+        )
+
+        return {
+            "status": "purged",
+            "pg_deleted": pg_deleted,
+            "wallets_deleted": wallets_deleted,
+            "composite_count": composite_cnt,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Failed to purge ingested data: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+

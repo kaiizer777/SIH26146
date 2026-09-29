@@ -435,26 +435,6 @@ export default function EntityDrawer({
                   </div>
                 </div>
               )}
-              {/* Provisional Warning Banner */}
-              {isProvisional && !isUnscored && (
-                <div
-                  id="drawer-provisional-banner"
-                  role="status"
-                  className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-3.5 flex items-start gap-3"
-                >
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold uppercase tracking-wider text-amber-900">
-                      Provisional Analysis
-                    </p>
-                    <p className="text-xs text-amber-800 leading-relaxed">
-                      This entity was ingested in the current session. SHAP waterfall and GNN
-                      subgraph are available only for pre-indexed entities. Anomaly score and
-                      rule detections are live.
-                    </p>
-                  </div>
-                </div>
-              )}
               {/* Identity block */}
               <div className="flex items-start justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="min-w-0 flex-1">
@@ -761,9 +741,7 @@ export default function EntityDrawer({
                       className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
                     >
                       <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
-                        {isProvisional
-                          ? "SHAP attribution and attention weights are unavailable for newly ingested provisional entities — run full pipeline retraining to compute."
-                          : "No SHAP feature attribution data available for this entity."}
+                        No SHAP feature attribution data available for this entity.
                       </p>
                     </div>
                   ) : (
@@ -829,9 +807,7 @@ export default function EntityDrawer({
                             className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-amber-200 bg-amber-50/40 rounded-lg text-center"
                           >
                             <p className="text-xs text-slate-600 font-medium max-w-md leading-relaxed">
-                              {isProvisional
-                                ? "SHAP attribution and attention weights are unavailable for newly ingested provisional entities — run full pipeline retraining to compute."
-                                : "No SHAP feature attribution data available for this entity."}
+                              No SHAP feature attribution data available for this entity.
                             </p>
                           </div>
                         ) : (

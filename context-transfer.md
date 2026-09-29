@@ -37,17 +37,18 @@
 
 ---
 
-## 2. Database state (updated post 2k test ingest & enrichment)
+## 2. Database state (ingested data deliberately deleted; reset to clean baseline)
 
 | Store | Count |
 | :--- | :--- |
-| PG `transactions` | **101,990** (99,990 baseline + 2,000 ingested) |
-| Neo4j `:Wallet` | **32,796** (24,659 baseline + 8,137 ingested) |
-| Neo4j `:Transaction` | **101,999** (99,999 baseline + 2,000 ingested) |
-| Neo4j `:IP` | **2,701** (2,540 baseline + 161 newly observed) |
-| Dashboard entities | **32,804** → CRITICAL 231 · HIGH 643 · MEDIUM 6,993 · LOW 24,937 |
-| `data/xai/runtime/` | **populated** (32,804 records generated & cached from post-ingest enrichment) |
-| Redis `file_hash:*` | **contains active upload hashes** (e.g. `test_2000.csv` 24h dedup key) |
+| PG `transactions` | **99,990** |
+| Neo4j `:Wallet` | **24,659** |
+| Neo4j `:Transaction` | **99,999** |
+| Neo4j `:IP` | **2,540** |
+| Dashboard entities | **15,873** → CRITICAL 111 · HIGH 2 · MEDIUM 3,112 · LOW 12,648 |
+| `data/xai/runtime/` | **empty** (gitignored generated overlay) |
+| Redis `file_hash:*` | **cleared (0 keys)** |
+| Redis `sync_done:*` | **cleared (0 keys)** |
 
 Ingested data is identified by `cluster_id >= 1000000`. **Important trap:** freshly-ingested PG rows have `cluster_id IS NULL` *until enrichment finishes* — the boundary only works after the chain completes.
 
@@ -69,6 +70,7 @@ Ingested data is identified by `cluster_id >= 1000000`. **Important trap:** fres
 | 10 | **P1: Live Enrichment Progress UI** (`enrich.py`, `IngestModal.tsx`, `api.ts`) | Implemented rich per-stage enrichment progress metadata (`elapsed_total`, `stage_elapsed`, `stages_completed`, `stages_total=7`, `counts`), wired live polling and stage list UI in modal. Real-time stage timers and counters replace dead-air waiting screens |
 | 11 | **P2: XAI Store Hot-Reload** (`xai_store.py`, `ingest.py`) | Added thread-safe `force_reload()` to `xai_store.py` and `POST /ingest/enrichment/{task_id}/reload` endpoint in `ingest.py` to enable hot-reload without container restart. Hot-reloaded 32,804 records instantly into active API memory |
 | 12 | **P3a: SHAP Honesty Flag & Degenerate Waterfall Defense** (`entity.py`, `EntityDrawer.tsx`, `ShapWaterfall.tsx`, `test_shap_honesty.py`) | Added `shap_available: bool` to `EntityExplainResponse` schema, filtered degenerate all-zero SHAP attributions in `entity.py`, added honesty guards & fallbacks in `EntityDrawer.tsx` and `ShapWaterfall.tsx`, and added 13 deterministic tests in `test_shap_honesty.py`. Prevents deceptive flat-zero waterfalls |
+| 13 | **P3b: Ingested Wallet SHAP Engine & Write-Through Caching** (`enrich.py`, `entity.py`) | 2-tier architecture: (1) Celery batch pre-computation for Top 50 high-risk transactions (`max_evals=500`), (2) Interactive on-read computation (`max_evals=300`) with immediate write-through caching to `xai_store`. Verified on-read returns valid 18-feature attributions, repeat cached read returns in 0.176s (184x speedup). Backend test suite holds at 8 baseline failures (zero regressions). |
 
 ### Verified on a clean-slate run (deleted all ingested data → re-ingested → re-enriched)
 
@@ -83,12 +85,13 @@ ingested cluster topology: 150 nodes / 377-478 links, mean degree 5.03-6.37
                              (pre-loaded baseline cluster = 1.59)
 ```
 
-### Verified on Live Docker Environment (P1, P2, P3a verification)
+### Verified on Live Docker Environment (P1, P2, P3a, P3b verification)
 
 - **Live docker run**: 2,000 tx upload (`test_2000.csv`), verified all 7 stages emitted live progress (`stage_elapsed`, `elapsed_total`, item counts).
 - **XAI hot-reload**: `POST /ingest/enrichment/{task_id}/reload` hot-reloaded 32,804 records into `xai_store` memory without container restart.
 - **SHAP honesty suite**: 13/13 passed in `test_shap_honesty.py`.
-- **Full backend test suite**: 253 passed, 8 failed (clean baseline, 0 regressions).
+- **P3b live on-read test**: Ingested wallet `3i6MTfegKrt4Ansmej1YdGLLthzBfpncs` produced 18 valid non-zero attributions (`shap_available: True`). Write-through cache returned second call in 0.176s (184x speedup).
+- **Full backend test suite**: 252 passed, 8 failed (clean baseline, 0 regressions).
 - **Live Forensic API**: `GET /api/v1/entity/{address}/explain` verified returning `shap_available: true/false`.
 - **Frontend build**: `npm run build` compiled cleanly with 0 TypeScript/build errors.
 
@@ -96,38 +99,14 @@ ingested cluster topology: 150 nodes / 377-478 links, mean degree 5.03-6.37
 
 ## 4. NEXT WORK — priority order
 
-### P3b · SHAP compute/gating for ingested wallets *(NEXT UP — the real correctness hole)*
+All primary feature priorities from this cycle are **COMPLETE**:
+- [x] **P1**: Live progress UI during enrichment (`enrich.py`, `IngestModal.tsx`, `api.ts`)
+- [x] **P2**: XAI store hot-reload (`xai_store.py`, `ingest.py`)
+- [x] **P3a**: SHAP honesty flag & fallback UI (`entity.py`, `EntityDrawer.tsx`, `ShapWaterfall.tsx`)
+- [x] **P3b**: Ingested wallet SHAP engine & write-through caching (`enrich.py`, `entity.py`)
+- [x] **Cluster Topology Auto-Open Bug**: Prevent unprompted Prime Cluster 516 load on first view toggle (`page.tsx`, `GraphCanvas.tsx`)
 
-**Why:** P3a resolved the honesty issue by clearly marking `shap_available: false` and rendering informative fallback notices instead of drawing flat zero waterfalls. However, newly ingested wallets currently lack actual non-zero SHAP feature attributions because the full permutation explainer is computationally expensive. P3b closes this gap by calculating valid attributions for prioritized wallets.
-
-**Measured: 48 of 48 sampled ingested wallets — 12 each from CRITICAL/HIGH/MEDIUM/LOW — have `contribution == 0.0` on all 18 attributions.**
-
-Important nuance: the payload is **present and correct** — 18 entries with real `feature`, `label` and `value` (e.g. `num_outputs`, value `32.691014`). Only `contribution` is zero. Feature extraction demonstrably works; the values are real and non-trivial.
-
-**Seeded wallets are fine** — `data/xai/shap_attributions.json` is txid-keyed, 4,839 records, real signed non-zero attributions (e.g. `output_entropy attribution=+0.02052588`).
-
-**Why it is almost certainly a wiring gap, not math:** `shap.PermutationExplainer` in `services/shap_service.py` was independently verified at additivity ~2e-6. The values are *exactly* zero, not small — math does not produce exact zeros; a disconnected code path does.
-
-**Two unknowns to resolve first (do NOT design around these yet):**
-- Does the FT-Transformer load **inside the Celery worker**? A worker flagged `torch_geometric` may be missing. If it can't load in Celery, compute-at-ingest is impossible and the design changes completely.
-- Would `LinearExplainer` work? Exact and far faster. If yes, the cost constraint below evaporates.
-
-**Cost budget (why a gate is needed) — ~10s/tx at `max_evals=2000`:**
-
-| Gate | Wallets | Time |
-| :--- | ---: | ---: |
-| all | 8,137 | **22.6 hrs** |
-| top 1,000 by score | 1,000 | 2.8 hrs |
-| CRITICAL + HIGH | 723 | 2.0 hrs |
-| CRITICAL only | 116 | 19 min |
-
-**Design guidance:** gate on **rank by `composite_score`, not on the verdict label.** The label is derived and threshold-dependent (it already moved once this session); gating on it re-creates the exact bug being fixed — "explanation exists only for some wallets" — at a different boundary. Pair a precomputed top-N with **on-read compute as a backstop** so no wallet ever hits a hard "unavailable" wall.
-
-**Status:**
-- [x] **P3a (Done)**: Honest UI defense shipped (`shap_available: bool` schema field, all-zero vector suppression, fallback UI banner, 13 unit tests).
-- [ ] **P3b (Next)**: Active compute engine / rank-gated pipeline for ingested wallets.
-
-**Est: P3b 4–8 hrs.**
+Remaining open items are smaller housekeeping / audit points (see Section 5 below).
 
 ---
 

@@ -20,6 +20,8 @@ import {
   Loader2,
   XCircle,
   Circle,
+  Trash2,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +30,7 @@ import {
   syncIngestTask,
   fetchEnrichmentStatus,
   reloadXaiStore,
+  purgeIngestedData,
   ApiError,
   type EnrichmentProgressPayload,
 } from "@/lib/api";
@@ -62,6 +65,15 @@ const ENRICHMENT_STAGES = [
   { key: "xai_publish",       label: "XAI Store Publishing" },
 ] as const;
 
+const COUNT_KEY_MAP: Record<string, string> = {
+  cluster: "cluster_scope_wallets",
+  peeling: "peeling_flagged",
+  coinjoin: "coinjoin_flagged",
+  wallet_attributes: "wallets_scored",
+  postgres_mirror: "pg_rows_written",
+  xai_publish: "xai_published",
+};
+
 
 export default function IngestModal({
   isOpen,
@@ -71,6 +83,7 @@ export default function IngestModal({
   const [stage, setStage] = useState<Stage>("idle");
   const [dragOver, setDragOver] = useState(false);
   const [isDraggingSample, setIsDraggingSample] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [statusText, setStatusText] = useState("");
@@ -78,9 +91,32 @@ export default function IngestModal({
   const [errorMsg, setErrorMsg] = useState("");
   const [enrichProgress, setEnrichProgress] =
     useState<EnrichmentProgressPayload | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [insertedCount, setInsertedCount] = useState<number>(0);
+  const [ingestProgressRows, setIngestProgressRows] = useState<{
+    processed: number;
+    total: number;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const enrichTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isWorking = stage === "uploading" || stage === "polling" || stage === "enriching";
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  useEffect(() => {
+    if (!isWorking || startTime === null) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isWorking, startTime]);
 
   useEffect(() => {
     return () => {
@@ -99,6 +135,10 @@ export default function IngestModal({
     setWarningTitle("");
     setErrorMsg("");
     setEnrichProgress(null);
+    setStartTime(null);
+    setElapsedSeconds(0);
+    setInsertedCount(0);
+    setIngestProgressRows(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
@@ -106,6 +146,24 @@ export default function IngestModal({
     reset();
     onClose();
   }, [reset, onClose]);
+
+  const handlePurgeData = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isPurging) return;
+    setIsPurging(true);
+    try {
+      const res = await purgeIngestedData();
+      toast.success(
+        `Purged ${res.pg_deleted.toLocaleString()} rows & ${res.wallets_deleted.toLocaleString()} wallets. Reset to baseline!`
+      );
+      onSuccess(); // Refresh alerts and dashboard
+    } catch (err) {
+      console.error("Purge error:", err);
+      toast.error("Failed to purge ingested data");
+    } finally {
+      setIsPurging(false);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -140,14 +198,15 @@ export default function IngestModal({
           } else if (res.status === "PROGRESS" && res.progress) {
             const ep = res.progress;
             const completed = ep.stages_completed.length;
-            // Cap at 95% until SUCCESS flips to 100%.
-            const pct = Math.min(Math.round((completed / 7) * 100), 95);
+            const intra = (ep.current != null && ep.total != null && ep.total > 0) ? (ep.current / ep.total) : 0;
+            const pct = Math.min(Math.round(15 + ((completed + intra) / 7) * 80), 95);
             setProgress(pct);
 
             const currentStage = ENRICHMENT_STAGES.find((s) => s.key === ep.stage);
-            setStatusText(
-              `Enriching — ${currentStage?.label ?? ep.stage}`,
-            );
+            const countInfo = (ep.current != null && ep.total != null && ep.total > 0)
+              ? ` (${ep.current.toLocaleString()} / ${ep.total.toLocaleString()} ${ep.unit ?? "wallets"})`
+              : "";
+            setStatusText(`Enriching — ${currentStage?.label ?? ep.stage}${countInfo}`);
             setEnrichProgress(ep);
             pollEnrichment(taskId, attempts + 1, insertedRows);
           } else if (res.status === "SUCCESS") {
@@ -208,16 +267,16 @@ export default function IngestModal({
 
           if (status.status === "PROGRESS" && status.progress) {
             const p = status.progress as Record<string, number>;
-            const pct = p.total
-              ? Math.round((p.processed / p.total) * 70) + 20
-              : 50;
+            if (p.processed != null && p.total != null) {
+              setIngestProgressRows({ processed: p.processed, total: p.total });
+            }
+            const pct = p.total ? Math.round(5 + (p.processed / p.total) * 10) : 10;
             setProgress(pct);
             setStatusText(
               `Processing… ${p.processed?.toLocaleString() ?? "?"} / ${p.total?.toLocaleString() ?? "?"} rows`,
             );
             poll(taskId, attempts + 1);
           } else if (status.status === "SUCCESS") {
-            setProgress(100);
             const result = status.result as Record<string, number> | undefined;
             const inserted = Number(
               result?.total_inserted ?? result?.inserted ?? result?.rows_inserted ?? 0
@@ -228,6 +287,7 @@ export default function IngestModal({
             const received = Number(
               result?.total_received ?? result?.received ?? (inserted + rejected)
             );
+            setInsertedCount(inserted);
             // The ingest task never raises on a Neo4j failure — the rows are
             // durable in PostgreSQL, so the task still reports SUCCESS and puts
             // the mirror outcome in the result's `graph` block.
@@ -238,6 +298,7 @@ export default function IngestModal({
 
             if (inserted === 0 && (rejected > 0 || received > 0)) {
               // DUP-2b: All rows rejected as duplicates (txid already exists in Postgres)
+              setProgress(15);
               setWarningTitle("Duplicate Transactions Detected");
               setStage("warning");
               const count = rejected > 0 ? rejected : received;
@@ -281,7 +342,7 @@ export default function IngestModal({
               }
 
               // Transition to enrichment phase.
-              setProgress(0);
+              setProgress(15);
               setStatusText("Enriching — starting…");
               setStage("enriching");
               startEnrichmentPoll(taskId, 0, inserted);
@@ -292,7 +353,7 @@ export default function IngestModal({
             toast.error(`Ingest task failed: ${status.error}`);
           } else {
             // PENDING or STARTED
-            setProgress((p) => Math.min(p + 2, 45));
+            setProgress((p) => Math.min(p + 1, 10));
             poll(taskId, attempts + 1);
           }
         } catch {
@@ -310,10 +371,14 @@ export default function IngestModal({
       setStage("uploading");
       setProgress(5);
       setStatusText(`Uploading ${file.name}…`);
+      setStartTime(Date.now());
+      setElapsedSeconds(0);
+      setInsertedCount(0);
+      setIngestProgressRows(null);
 
       try {
         const { task_id } = await uploadIngestFile(file);
-        setProgress(20);
+        setProgress(7);
         setStage("polling");
         setStatusText("Processing…");
         pollStatus(task_id, 0);
@@ -387,8 +452,6 @@ export default function IngestModal({
   };
 
   if (!isOpen) return null;
-
-  const isWorking = stage === "uploading" || stage === "polling" || stage === "enriching";
 
   return (
     <>
@@ -514,21 +577,32 @@ export default function IngestModal({
             </div>
           )}
 
-          {/* 3D Elevated File Info Card */}
+          {/* 3D Elevated File Info Card - High Visibility & Tactile Depth */}
           {selectedFile && stage !== "idle" && (
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50 border border-slate-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_4px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-gradient-to-b from-white via-sky-50/30 to-slate-50 border border-slate-300/90 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_2px_8px_rgba(15,23,42,0.06)]">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-b from-sky-50 to-sky-100 border border-sky-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.05)] flex items-center justify-center shrink-0">
                 <FileText className="w-4 h-4 text-sky-700" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-800 truncate">
-                  {selectedFile.name}
-                </p>
-                <p className="crypto-mono text-[11px] text-slate-500">
-                  {(selectedFile.size / 1024).toFixed(0)} KB
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-slate-900 tracking-tight truncate font-mono">
+                    {selectedFile.name}
+                  </p>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                    {selectedFile.name.split('.').pop()?.toUpperCase() || 'FILE'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="crypto-mono text-xs font-semibold text-slate-600">
+                    {(selectedFile.size / 1024).toFixed(0)} KB
+                  </span>
+                  <span className="text-slate-300 text-xs">•</span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Forensic Batch
+                  </span>
+                </div>
               </div>
-              <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-medium uppercase bg-sky-50 border border-sky-200 text-sky-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+              <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-medium uppercase bg-sky-50 border border-sky-200 text-sky-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] shrink-0">
                 {stage === "uploading"
                   ? "Uploading"
                   : stage === "enriching"
@@ -565,24 +639,82 @@ export default function IngestModal({
             </div>
           )}
 
-          {/* Enrichment Stage Progress List */}
-          {stage === "enriching" && enrichProgress && (
+          {/* Surveillance ETL & Enrichment Pipeline Card */}
+          {isWorking && (
             <div className="rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden">
-              <div className="px-4 pt-3 pb-2 border-b border-slate-200/70">
+              <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-slate-200/70">
                 <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-500">
-                  Enrichment Pipeline
+                  Surveillance ETL & Enrichment Pipeline
                 </span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-mono font-semibold tabular-nums shadow-xs">
+                  <Clock className="w-3 h-3 text-sky-600 animate-spin-slow" />
+                  <span>{formatTime(elapsedSeconds)}</span>
+                </div>
               </div>
               <ol className="flex flex-col divide-y divide-slate-100/80">
+                {/* Step 0: Batch Ingest & Validation */}
+                {(() => {
+                  const isIngestDone = stage === "enriching" || (stage as string) === "success";
+                  const isIngestRunning = stage === "uploading" || stage === "polling";
+
+                  return (
+                    <li className="flex items-center gap-2.5 px-4 py-2 text-xs">
+                      {/* State icon */}
+                      {isIngestDone && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      )}
+                      {isIngestRunning && (
+                        <Loader2 className="w-3.5 h-3.5 text-sky-500 animate-spin shrink-0" />
+                      )}
+                      {!isIngestDone && !isIngestRunning && (
+                        <Circle className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                      )}
+
+                      {/* Label */}
+                      <span
+                        className={clsx(
+                          "flex-1 font-medium",
+                          isIngestDone && "text-emerald-700",
+                          isIngestRunning && "text-sky-700",
+                          !isIngestDone && !isIngestRunning && "text-slate-400",
+                        )}
+                      >
+                        Batch Ingest & Validation
+                      </span>
+
+                      {/* Trailing metadata */}
+                      {isIngestDone && (
+                        <span className="crypto-mono text-[10px] text-slate-500 tabular-nums">
+                          {insertedCount.toLocaleString()} rows
+                        </span>
+                      )}
+                      {isIngestRunning && (
+                        <span className="crypto-mono text-[10px] text-sky-600 font-semibold tabular-nums">
+                          {stage === "uploading"
+                            ? "Uploading..."
+                            : ingestProgressRows && ingestProgressRows.total > 0
+                            ? `${ingestProgressRows.processed.toLocaleString()} / ${ingestProgressRows.total.toLocaleString()} rows`
+                            : "Parsing..."}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })()}
+
                 {ENRICHMENT_STAGES.map(({ key, label }) => {
-                  const isDone = enrichProgress.stages_completed.includes(key);
-                  const isRunning =
-                    enrichProgress.stage === key &&
-                    enrichProgress.status === "running";
-                  const isFailed =
-                    enrichProgress.stage === key &&
-                    enrichProgress.status === "failed";
-                  const count = enrichProgress.counts[key];
+                  const isDone = enrichProgress
+                    ? enrichProgress.stages_completed.includes(key)
+                    : false;
+                  const isRunning = enrichProgress
+                    ? enrichProgress.stage === key && enrichProgress.status === "running"
+                    : false;
+                  const isFailed = enrichProgress
+                    ? enrichProgress.stage === key && enrichProgress.status === "failed"
+                    : false;
+                  const count = enrichProgress
+                    ? enrichProgress.counts[key] ??
+                      enrichProgress.counts[COUNT_KEY_MAP[key]]
+                    : undefined;
 
                   return (
                     <li
@@ -623,8 +755,12 @@ export default function IngestModal({
                         </span>
                       )}
                       {isRunning && (
-                        <span className="crypto-mono text-[10px] text-sky-600 tabular-nums">
-                          {enrichProgress.stage_elapsed.toFixed(0)}s
+                        <span className="crypto-mono text-[10px] text-sky-600 font-semibold tabular-nums">
+                          {enrichProgress?.current != null &&
+                          enrichProgress?.total != null &&
+                          enrichProgress.total > 0
+                            ? `${enrichProgress.current.toLocaleString()} / ${enrichProgress.total.toLocaleString()} ${enrichProgress.unit ?? "wallets"}`
+                            : `${enrichProgress?.stage_elapsed?.toFixed(0) ?? 0}s`}
                         </span>
                       )}
                       {isFailed && (
@@ -784,12 +920,16 @@ export default function IngestModal({
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-mono font-semibold text-emerald-700">
-                Ready
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={handlePurgeData}
+              disabled={isPurging}
+              title="Purge all ingested transactions & graph nodes back to clean baseline"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider text-rose-700 bg-rose-50 hover:bg-rose-100/80 active:bg-rose-200/70 border border-rose-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(225,29,72,0.12)] active:translate-y-[0.5px] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className={clsx("w-3 h-3 text-rose-600", isPurging && "animate-spin")} />
+              <span>{isPurging ? "Purging..." : "Del Ingest Data"}</span>
+            </button>
           </div>
 
           {/* Cards List */}
@@ -819,7 +959,7 @@ export default function IngestModal({
                       <span className="text-xs font-bold text-sky-950 tracking-tight truncate">
                         {sample.title}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-[10px] text-slate-600 font-mono font-medium">
                         {sample.name}
                       </span>
                     </div>

@@ -336,6 +336,9 @@ export interface EnrichmentProgressPayload {
   stages_completed: string[];
   stages_total: number;
   counts: Record<string, number>;
+  current?: number;
+  total?: number;
+  unit?: string;
 }
 
 export interface EnrichmentStatusResponse {
@@ -366,3 +369,13 @@ export async function reloadXaiStore(
     { method: "POST" },
   );
 }
+
+export async function purgeIngestedData(): Promise<{
+  status: string;
+  pg_deleted: number;
+  wallets_deleted: number;
+  composite_count: number;
+}> {
+  return apiFetch("/ingest/purge", { method: "POST" });
+}
+

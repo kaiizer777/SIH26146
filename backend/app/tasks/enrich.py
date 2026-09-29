@@ -115,6 +115,13 @@ ANOMALY_FLAG_THRESHOLD = 0.03635445237159729
 # Widened to NUMERIC(12,4) (see models/transaction.py) so the raw score is kept.
 PG_ANOMALY_MAX = 999999.9999
 
+# ---------------------------------------------------------------------------
+# SHAP precomputation limits — Top-N high-risk transactions during enrichment
+# ---------------------------------------------------------------------------
+
+TOP_SHAP_LIMIT = 50
+SHAP_MAX_EVALS = 500
+
 
 # ---------------------------------------------------------------------------
 # Cypher (ported verbatim from the corresponding backend/scripts/*.py)
@@ -204,6 +211,17 @@ _SCOPE_CLUSTER_STATE_QUERY = """
 UNWIND $addresses AS address
 MATCH (w:Wallet {address: address})
 RETURN w.address AS address, w.cluster_id AS cluster_id
+"""
+
+# Finds candidate transactions associated with scoped wallets, returning
+# distinct txids with their anomaly scores ordered descending.
+_SCOPE_TXIDS_FOR_WALLETS_QUERY = """
+UNWIND $addresses AS address
+MATCH (w:Wallet {address: address})
+MATCH (w)-[:SENDS|RECEIVES]-(tx:Transaction)
+RETURN DISTINCT tx.txid AS txid, coalesce(tx.anomaly_score, 0.0) AS score
+ORDER BY score DESC
+LIMIT $limit
 """
 
 
@@ -839,7 +857,10 @@ def run_coinjoin_detection(svc: GraphService) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _write_wallet_risk_scores(svc: GraphService) -> dict[str, Any]:
+def _write_wallet_risk_scores(
+    svc: GraphService,
+    progress_cb: Any = None,
+) -> dict[str, Any]:
     """Write a real ``risk_score`` onto every ``:Wallet``.
 
     ``risk_score`` is NEVER hardcoded, and it is NEVER a restatement of another
@@ -887,7 +908,8 @@ def _write_wallet_risk_scores(svc: GraphService) -> dict[str, Any]:
     # Write in batched UNWIND transactions.
     written = 0
     items = [(addr, val, terms) for addr, (val, terms) in scored_risk.items()]
-    for i in range(0, len(items), WALLET_BATCH):
+    total = len(items)
+    for i in range(0, total, WALLET_BATCH):
         chunk = [
             {
                 "address": addr,
@@ -920,6 +942,9 @@ def _write_wallet_risk_scores(svc: GraphService) -> dict[str, Any]:
 
         with svc.driver.session(database=settings.neo4j_database) as session:
             written += session.execute_write(_write)
+
+        if progress_cb:
+            progress_cb(min(i + len(chunk), total), total, "wallets")
 
     logger.info(
         "[enrich] risk: wrote risk_score to %d wallets (source=%s, graph_model=%s) in %.2fs",
@@ -1155,7 +1180,10 @@ _TX_SAMPLE_LIMIT = 500_000
 _TX_PER_WALLET = 5
 
 
-def run_wallet_attributes(svc: GraphService) -> dict[str, Any]:
+def run_wallet_attributes(
+    svc: GraphService,
+    progress_cb: Any = None,
+) -> dict[str, Any]:
     """Write ``risk_score``, ``seed_proximity`` and ``is_seed_illicit`` on ``:Wallet``.
 
     ``seed_proximity`` / ``is_seed_illicit`` are derived from the real
@@ -1175,7 +1203,11 @@ def run_wallet_attributes(svc: GraphService) -> dict[str, Any]:
     """
     t0 = time.perf_counter()
     seed = _write_seed_proximity(svc)
-    risk = _write_wallet_risk_scores(svc)
+    risk = (
+        _write_wallet_risk_scores(svc, progress_cb=progress_cb)
+        if progress_cb
+        else _write_wallet_risk_scores(svc)
+    )
 
     stats = {
         "risk": risk,
@@ -1999,6 +2031,8 @@ def _build_publish_record(rec: dict[str, Any]) -> dict[str, Any]:
         "address": address,
         "composite_record": composite_record,
         "evidence_record": evidence_record,
+        "composite_score": composite.score,
+        "verdict": risk_thresholds.map_verdict(composite.score),
     }
 
 
@@ -2009,7 +2043,149 @@ _PUBLISH_LOCK_ATTEMPTS = 3
 _PUBLISH_LOCK_BACKOFF_S = 10.0
 
 
-def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
+def _load_background_sample_rows(
+    exclude_txids: set[str] | None = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """Load a background pool of recent transactions from PostgreSQL."""
+    conn = None
+    try:
+        conn = psycopg2.connect(settings.database_url)
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT txid, input_addresses, output_addresses, input_amounts,
+                       output_amounts, fee, script_type, geo_country, asn, ts,
+                       risk_score, anomaly_score, cluster_id, is_mixing, chain_hops
+                FROM transactions
+                ORDER BY ts DESC
+                LIMIT %s
+                """,
+                (limit + len(exclude_txids or ()),),
+            )
+            cols = [d[0] for d in cur.description]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        if exclude_txids:
+            rows = [r for r in rows if r.get("txid") not in exclude_txids][:limit]
+        return rows
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[enrich] could not load background sample transactions: %s", exc)
+        return []
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _load_top_risk_transactions(
+    svc: GraphService,
+    *,
+    wallets: Sequence[str] | None = None,
+    txids: Sequence[str] | None = None,
+    limit: int = TOP_SHAP_LIMIT,
+) -> list[dict[str, Any]]:
+    """Find transactions associated with scoped wallets, ranked by anomaly_score DESC."""
+    wanted_wallets = [w for w in (wallets or []) if w]
+    wanted_txids = [t for t in (txids or []) if t]
+
+    if not wanted_wallets and not wanted_txids:
+        return []
+
+    top_txids: list[str] = []
+
+    # 1. Query Neo4j for transactions connected to scoped wallets
+    if wanted_wallets:
+        try:
+            candidate_scores: dict[str, float] = {}
+            with svc.driver.session(database=settings.neo4j_database) as session:
+                for i in range(0, len(wanted_wallets), NEO4J_BATCH):
+                    chunk = wanted_wallets[i : i + NEO4J_BATCH]
+                    records = session.run(
+                        _SCOPE_TXIDS_FOR_WALLETS_QUERY,
+                        addresses=chunk,
+                        limit=limit,
+                    )
+                    for r in records:
+                        t_id = r.get("txid")
+                        score = float(r.get("score") or 0.0)
+                        if t_id:
+                            candidate_scores[t_id] = max(candidate_scores.get(t_id, 0.0), score)
+
+            if candidate_scores:
+                sorted_cand = sorted(
+                    candidate_scores.keys(),
+                    key=lambda t: candidate_scores[t],
+                    reverse=True,
+                )
+                top_txids.extend(sorted_cand[:limit])
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("[enrich] Neo4j candidate tx query note: %s", exc)
+
+    # 2. Add any explicit txids in scope
+    for t_id in wanted_txids:
+        if t_id not in top_txids:
+            top_txids.append(t_id)
+
+    # 3. Load full rows from PostgreSQL
+    conn = None
+    try:
+        conn = psycopg2.connect(settings.database_url)
+        with conn, conn.cursor() as cur:
+            if top_txids:
+                cur.execute(
+                    """
+                    SELECT txid, input_addresses, output_addresses, input_amounts,
+                           output_amounts, fee, script_type, geo_country, asn, ts,
+                           risk_score, anomaly_score, cluster_id, is_mixing, chain_hops
+                    FROM transactions
+                    WHERE txid = ANY(%s)
+                    ORDER BY anomaly_score DESC NULLS LAST, risk_score DESC NULLS LAST
+                    LIMIT %s
+                    """,
+                    (top_txids, limit),
+                )
+                cols = [d[0] for d in cur.description]
+                rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+                if rows:
+                    return rows
+
+            # Fall back to Postgres array overlap if top_txids was empty/yielded no rows
+            if wanted_wallets:
+                cur.execute(
+                    """
+                    SELECT txid, input_addresses, output_addresses, input_amounts,
+                           output_amounts, fee, script_type, geo_country, asn, ts,
+                           risk_score, anomaly_score, cluster_id, is_mixing, chain_hops
+                    FROM transactions
+                    WHERE input_addresses && %s OR output_addresses && %s
+                    ORDER BY anomaly_score DESC NULLS LAST, risk_score DESC NULLS LAST
+                    LIMIT %s
+                    """,
+                    (wanted_wallets, wanted_wallets, limit),
+                )
+                cols = [d[0] for d in cur.description]
+                return [dict(zip(cols, r)) for r in cur.fetchall()]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[enrich] could not load top-risk transactions from PG: %s", exc)
+        return []
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    return []
+
+
+def publish_to_xai_store(
+    svc: GraphService,
+    scope_addresses: Sequence[str] | None = None,
+    txids: Sequence[str] | None = None,
+    progress_cb: Any = None,
+) -> dict[str, Any]:
     """Push the committed enrichment results into the XAI store.
 
     Runs last in the chain so the records it publishes reflect the final
@@ -2021,26 +2197,44 @@ def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
 
     Args:
         svc: The chain's open GraphService.
+        scope_addresses: Wallets in scope for this enrichment run.
+        txids: Transactions in scope for this enrichment run.
+        progress_cb: Optional callable for intra-stage progress reporting.
 
     Returns:
         Counters: wallets in graph, published, created, refreshed, retained as
-        pre-indexed, skipped because no honest record could be built, and the
-        per-verdict breakdown.
+        pre-indexed, skipped because no honest record could be built, verdicts,
+        and shap_precomputed count.
     """
     t0 = time.perf_counter()
     from app.services import xai_store
 
     xai_store.load()
 
-    with svc.driver.session(database=settings.neo4j_database) as session:
-        addresses = [
-            r["address"]
-            for r in session.run(
-                "MATCH (w:Wallet) WHERE w.cluster_id IS NOT NULL "
-                "AND w.risk_score IS NOT NULL RETURN w.address AS address"
-            )
-            if r.get("address")
-        ]
+    if scope_addresses:
+        # Ingest run: query only newly scoped wallets in batches or single IN query
+        with svc.driver.session(database=settings.neo4j_database) as session:
+            addresses = [
+                r["address"]
+                for r in session.run(
+                    "MATCH (w:Wallet) WHERE w.address IN $scope "
+                    "AND w.cluster_id IS NOT NULL AND w.risk_score IS NOT NULL "
+                    "RETURN w.address AS address",
+                    scope=list(scope_addresses),
+                )
+                if r.get("address")
+            ]
+    else:
+        # Full graph scan fallback
+        with svc.driver.session(database=settings.neo4j_database) as session:
+            addresses = [
+                r["address"]
+                for r in session.run(
+                    "MATCH (w:Wallet) WHERE w.cluster_id IS NOT NULL "
+                    "AND w.risk_score IS NOT NULL RETURN w.address AS address"
+                )
+                if r.get("address")
+            ]
 
     total = len(addresses)
     if total == 0:
@@ -2053,6 +2247,7 @@ def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
             "published": 0,
             "status": "skipped",
             "reason": "no_wallets_with_cluster_and_risk",
+            "shap_precomputed": 0,
             "elapsed_s": round(time.perf_counter() - t0, 2),
         }
 
@@ -2060,6 +2255,8 @@ def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
     verdicts: dict[str, int] = {}
     skip_reasons: dict[str, int] = {}
     lock_timeouts = 0
+    written_addresses: list[str] = []
+    written_non_low: list[str] = []
 
     for i in range(0, total, WALLET_BATCH):
         chunk = addresses[i : i + WALLET_BATCH]
@@ -2081,6 +2278,8 @@ def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
                 continue
 
         if not items:
+            if progress_cb:
+                progress_cb(min(i + len(chunk), total), total, "wallets")
             continue
 
         # Split off the pre-indexed non-provisional dossiers BEFORE the write.
@@ -2097,6 +2296,8 @@ def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
             to_write.append(item)
 
         if not to_write:
+            if progress_cb:
+                progress_cb(min(i + len(chunk), total), total, "wallets")
             continue
 
         # The durable overlay is a single file guarded by a 15 s lock. A long
@@ -2130,6 +2331,8 @@ def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
                 time.sleep(_PUBLISH_LOCK_BACKOFF_S * attempt)
 
         if report is None:
+            if progress_cb:
+                progress_cb(min(i + len(chunk), total), total, "wallets")
             continue
 
         created += report.created
@@ -2142,6 +2345,83 @@ def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
         for item in to_write[:written]:
             verdict = item["composite_record"]["verdict"]
             verdicts[verdict] = verdicts.get(verdict, 0) + 1
+            written_addresses.append(str(item["address"]))
+            # Keep track of written non-low wallets for focused SHAP precomputation
+            if item.get("verdict") in ("MEDIUM", "HIGH", "CRITICAL") or float(item.get("composite_score") or 0.0) >= 0.15:
+                written_non_low.append(str(item["address"]))
+
+        if progress_cb:
+            progress_cb(min(i + len(chunk), total), total, "wallets")
+
+    # -----------------------------------------------------------------------
+    # SHAP precomputation: Explain top high-risk transactions for the scoped wallets
+    # -----------------------------------------------------------------------
+    target_wallets = written_non_low if written_non_low else (list(scope_addresses) if scope_addresses else written_addresses)
+    if not target_wallets and not txids and addresses:
+        target_wallets = addresses[:500]
+
+    top_rows = _load_top_risk_transactions(
+        svc,
+        wallets=target_wallets,
+        txids=txids,
+        limit=TOP_SHAP_LIMIT,
+    )
+    top_txids = [str(r.get("txid")) for r in top_rows if r.get("txid")]
+    precomputed_count = 0
+
+    if top_rows:
+        from app.services import shap_service
+        avail_err = shap_service.availability_error()
+        if avail_err is not None:
+            logger.warning("[enrich] Real SHAP unavailable, skipping precomputation: %s", avail_err)
+        else:
+            background = None
+            try:
+                background_pool = list(top_rows)
+                if len(background_pool) < shap_service.DEFAULT_BACKGROUND_SIZE:
+                    extra = _load_background_sample_rows(
+                        exclude_txids=set(top_txids),
+                        limit=shap_service.DEFAULT_BACKGROUND_SIZE - len(background_pool),
+                    )
+                    background_pool.extend(extra)
+                background = shap_service.build_background(
+                    background_pool,
+                    size=shap_service.DEFAULT_BACKGROUND_SIZE,
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("[enrich] Could not build SHAP background: %s", exc)
+
+            if background is not None:
+                for row in top_rows:
+                    txid = str(row.get("txid") or "")
+                    if not txid:
+                        continue
+                    try:
+                        explanation, attention = shap_service.explain_row_with_attention(
+                            row,
+                            background=background,
+                            max_evals=SHAP_MAX_EVALS,
+                        )
+                        shap_records = [
+                            getattr(attr, "to_store_dict", attr.to_record)()
+                            for attr in explanation.attributions
+                        ]
+                        xai_store.upsert_shap(txid, shap_records, persist=True)
+                        xai_store.upsert_attention(txid, attention, persist=True)
+                        precomputed_count += 1
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning(
+                            "[enrich] SHAP precompute failed for txid %s: %s",
+                            txid[:12],
+                            exc,
+                        )
+                        continue
+
+    logger.info(
+        "[enrich] Precomputed SHAP for %d/%d top transactions",
+        precomputed_count,
+        len(top_txids),
+    )
 
     stats = {
         "wallets_in_graph": total,
@@ -2154,14 +2434,15 @@ def publish_to_xai_store(svc: GraphService) -> dict[str, Any]:
         "lock_timeouts": lock_timeouts,
         "verdicts": verdicts,
         "refresh_existing": False,
+        "shap_precomputed": precomputed_count,
         "elapsed_s": round(time.perf_counter() - t0, 2),
     }
     logger.info(
         "[enrich] publish: wrote %d wallets into the XAI store (created=%d "
         "updated=%d, %d pre-indexed dossiers retained, %d skipped, %d lock "
-        "timeouts) in %.2fs | verdicts of written records: %s",
+        "timeouts, %d shap precomputed) in %.2fs | verdicts of written records: %s",
         published, created, updated, retained, skipped, lock_timeouts,
-        stats["elapsed_s"], verdicts,
+        precomputed_count, stats["elapsed_s"], verdicts,
     )
     return stats
 
@@ -2216,8 +2497,18 @@ def run_enrichment_chain(
         for name, fn in stages:
             if progress_callback is not None:
                 progress_callback(name, "running", None)
+
+            def _intra(current: int, total: int, unit: str = "wallets", _stg: str = name) -> None:
+                if progress_callback:
+                    progress_callback(_stg, "running", {"current": current, "total": total, "unit": unit})
+
             try:
-                result = fn(svc)
+                if name == "xai_publish":
+                    result = fn(svc, scope_addresses=scope, txids=txids, progress_cb=_intra)
+                elif name == "wallet_attributes":
+                    result = fn(svc, progress_cb=_intra)
+                else:
+                    result = fn(svc)
                 report[name] = result
                 if progress_callback is not None:
                     progress_callback(name, "ok", result)
@@ -2250,6 +2541,7 @@ _STAGE_COUNT_EXTRACTORS: list[tuple[str, str, tuple[str, ...]]] = [
     ("coinjoin",          "coinjoin_flagged",        ("txids_flagged",)),
     ("wallet_attributes", "wallets_scored",          ("risk", "wallets_written")),
     ("xai_publish",       "xai_published",           ("published",)),
+    ("xai_publish",       "shap_precomputed",        ("shap_precomputed",)),
 ]
 
 
@@ -2271,6 +2563,7 @@ def enrich_ingested_transactions(self, txids: list[str] | None = None) -> dict[s
     cumulative_counts: dict[str, int] = {}
     # Single-element list so the closure can rebind it without nonlocal.
     stage_start: list[float] = [chain_start]
+    current_running_stage: list[str | None] = [None]
 
     self.update_state(
         state="STARTED",
@@ -2285,22 +2578,31 @@ def enrich_ingested_transactions(self, txids: list[str] | None = None) -> dict[s
         },
     )
 
-    def _progress(stage: str, status: str, result: dict[str, Any] | None) -> None:
+    def _progress(stage: str, status: str, result: Any = None) -> None:
         now = time.time()
 
         if status == "running":
-            stage_start[0] = now
+            if current_running_stage[0] != stage:
+                current_running_stage[0] = stage
+                stage_start[0] = now
+
+            meta: dict[str, Any] = {
+                "stage": stage,
+                "status": "running",
+                "elapsed_total": round(now - chain_start, 3),
+                "stage_elapsed": round(now - stage_start[0], 1),
+                "stages_completed": list(stages_completed),
+                "stages_total": _STAGES_TOTAL,
+                "counts": dict(cumulative_counts),
+            }
+            if isinstance(result, dict) and result.get("current") is not None:
+                meta["current"] = int(result["current"])
+                meta["total"] = int(result.get("total", 0))
+                meta["unit"] = result.get("unit", "wallets")
+
             self.update_state(
                 state="PROGRESS",
-                meta={
-                    "stage": stage,
-                    "status": "running",
-                    "elapsed_total": round(now - chain_start, 3),
-                    "stage_elapsed": 0.0,
-                    "stages_completed": list(stages_completed),
-                    "stages_total": _STAGES_TOTAL,
-                    "counts": dict(cumulative_counts),
-                },
+                meta=meta,
             )
             return
 
@@ -2333,6 +2635,21 @@ def enrich_ingested_transactions(self, txids: list[str] | None = None) -> dict[s
                         "anomaly_rows_updated",
                     )
                 )
+
+            # Store by stage name for direct UI lookup.
+            _stage_to_primary_key = {
+                "cluster": "cluster_scope_wallets",
+                "peeling": "peeling_flagged",
+                "coinjoin": "coinjoin_flagged",
+                "wallet_attributes": "wallets_scored",
+                "xai_publish": "xai_published",
+                "postgres_mirror": "pg_rows_written",
+            }
+            if stage in _stage_to_primary_key:
+                extracted_key = _stage_to_primary_key[stage]
+                cumulative_counts[stage] = cumulative_counts.get(extracted_key, 0)
+            elif stage not in cumulative_counts and "wallets_total" in result:
+                cumulative_counts[stage] = int(result["wallets_total"])
 
         stages_completed.append(stage)
 

@@ -322,6 +322,9 @@ _SHAP_BACKGROUND_POOL = 128
 # explainer output, not a measurement that "no feature mattered".
 _SHAP_DEGENERATE_EPS = 1e-9
 
+# Maximum permutation evaluations for interactive on-read queries (~1.2s CPU latency).
+_SHAP_ON_READ_MAX_EVALS = 300
+
 
 def _is_degenerate_attribution(attributions: list[dict[str, Any]]) -> bool:
     """True when every attribution is (near) exactly zero.
@@ -364,10 +367,31 @@ async def _load_shap_background_pool() -> list[dict]:
         return []
 
 
+def _select_target_transaction_row(tx_rows: list[dict]) -> Optional[dict]:
+    """Pick the transaction row with the largest recorded anomaly score.
+
+    This is the highest-signal transaction for this wallet, and the one the
+    dossier is opened for. Attribution is exact for that row.
+    """
+    if not tx_rows:
+        return None
+
+    def _anomaly_of(row: dict) -> float:
+        raw = row.get("anomaly_score")
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            return -1.0
+        return value if value == value else -1.0
+
+    return max(tx_rows, key=_anomaly_of)
+
+
 def _compute_provisional_shap_and_attention(
     address: str,
     tx_rows: list[dict],
     background_pool: list[dict] | None = None,
+    max_evals: int = _SHAP_ON_READ_MAX_EVALS,
 ) -> tuple[list[ShapAttribution], Optional[list[list[float]]]]:
     """Compute REAL SHAP attributions and REAL model attention for provisional entities.
 
@@ -386,6 +410,7 @@ def _compute_provisional_shap_and_attention(
         tx_rows: This wallet's transactions.
         background_pool: Extra real rows used to widen the background when
             ``tx_rows`` is too small to estimate E[f]. Never synthetic.
+        max_evals: Cap on permutation evaluations for on-read queries.
 
     Returns:
         ``(shap_items, attention_matrix)``. Either may be empty/None ONLY when
@@ -396,17 +421,9 @@ def _compute_provisional_shap_and_attention(
     if not tx_rows:
         return [], None
 
-    # Pick the row with the largest recorded anomaly score: the highest-signal
-    # transaction for this wallet, and the one the dossier is opened for.
-    def _anomaly_of(row: dict) -> float:
-        raw = row.get("anomaly_score")
-        try:
-            value = float(raw)
-        except (TypeError, ValueError):
-            return -1.0
-        return value if value == value else -1.0
-
-    target_row = max(tx_rows, key=_anomaly_of)
+    target_row = _select_target_transaction_row(tx_rows)
+    if not target_row:
+        return [], None
 
     # E[f] needs a distribution. Widen with real rows when the wallet's own
     # transaction set is too small; never invent samples.
@@ -422,10 +439,11 @@ def _compute_provisional_shap_and_attention(
         background = shap_service.build_background(
             background_rows, size=shap_service.DEFAULT_BACKGROUND_SIZE
         )
+        effective_max_evals = min(max_evals, _SHAP_ON_READ_MAX_EVALS) if max_evals else _SHAP_ON_READ_MAX_EVALS
         explanation, attention = shap_service.explain_row_with_attention(
             target_row,
             background=background,
-            max_evals=shap_service.DEFAULT_MAX_EVALS,
+            max_evals=effective_max_evals,
         )
     except shap_service.ShapServiceError as exc:
         logger.warning(
@@ -811,6 +829,49 @@ async def get_entity_explain(address: str) -> EntityExplainResponse:
             )
         if not attention_matrix and prov_attn:
             attention_matrix = prov_attn
+
+        # Write-through cache: persist real provisional explanations so subsequent
+        # reads don't re-execute the explainer on-the-fly.
+        is_prov_shap_valid = bool(prov_shap) and not _is_degenerate_attribution(
+            [{"attribution": item.value} for item in prov_shap]
+        )
+        if is_prov_shap_valid:
+            target_row = _select_target_transaction_row(tx_rows)
+            target_txid = str(
+                target_row.get("txid", "") if target_row else (matched_txid or "")
+            ).strip()
+            if target_txid:
+                if not matched_txid:
+                    matched_txid = target_txid
+                store_records = [
+                    {
+                        "feature": item.feature,
+                        "label": item.label,
+                        "value": item.value,
+                        "attribution": item.value,
+                    }
+                    for item in prov_shap
+                ]
+                try:
+                    xai_store.upsert_shap(target_txid, store_records, persist=True)
+                    if prov_attn:
+                        attn_payload = (
+                            prov_attn
+                            if isinstance(prov_attn, dict)
+                            else {"cross_feature_attention": prov_attn}
+                        )
+                        xai_store.upsert_attention(target_txid, attn_payload, persist=True)
+                    logger.info(
+                        "[explain] Write-through cached SHAP and attention for txid=%s (wallet=%s)",
+                        target_txid,
+                        address,
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "[explain] Failed write-through cache for txid=%s: %s",
+                        target_txid,
+                        exc,
+                    )
 
     # --- SHAP availability and honesty guard ---
     # Ensure degenerate or empty vectors are never presented as real.
