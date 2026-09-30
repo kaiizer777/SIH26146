@@ -1,4 +1,0 @@
-GROQ_API_KEY_PRIMARY="gsk_..."
-GROQ_API_KEY_FALLBACK="gsk_..."
-GROQ_MODEL_PRIMARY="openai/gpt-oss-120b"
-GROQ_MODEL_FALLBACK="openai/gpt-oss-20b"
