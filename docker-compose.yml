@@ -70,7 +70,7 @@ services:
       dockerfile: Dockerfile
     container_name: sih26146-fastapi
     restart: unless-stopped
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       POSTGRES_USER: ${POSTGRES_USER:-sih_user}
@@ -148,11 +148,13 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_API_TOKEN: ${NEXT_PUBLIC_API_TOKEN:-dev-token-ntro-2026}
       # Internal URL for SSR/API routes within the Docker network
       INTERNAL_API_URL: http://fastapi:8000
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       fastapi:
         condition: service_started

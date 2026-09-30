@@ -5,7 +5,10 @@
  * NEXT_PUBLIC_API_TOKEN (falls back to the default dev token).
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8000";
 const API_TOKEN =
   process.env.NEXT_PUBLIC_API_TOKEN ?? "dev-token-ntro-2026";
 

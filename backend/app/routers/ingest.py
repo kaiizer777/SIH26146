@@ -28,6 +28,7 @@ import time
 from typing import Any
 import uuid
 
+import psycopg2
 import redis
 from celery.result import AsyncResult
 from fastapi import APIRouter, HTTPException, Path, UploadFile
@@ -615,34 +616,69 @@ async def reload_xai_store_after_enrichment(
     return {"status": "reloaded", "composite_count": count}
 
 
-def _sync_purge_blocking() -> int:
-    """Synchronous cleanup for Neo4j, Redis, runtime XAI files, and store reload."""
-    from app.services.graph_writer import GraphService
+def _sync_purge_blocking() -> tuple[int, int]:
+    """Synchronous cleanup for PostgreSQL, Neo4j, Redis, runtime XAI files, and store reload."""
+    from app.services.graph_service import GraphService
 
-    # 1. Neo4j graph cleanup
+    # 1. PostgreSQL deletion: remove ingested/unclustered transactions and collect deleted txids
+    deleted_txids: list[str] = []
+    pg_deleted = 0
+    conn = None
+    try:
+        conn = psycopg2.connect(settings.database_url)
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM transactions WHERE cluster_id IS NULL OR cluster_id >= 1000000 RETURNING txid;"
+            )
+            rows = cur.fetchall()
+            deleted_txids = [r[0] for r in rows] if rows else []
+            pg_deleted = len(deleted_txids)
+    except Exception as pg_exc:
+        logger.warning("PostgreSQL purge failed: %s", pg_exc)
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    # 2. Neo4j graph cleanup
     wallets_deleted = 0
     with GraphService() as svc:
         with svc.driver.session(database=settings.neo4j_database) as session:
+            # 2a. Explicitly delete transactions matching deleted PG rows in batches
+            if deleted_txids:
+                batch_size = 1000
+                for i in range(0, len(deleted_txids), batch_size):
+                    chunk = deleted_txids[i : i + batch_size]
+                    session.run(
+                        "UNWIND $txids AS txid MATCH (t:Transaction {txid: txid}) DETACH DELETE t;",
+                        txids=chunk,
+                    )
+
+            # 2b. Delete all ingested wallets (both unassigned/null cluster_id and enriched >= 1M)
             w_res = session.run(
-                "MATCH (w:Wallet) WHERE w.cluster_id >= 1000000 DETACH DELETE w RETURN count(w) as cnt;"
+                "MATCH (w:Wallet) WHERE w.cluster_id IS NULL OR w.cluster_id >= 1000000 DETACH DELETE w RETURN count(w) as cnt;"
             )
             record = w_res.single() if w_res else None
             wallets_deleted = record["cnt"] if record and "cnt" in record else 0
+
+            # 2c. Clean up any remaining orphaned transactions and IPs
             session.run("MATCH (t:Transaction) WHERE NOT (t)-[:SENDS|RECEIVES]-() DETACH DELETE t;")
             session.run("MATCH (ip:IP) WHERE NOT (ip)-[:OBSERVED|OBSERVED_AT]-() DETACH DELETE ip;")
 
-    # 2. Redis key cleanup
+    # 3. Redis key cleanup
     redis_cli = get_redis_client()
     if redis_cli is not None:
         try:
-            for pattern in ("file_hash:*", "sync_done:*"):
+            for pattern in ("file_hash:*", "sync_done:*", "celery-task-meta-*"):
                 keys = redis_cli.keys(pattern)
                 if keys:
                     redis_cli.delete(*keys)
         except Exception as r_exc:
             logger.warning("Redis purge failed: %s", r_exc)
 
-    # 3. Runtime XAI cache files cleanup
+    # 4. Runtime XAI cache files cleanup
     runtime_dir = (
         pathlib.Path(settings.xai_dir) / "runtime"
         if hasattr(settings, "xai_dir")
@@ -655,10 +691,10 @@ def _sync_purge_blocking() -> int:
             except Exception:
                 pass
 
-    # 4. XAI Store Hot Reload
+    # 5. XAI Store Hot Reload
     xai_store.force_reload()
 
-    return wallets_deleted
+    return pg_deleted, wallets_deleted
 
 
 @router.post(
@@ -671,38 +707,9 @@ async def purge_ingested_data() -> dict[str, Any]:
     Resets the database back to the clean 99,990 baseline and reloads xai_store.
     """
     try:
-        # PostgreSQL deletion
-        session_cm = SessionLocal()
-        if hasattr(session_cm, "__aenter__"):
-            async with session_cm as db:
-                result = await db.execute(
-                    text(
-                        "DELETE FROM transactions WHERE cluster_id IS NULL OR cluster_id >= 1000000;"
-                    )
-                )
-                await db.commit()
-                pg_deleted = (
-                    result.rowcount
-                    if hasattr(result, "rowcount") and result.rowcount is not None
-                    else 0
-                )
-        else:
-            with session_cm as db:
-                result = db.execute(
-                    text(
-                        "DELETE FROM transactions WHERE cluster_id IS NULL OR cluster_id >= 1000000;"
-                    )
-                )
-                db.commit()
-                pg_deleted = (
-                    result.rowcount
-                    if hasattr(result, "rowcount") and result.rowcount is not None
-                    else 0
-                )
-
-        # Offload blocking I/O (Neo4j, Redis, FS unlinks, xai_store reload) off the event loop
+        # Offload blocking I/O (PostgreSQL, Neo4j, Redis, FS unlinks, xai_store reload) off the event loop
         loop = asyncio.get_event_loop()
-        wallets_deleted = await loop.run_in_executor(None, _sync_purge_blocking)
+        pg_deleted, wallets_deleted = await loop.run_in_executor(None, _sync_purge_blocking)
 
         composite_cnt = xai_store.composite_count()
         logger.info(

@@ -250,6 +250,32 @@ RETURN tx.txid AS txid,
        large_out.addr  AS change_wallet
 """
 
+_PEEL_CANDIDATE_SCOPED_QUERY = """
+UNWIND $txids AS txid
+MATCH (tx:Transaction {txid: txid})
+MATCH (in_w:Wallet)-[:SENDS]->(tx)
+WITH tx, count(DISTINCT in_w) AS n_in
+WHERE n_in = 1
+MATCH (tx)-[r:RECEIVES]->(out_w:Wallet)
+WITH tx, n_in, collect({addr: out_w.address, amount: r.amount}) AS out_list
+WHERE size(out_list) = 2
+WITH tx,
+     out_list[0] AS out0,
+     out_list[1] AS out1,
+     tx.total_in AS total_in
+WHERE total_in IS NOT NULL AND total_in > 0
+WITH tx, total_in,
+     CASE WHEN out0.amount <= out1.amount THEN out0 ELSE out1 END AS small_out,
+     CASE WHEN out0.amount <= out1.amount THEN out1 ELSE out0 END AS large_out
+WHERE small_out.amount <= total_in * $peel_ratio_max
+  AND large_out.amount >= total_in * $change_ratio_min
+RETURN tx.txid AS txid,
+       total_in,
+       small_out.amount AS small_amt,
+       large_out.amount AS large_amt,
+       large_out.addr  AS change_wallet
+"""
+
 # From detect_peeling_chains.py _NEXT_HOP_QUERY
 _PEEL_NEXT_HOP_QUERY = """
 MATCH (w:Wallet {address: $wallet})-[:SENDS]->(tx:Transaction)
@@ -329,6 +355,23 @@ RETURN txid, total_in, forwarded
 _COINJOIN_CANDIDATE_QUERY = """
 MATCH (in_w:Wallet)-[:SENDS]->(tx:Transaction)
 WHERE tx.total_in >= $min_btc
+WITH tx, count(DISTINCT in_w) AS n_in
+WHERE n_in >= $min_inputs
+MATCH (tx)-[r:RECEIVES]->(out_w:Wallet)
+WITH tx, n_in, count(DISTINCT out_w) AS n_out, collect(r.amount) AS out_amounts
+WHERE n_out >= $min_outputs
+RETURN tx.txid AS txid,
+       tx.total_in AS total_in,
+       n_in,
+       n_out,
+       out_amounts
+"""
+
+_COINJOIN_CANDIDATE_SCOPED_QUERY = """
+UNWIND $txids AS txid
+MATCH (tx:Transaction {txid: txid})
+WHERE tx.total_in >= $min_btc
+MATCH (in_w:Wallet)-[:SENDS]->(tx)
 WITH tx, count(DISTINCT in_w) AS n_in
 WHERE n_in >= $min_inputs
 MATCH (tx)-[r:RECEIVES]->(out_w:Wallet)
@@ -572,7 +615,10 @@ def run_clustering(
 # ---------------------------------------------------------------------------
 
 
-def run_peeling_detection(svc: GraphService) -> dict[str, Any]:
+def run_peeling_detection(
+    svc: GraphService,
+    txids: Sequence[str] | None = None,
+) -> dict[str, Any]:
     """Trace multi-hop peeling chains and write ``is_mixing``/``chain_hops``.
 
     Ported from ``backend/scripts/detect_peeling_chains.py``. Only maximal
@@ -589,8 +635,16 @@ def run_peeling_detection(svc: GraphService) -> dict[str, Any]:
     params = {"peel_ratio_max": PEEL_RATIO_MAX, "change_ratio_min": CHANGE_RATIO_MIN}
 
     with svc.driver.session(database=settings.neo4j_database) as session:
-        candidates = [dict(r) for r in session.run(_PEEL_CANDIDATE_QUERY, **params)]
-        logger.info("[enrich] peel: %d single-hop candidates found", len(candidates))
+        if txids is not None:
+            txids_list = [t for t in txids if t]
+            candidates = []
+            for i in range(0, len(txids_list), NEO4J_BATCH):
+                chunk = txids_list[i : i + NEO4J_BATCH]
+                recs = session.run(_PEEL_CANDIDATE_SCOPED_QUERY, txids=chunk, **params)
+                candidates.extend(dict(r) for r in recs)
+        else:
+            candidates = [dict(r) for r in session.run(_PEEL_CANDIDATE_QUERY, **params)]
+        logger.info("[enrich] peel: %d single-hop candidates found (scoped=%s)", len(candidates), len(txids) if txids is not None else "all")
 
         if not candidates:
             return {
@@ -798,7 +852,10 @@ def _max_equal_output_group(amounts: list[float], relative_tolerance: float) -> 
     return max_group
 
 
-def run_coinjoin_detection(svc: GraphService) -> dict[str, Any]:
+def run_coinjoin_detection(
+    svc: GraphService,
+    txids: Sequence[str] | None = None,
+) -> dict[str, Any]:
     """Flag CoinJoin transactions with ``is_mixing=true``.
 
     Ported from ``backend/scripts/detect_coinjoin.py``: a Cypher structural
@@ -807,17 +864,31 @@ def run_coinjoin_detection(svc: GraphService) -> dict[str, Any]:
     """
     t0 = time.perf_counter()
     with svc.driver.session(database=settings.neo4j_database) as session:
-        candidates = [
-            dict(r)
-            for r in session.run(
-                _COINJOIN_CANDIDATE_QUERY,
-                min_btc=float(COINJOIN_MIN_BTC),
-                min_inputs=int(COINJOIN_MIN_INPUTS),
-                min_outputs=int(COINJOIN_MIN_OUTPUTS),
-            )
-        ]
+        if txids is not None:
+            txids_list = [t for t in txids if t]
+            candidates = []
+            for i in range(0, len(txids_list), NEO4J_BATCH):
+                chunk = txids_list[i : i + NEO4J_BATCH]
+                recs = session.run(
+                    _COINJOIN_CANDIDATE_SCOPED_QUERY,
+                    txids=chunk,
+                    min_btc=float(COINJOIN_MIN_BTC),
+                    min_inputs=int(COINJOIN_MIN_INPUTS),
+                    min_outputs=int(COINJOIN_MIN_OUTPUTS),
+                )
+                candidates.extend(dict(r) for r in recs)
+        else:
+            candidates = [
+                dict(r)
+                for r in session.run(
+                    _COINJOIN_CANDIDATE_QUERY,
+                    min_btc=float(COINJOIN_MIN_BTC),
+                    min_inputs=int(COINJOIN_MIN_INPUTS),
+                    min_outputs=int(COINJOIN_MIN_OUTPUTS),
+                )
+            ]
 
-    logger.info("[enrich] coinjoin: %d structural candidates", len(candidates))
+    logger.info("[enrich] coinjoin: %d structural candidates (scoped=%s)", len(candidates), len(txids) if txids is not None else "all")
 
     qualified_txids: list[str] = []
     for cand in candidates:
@@ -859,50 +930,13 @@ def run_coinjoin_detection(svc: GraphService) -> dict[str, Any]:
 
 def _write_wallet_risk_scores(
     svc: GraphService,
+    scope_addresses: Sequence[str] | None = None,
+    txids: Sequence[str] | None = None,
     progress_cb: Any = None,
 ) -> dict[str, Any]:
-    """Write a real ``risk_score`` onto every ``:Wallet``.
-
-    ``risk_score`` is NEVER hardcoded, and it is NEVER a restatement of another
-    score.
-
-    Why not the composite: the composite is
-    ``0.45 * risk_score + 0.35 * anomaly + rule_bonus + mixing`` (see
-    ``app/services/risk_thresholds.py``). Back-filling ``risk_score`` from
-    ``clamp(composite)`` therefore fed a value derived from ``risk_score`` back
-    into ``risk_score``, which pinned 7,517 wallets to exactly
-    ``W_ANOMALY = 0.35`` and 1,171 to 0.43. That is a fixed point, not a
-    measurement.
-
-    The graph risk model (``graph_transformer_*.pt`` / ``graphsage_*.pt``) is a
-    FULL-GRAPH artifact: it needs a PyG node-feature matrix and edge_index over
-    every wallet, produced by ``train_graphsage.py`` / ``promote_models.py`` at
-    training time. Scoring one freshly-ingested wallet against it is not
-    possible without rebuilding that matrix, so this chain does not pretend to
-    do it. It is reported as ``not_applicable`` rather than substituted.
-
-        What is written instead is :func:`_independent_risk_scores`: a documented
-        additive heuristic over four signals that are all independent of both the
-    composite and of ``risk_score`` itself —
-
-        0.30 * normalised FT-Transformer anomaly (the real model, per wallet)
-      + 0.25 * log-scaled co-spend cluster size
-      + 0.25 * seed proximity (0 / 0.2 / 0.5 / 1.0 from the 2-hop BFS)
-      + 0.20 * normalised peeling-chain depth
-
-    Every term is a measured property of the wallet's own transactions and
-    graph position, so the result is a genuine independent signal. It is
-    labelled ``graph_heuristic_v1`` in the report and on the wallet, and it is
-    never described as a GraphSAGE output. The four terms are written as four
-    scalar properties (``risk_score_anomaly_term`` and siblings) because Neo4j
-    cannot store a map as a node property — writing one aborts the whole
-    transaction with a TypeError and silently leaves every ``risk_score`` stale.
-
-    Wallets for which no score can be computed are left with ``risk_score``
-    unset (null), which is distinguishable from a computed 0.0.
-    """
+    """Write a real ``risk_score`` onto every ``:Wallet``."""
     t0 = time.perf_counter()
-    scored_risk = _independent_risk_scores(svc)
+    scored_risk = _independent_risk_scores(svc, scope_addresses=scope_addresses, txids=txids)
     risk_source = "graph_heuristic_v1"
 
     # Write in batched UNWIND transactions.
@@ -982,7 +1016,11 @@ _PEEL_DEPTH_SATURATION = float(max(PEEL_MIN_HOPS, 10))
 _ANOMALY_NORMALISATION_SCALE = 2.0 * ANOMALY_FLAG_THRESHOLD
 
 
-def _independent_risk_scores(svc: GraphService) -> dict[str, tuple[float, dict[str, float]]]:
+def _independent_risk_scores(
+    svc: GraphService,
+    scope_addresses: Sequence[str] | None = None,
+    txids: Sequence[str] | None = None,
+) -> dict[str, tuple[float, dict[str, float]]]:
     """Compute an independent per-wallet risk score from measured signals.
 
     Reads the real transaction rows for each wallet from PostgreSQL, runs the
@@ -996,6 +1034,8 @@ def _independent_risk_scores(svc: GraphService) -> dict[str, tuple[float, dict[s
 
     Args:
         svc: The chain's open GraphService.
+        scope_addresses: Ingested wallet addresses in scope, or None for full corpus.
+        txids: Ingested transaction IDs in scope, or None for full corpus.
 
     Returns:
         ``{address: (risk_score, {"anomaly_term": .., "cluster_term": ..,
@@ -1004,7 +1044,12 @@ def _independent_risk_scores(svc: GraphService) -> dict[str, tuple[float, dict[s
     """
     from app.services import inline_scorer
 
-    rows_by_wallet: dict[str, list[dict[str, Any]]] = _load_tx_rows_by_wallet()
+    if scope_addresses is not None and not scope_addresses:
+        return {}
+
+    rows_by_wallet: dict[str, list[dict[str, Any]]] = _load_tx_rows_by_wallet(
+        scope_addresses=scope_addresses, txids=txids
+    )
     if not rows_by_wallet:
         logger.warning(
             "[enrich] risk: no transaction rows available — risk_score will be "
@@ -1117,7 +1162,10 @@ RETURN w.address AS address,
 """
 
 
-def _load_tx_rows_by_wallet() -> dict[str, list[dict[str, Any]]]:
+def _load_tx_rows_by_wallet(
+    scope_addresses: Sequence[str] | None = None,
+    txids: Sequence[str] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
     """Load the most recent transactions per wallet from PostgreSQL.
 
     ``risk_score`` is deliberately blanked on the way out. The wallet risk this
@@ -1126,18 +1174,41 @@ def _load_tx_rows_by_wallet() -> dict[str, list[dict[str, Any]]]:
     own last output — a re-run would then keep inflating it and the stage would
     not be idempotent.
     """
+    if scope_addresses is not None and not scope_addresses:
+        return {}
+
     conn = None
     try:
         conn = psycopg2.connect(settings.database_url)
         with conn, conn.cursor() as cur:
-            cur.execute("""
-                SELECT txid, input_addresses, output_addresses, input_amounts,
-                       output_amounts, fee, script_type, geo_country, asn, ts,
-                       risk_score, anomaly_score, cluster_id, is_mixing, chain_hops
-                FROM transactions
-                ORDER BY ts DESC
-                LIMIT %s
-            """, (_TX_SAMPLE_LIMIT,))
+            if txids:
+                cur.execute("""
+                    SELECT txid, input_addresses, output_addresses, input_amounts,
+                           output_amounts, fee, script_type, geo_country, asn, ts,
+                           risk_score, anomaly_score, cluster_id, is_mixing, chain_hops
+                    FROM transactions
+                    WHERE txid = ANY(%s)
+                    ORDER BY ts DESC
+                """, (list(txids),))
+            elif scope_addresses is not None:
+                cur.execute("""
+                    SELECT txid, input_addresses, output_addresses, input_amounts,
+                           output_amounts, fee, script_type, geo_country, asn, ts,
+                           risk_score, anomaly_score, cluster_id, is_mixing, chain_hops
+                    FROM transactions
+                    WHERE input_addresses && %s OR output_addresses && %s
+                    ORDER BY ts DESC
+                    LIMIT %s
+                """, (list(scope_addresses), list(scope_addresses), _TX_SAMPLE_LIMIT))
+            else:
+                cur.execute("""
+                    SELECT txid, input_addresses, output_addresses, input_amounts,
+                           output_amounts, fee, script_type, geo_country, asn, ts,
+                           risk_score, anomaly_score, cluster_id, is_mixing, chain_hops
+                    FROM transactions
+                    ORDER BY ts DESC
+                    LIMIT %s
+                """, (_TX_SAMPLE_LIMIT,))
             cols = [d[0] for d in cur.description]
             rows = [dict(zip(cols, r)) for r in cur.fetchall()]
     except Exception as exc:  # noqa: BLE001
@@ -1150,7 +1221,7 @@ def _load_tx_rows_by_wallet() -> dict[str, list[dict[str, Any]]]:
             except Exception:
                 pass
 
-    if len(rows) >= _TX_SAMPLE_LIMIT:
+    if len(rows) >= _TX_SAMPLE_LIMIT and scope_addresses is None and not txids:
         logger.error(
             "[enrich] risk: transaction load hit the %d-row ceiling — wallets "
             "outside the loaded window will NOT receive a risk_score this run. "
@@ -1161,10 +1232,13 @@ def _load_tx_rows_by_wallet() -> dict[str, list[dict[str, Any]]]:
     for row in rows:
         row["risk_score"] = None
 
+    target_scope = set(scope_addresses) if scope_addresses is not None else None
     by_wallet: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
         addrs = list(row.get("input_addresses") or []) + list(row.get("output_addresses") or [])
         for addr in addrs:
+            if target_scope is not None and addr not in target_scope:
+                continue
             bucket = by_wallet.setdefault(addr, [])
             if len(bucket) < _TX_PER_WALLET:
                 bucket.append(row)
@@ -1182,6 +1256,8 @@ _TX_PER_WALLET = 5
 
 def run_wallet_attributes(
     svc: GraphService,
+    scope_addresses: Sequence[str] | None = None,
+    txids: Sequence[str] | None = None,
     progress_cb: Any = None,
 ) -> dict[str, Any]:
     """Write ``risk_score``, ``seed_proximity`` and ``is_seed_illicit`` on ``:Wallet``.
@@ -1202,11 +1278,15 @@ def run_wallet_attributes(
     get an explicit ``0.0`` / ``false`` rather than being left ambiguous.
     """
     t0 = time.perf_counter()
-    seed = _write_seed_proximity(svc)
+    seed = (
+        _write_seed_proximity(svc, scope_addresses=scope_addresses)
+        if scope_addresses is not None
+        else _write_seed_proximity(svc)
+    )
     risk = (
-        _write_wallet_risk_scores(svc, progress_cb=progress_cb)
-        if progress_cb
-        else _write_wallet_risk_scores(svc)
+        _write_wallet_risk_scores(svc, scope_addresses=scope_addresses, txids=txids, progress_cb=progress_cb)
+        if scope_addresses is not None or txids is not None
+        else (_write_wallet_risk_scores(svc, progress_cb=progress_cb) if progress_cb else _write_wallet_risk_scores(svc))
     )
 
     stats = {
@@ -1217,14 +1297,11 @@ def run_wallet_attributes(
     return stats
 
 
-def _write_seed_proximity(svc: GraphService) -> dict[str, Any]:
-    """Write ``seed_proximity`` and ``is_seed_illicit`` on every ``:Wallet``.
-
-    Proximity is a 2-hop BFS decay from the real seed set over ``CO_SPEND``:
-    hop 0 (a seed) = 1.0, hop 1 = 0.5, hop 2 = 0.2, beyond = 0.0. This mirrors
-    the intent of the Personalized PageRank in ``train_graphsage.py`` while
-    being computable in the enrichment chain without retraining.
-    """
+def _write_seed_proximity(
+    svc: GraphService,
+    scope_addresses: Sequence[str] | None = None,
+) -> dict[str, Any]:
+    """Write ``seed_proximity`` and ``is_seed_illicit`` on every in-scope ``:Wallet``."""
     t0 = time.perf_counter()
     from app.services import inline_scorer
 
@@ -1299,13 +1376,25 @@ def _write_seed_proximity(svc: GraphService) -> dict[str, Any]:
             ).single()
             hop2 = set(hop2_rec["addrs"]) if hop2_rec and hop2_rec["addrs"] else set()
 
-    # Assign proximity to every wallet (0.0 for those beyond 2 hops) and write
+    # Assign proximity to in-scope wallets (0.0 for those beyond 2 hops) and write
     # in batches. Writing 0.0 explicitly keeps the property non-null so the
     # graph contract always holds.
-    with svc.driver.session(database=settings.neo4j_database) as session:
-        all_addrs = [r["address"] for r in session.run(
-            "MATCH (w:Wallet) RETURN w.address AS address"
-        )]
+    if scope_addresses is not None:
+        all_addrs = sorted(set(scope_addresses))
+    else:
+        with svc.driver.session(database=settings.neo4j_database) as session:
+            all_addrs = [r["address"] for r in session.run(
+                "MATCH (w:Wallet) RETURN w.address AS address"
+            )]
+
+    if not all_addrs:
+        return {
+            "wallets_written": 0,
+            "seed_addresses": len(seed_addrs),
+            "hop1": len(hop1),
+            "hop2": len(hop2),
+            "elapsed_s": round(time.perf_counter() - t0, 2),
+        }
 
     payload: list[dict[str, Any]] = []
     for addr in all_addrs:
@@ -1359,7 +1448,10 @@ def _write_seed_proximity(svc: GraphService) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def verify_schema_contract(svc: GraphService) -> dict[str, Any]:
+def verify_schema_contract(
+    svc: GraphService,
+    scope_addresses: Sequence[str] | None = None,
+) -> dict[str, Any]:
     """Verify the ``:Wallet`` property contract from ``neo4j_init.cypher:62-91``.
 
     Checks that ``cluster_id``, ``risk_score``, ``seed_proximity`` and
@@ -1387,23 +1479,60 @@ def verify_schema_contract(svc: GraphService) -> dict[str, Any]:
         )
         seeds_configured = False
 
+    if scope_addresses is not None and not scope_addresses:
+        return {
+            "wallets_total": 0,
+            "with_cluster_id": 0,
+            "with_risk_score": 0,
+            "with_seed_proximity": 0,
+            "with_nonzero_seed_proximity": 0,
+            "seed_illicit_wallets": 0,
+            "with_is_seed_illicit": 0,
+            "out_of_range_risk_score": 0,
+            "zero_risk_score": 0,
+            "risk_score_at_w_anomaly": 0,
+            "seeds_configured": seeds_configured,
+            "failures": [],
+            "ok": True,
+        }
+
     with svc.driver.session(database=settings.neo4j_database) as session:
-        record = session.run(
-            """
-            MATCH (w:Wallet)
-            RETURN count(w) AS total,
-                   count(w.cluster_id) AS with_cluster,
-                   count(w.risk_score) AS with_risk,
-                   count(w.seed_proximity) AS with_seed_prox,
-                   count(CASE WHEN w.seed_proximity > 0.0 THEN 1 END) AS with_nonzero_seed_prox,
-                   count(CASE WHEN w.is_seed_illicit THEN 1 END) AS seed_wallets,
-                   count(w.is_seed_illicit) AS with_seed_flag,
-                   count(CASE WHEN w.risk_score IS NOT NULL
-                              AND (w.risk_score < 0 OR w.risk_score > 1) THEN 1 END) AS bad_risk,
-                   count(CASE WHEN w.risk_score IS NOT NULL AND w.risk_score = 0.0 THEN 1 END) AS zero_risk,
-                   count(CASE WHEN w.risk_score = 0.35 THEN 1 END) AS risk_at_w_anomaly
-            """
-        ).single()
+        if scope_addresses is not None:
+            record = session.run(
+                """
+                MATCH (w:Wallet)
+                WHERE w.address IN $scope
+                RETURN count(w) AS total,
+                       count(w.cluster_id) AS with_cluster,
+                       count(w.risk_score) AS with_risk,
+                       count(w.seed_proximity) AS with_seed_prox,
+                       count(CASE WHEN w.seed_proximity > 0.0 THEN 1 END) AS with_nonzero_seed_prox,
+                       count(CASE WHEN w.is_seed_illicit THEN 1 END) AS seed_wallets,
+                       count(w.is_seed_illicit) AS with_seed_flag,
+                       count(CASE WHEN w.risk_score IS NOT NULL
+                                  AND (w.risk_score < 0 OR w.risk_score > 1) THEN 1 END) AS bad_risk,
+                       count(CASE WHEN w.risk_score IS NOT NULL AND w.risk_score = 0.0 THEN 1 END) AS zero_risk,
+                       count(CASE WHEN w.risk_score = 0.35 THEN 1 END) AS risk_at_w_anomaly
+                """,
+                scope=list(scope_addresses),
+            ).single()
+        else:
+            record = session.run(
+                """
+                MATCH (w:Wallet)
+                RETURN count(w) AS total,
+                       count(w.cluster_id) AS with_cluster,
+                       count(w.risk_score) AS with_risk,
+                       count(w.seed_proximity) AS with_seed_prox,
+                       count(CASE WHEN w.seed_proximity > 0.0 THEN 1 END) AS with_nonzero_seed_prox,
+                       count(CASE WHEN w.is_seed_illicit THEN 1 END) AS seed_wallets,
+                       count(w.is_seed_illicit) AS with_seed_flag,
+                       count(CASE WHEN w.risk_score IS NOT NULL
+                                  AND (w.risk_score < 0 OR w.risk_score > 1) THEN 1 END) AS bad_risk,
+                       count(CASE WHEN w.risk_score IS NOT NULL AND w.risk_score = 0.0 THEN 1 END) AS zero_risk,
+                       count(CASE WHEN w.risk_score = 0.35 THEN 1 END) AS risk_at_w_anomaly
+                """
+            ).single()
 
     total = int(record["total"]) if record else 0
     report = {
@@ -1445,7 +1574,7 @@ def verify_schema_contract(svc: GraphService) -> dict[str, Any]:
                     f"seed_proximity present on {report['with_seed_proximity']}/{total} "
                     f"wallets while {len(inline_scorer._seeds)} seeds are configured"  # noqa: SLF001
                 )
-            if report["with_nonzero_seed_proximity"] == 0:
+            if scope_addresses is None and report["with_nonzero_seed_proximity"] == 0:
                 failures.append(
                     f"seed_proximity is 0.0 for all {total} wallets although "
                     f"{len(inline_scorer._seeds)} seeds are configured — the seed "  # noqa: SLF001
@@ -1467,13 +1596,21 @@ def verify_schema_contract(svc: GraphService) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def sync_to_postgres(svc: GraphService) -> dict[str, Any]:
+def sync_to_postgres(
+    svc: GraphService,
+    txids: Sequence[str] | None = None,
+    scope_addresses: Sequence[str] | None = None,
+) -> dict[str, Any]:
     """Mirror Neo4j enrichment state into the ``transactions`` table.
 
     Ported from ``backend/scripts/sync_mixing_to_postgres.py`` (is_mixing +
     chain_hops) and ``backend/scripts/sync_ft_transformer_to_postgres.py``
     (anomaly_score), plus the ``cluster_id`` mirror from
     ``cluster_wallets.py::sync_cluster_ids_to_postgres``.
+
+    When ``txids`` is provided, the mirror is strictly scoped to those
+    transactions: anomaly scores are computed and written only for those txids,
+    and cluster/risk/mixing states are mirrored only into those txids.
 
     The anomaly score is computed with the real FT-Transformer over the
     transaction rows (via the trained FT-Transformer checkpoint), not copied from a
@@ -1484,20 +1621,63 @@ def sync_to_postgres(svc: GraphService) -> dict[str, Any]:
     t0 = time.perf_counter()
 
     with svc.driver.session(database=settings.neo4j_database) as session:
-        mixing_rows = [dict(r) for r in session.run(_FETCH_MIXING_STATE_QUERY)]
-        cluster_rows = [dict(r) for r in session.run(_FETCH_WALLET_CLUSTERS_QUERY)]
-        risk_rows = [dict(r) for r in session.run(_FETCH_WALLET_RISK_QUERY)]
+        if txids is not None:
+            txids_list = [t for t in txids if t]
+            mixing_rows = []
+            cluster_rows = []
+            risk_rows = []
+            for i in range(0, len(txids_list), NEO4J_BATCH):
+                chunk = txids_list[i : i + NEO4J_BATCH]
+                m_recs = session.run(
+                    """
+                    UNWIND $txids AS txid
+                    MATCH (tx:Transaction {txid: txid})
+                    WHERE tx.is_mixing = true
+                    RETURN tx.txid AS txid,
+                           tx.is_mixing AS is_mixing,
+                           tx.chain_hops AS chain_hops
+                    """,
+                    txids=chunk,
+                )
+                mixing_rows.extend(dict(r) for r in m_recs)
+
+                c_recs = session.run(
+                    """
+                    UNWIND $txids AS txid
+                    MATCH (w:Wallet)-[:SENDS]->(tx:Transaction {txid: txid})
+                    WHERE w.cluster_id IS NOT NULL
+                    RETURN DISTINCT w.address AS address, w.cluster_id AS cluster_id
+                    """,
+                    txids=chunk,
+                )
+                cluster_rows.extend(dict(r) for r in c_recs)
+
+                r_recs = session.run(
+                    """
+                    UNWIND $txids AS txid
+                    MATCH (w:Wallet)-[:SENDS]->(tx:Transaction {txid: txid})
+                    WHERE w.risk_score IS NOT NULL
+                    RETURN DISTINCT w.address AS address, w.risk_score AS risk_score
+                    """,
+                    txids=chunk,
+                )
+                risk_rows.extend(dict(r) for r in r_recs)
+        else:
+            mixing_rows = [dict(r) for r in session.run(_FETCH_MIXING_STATE_QUERY)]
+            cluster_rows = [dict(r) for r in session.run(_FETCH_WALLET_CLUSTERS_QUERY)]
+            risk_rows = [dict(r) for r in session.run(_FETCH_WALLET_RISK_QUERY)]
 
     logger.info(
         "[enrich] pg: %d mixing transactions, %d clustered wallets, %d risk-scored "
-        "wallets to mirror",
+        "wallets to mirror (scoped_txids=%s)",
         len(mixing_rows), len(cluster_rows), len(risk_rows),
+        len(txids) if txids is not None else "all",
     )
 
     mixing_updated = _write_mixing_to_pg(mixing_rows)
-    cluster_updated = _write_clusters_to_pg(cluster_rows)
-    risk_updated = _write_risk_to_pg(risk_rows)
-    anomaly_updated = _write_anomaly_to_pg()
+    cluster_updated = _write_clusters_to_pg(cluster_rows, txids=txids)
+    risk_updated = _write_risk_to_pg(risk_rows, txids=txids)
+    anomaly_updated = _write_anomaly_to_pg(txids=txids)
 
     stats = {
         "mixing_rows_updated": mixing_updated,
@@ -1550,7 +1730,10 @@ def _write_mixing_to_pg(neo4j_rows: list[dict[str, Any]]) -> int:
     return updated
 
 
-def _write_clusters_to_pg(cluster_rows: list[dict[str, Any]]) -> int:
+def _write_clusters_to_pg(
+    cluster_rows: list[dict[str, Any]],
+    txids: Sequence[str] | None = None,
+) -> int:
     """Mirror ``(address, cluster_id)`` to ``transactions.cluster_id``.
 
     Uses a temp table + unnest-style join, ported from
@@ -1578,12 +1761,21 @@ def _write_clusters_to_pg(cluster_rows: list[dict[str, Any]]) -> int:
                 "COPY _wallet_clusters (address, cluster_id) FROM STDIN WITH (FORMAT TEXT)",
                 buf,
             )
-            cur.execute("""
-                UPDATE transactions t
-                SET cluster_id = wc.cluster_id
-                FROM _wallet_clusters wc
-                WHERE wc.address = t.input_addresses[1]
-            """)
+            if txids is not None:
+                cur.execute("""
+                    UPDATE transactions t
+                    SET cluster_id = wc.cluster_id
+                    FROM _wallet_clusters wc
+                    WHERE wc.address = t.input_addresses[1]
+                      AND t.txid = ANY(%s)
+                """, (list(txids),))
+            else:
+                cur.execute("""
+                    UPDATE transactions t
+                    SET cluster_id = wc.cluster_id
+                    FROM _wallet_clusters wc
+                    WHERE wc.address = t.input_addresses[1]
+                """)
             updated = cur.rowcount
     except Exception as exc:  # noqa: BLE001
         logger.warning("[enrich] pg: cluster mirror failed: %s", exc)
@@ -1610,7 +1802,10 @@ def _latest(base: Path, pattern: str) -> Any:
     return matches[0] if matches else None
 
 
-def _write_risk_to_pg(risk_rows: list[dict[str, Any]]) -> int:
+def _write_risk_to_pg(
+    risk_rows: list[dict[str, Any]],
+    txids: Sequence[str] | None = None,
+) -> int:
     """Mirror ``:Wallet.risk_score`` into ``transactions.risk_score``.
 
     Without this the composite scorer's 0.45 risk weight reads a null column
@@ -1639,12 +1834,21 @@ def _write_risk_to_pg(risk_rows: list[dict[str, Any]]) -> int:
                 "COPY _wallet_risk (address, risk_score) FROM STDIN WITH (FORMAT TEXT)",
                 buf,
             )
-            cur.execute("""
-                UPDATE transactions t
-                SET risk_score = wr.risk_score
-                FROM _wallet_risk wr
-                WHERE wr.address = t.input_addresses[1]
-            """)
+            if txids is not None:
+                cur.execute("""
+                    UPDATE transactions t
+                    SET risk_score = wr.risk_score
+                    FROM _wallet_risk wr
+                    WHERE wr.address = t.input_addresses[1]
+                      AND t.txid = ANY(%s)
+                """, (list(txids),))
+            else:
+                cur.execute("""
+                    UPDATE transactions t
+                    SET risk_score = wr.risk_score
+                    FROM _wallet_risk wr
+                    WHERE wr.address = t.input_addresses[1]
+                """)
             updated = cur.rowcount
     except Exception as exc:  # noqa: BLE001
         logger.warning("[enrich] pg: risk mirror failed: %s", exc)
@@ -1659,25 +1863,40 @@ def _write_risk_to_pg(risk_rows: list[dict[str, Any]]) -> int:
     return updated
 
 
-def _write_anomaly_to_pg() -> int:
+def _write_anomaly_to_pg(txids: Sequence[str] | None = None) -> int:
     """Recompute ``anomaly_score`` with the real model and write it to PG.
 
-    Runs the actual FT-Transformer checkpoint over every transaction row, so
+    Runs the actual FT-Transformer checkpoint over transaction rows, so
     the value is a real model output rather than a copy from a stale artefact.
     ``is_flagged`` follows the documented rule from ``train_graphsage.py``:
     anomaly above the calibrated threshold OR risk score at/above the flag
     threshold. Idempotent — the value is a pure function of the row.
+
+    When ``txids`` is provided, only those transactions are loaded, scored,
+    and updated in PostgreSQL and Neo4j.
     """
+    if txids is not None and not txids:
+        return 0
+
     conn = None
     try:
         conn = psycopg2.connect(settings.database_url)
         with conn, conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, txid, input_addresses, output_addresses, input_amounts,
-                       output_amounts, fee, script_type, geo_country, asn, ts,
-                       risk_score, anomaly_score
-                FROM transactions
-            """)
+            if txids is not None:
+                cur.execute("""
+                    SELECT id, txid, input_addresses, output_addresses, input_amounts,
+                           output_amounts, fee, script_type, geo_country, asn, ts,
+                           risk_score, anomaly_score
+                    FROM transactions
+                    WHERE txid = ANY(%s)
+                """, (list(txids),))
+            else:
+                cur.execute("""
+                    SELECT id, txid, input_addresses, output_addresses, input_amounts,
+                           output_amounts, fee, script_type, geo_country, asn, ts,
+                           risk_score, anomaly_score
+                    FROM transactions
+                """)
             cols = [d[0] for d in cur.description]
             rows = [dict(zip(cols, r)) for r in cur.fetchall()]
     except Exception as exc:  # noqa: BLE001
@@ -2506,7 +2725,15 @@ def run_enrichment_chain(
                 if name == "xai_publish":
                     result = fn(svc, scope_addresses=scope, txids=txids, progress_cb=_intra)
                 elif name == "wallet_attributes":
-                    result = fn(svc, progress_cb=_intra)
+                    result = fn(svc, scope_addresses=scope, txids=txids, progress_cb=_intra)
+                elif name == "schema_contract":
+                    result = fn(svc, scope_addresses=scope if txids is not None else None)
+                elif name == "postgres_mirror":
+                    result = fn(svc, txids=txids, scope_addresses=scope)
+                elif name == "peeling":
+                    result = fn(svc, txids=txids)
+                elif name == "coinjoin":
+                    result = fn(svc, txids=txids)
                 else:
                     result = fn(svc)
                 report[name] = result

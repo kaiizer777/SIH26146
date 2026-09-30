@@ -45,12 +45,12 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Markdown tracking & workflow docs (only README and 26146.md tracked)
+# Markdown tracking & workflow docs
 *.md
+**/*.md
 !README.md
 !26146.md
-**/*.md
+!setup.md
 !**/README.md
 # Handoff doc for the next agent session — must survive a fresh clone.
 !context-transfer.md
-

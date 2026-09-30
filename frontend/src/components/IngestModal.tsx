@@ -646,8 +646,8 @@ export default function IngestModal({
                 <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-500">
                   Surveillance ETL & Enrichment Pipeline
                 </span>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-mono font-semibold tabular-nums shadow-xs">
-                  <Clock className="w-3 h-3 text-sky-600 animate-spin-slow" />
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-900 text-[11px] font-mono font-semibold tabular-nums shadow-xs">
+                  <Clock className="w-3 h-3 text-slate-700 animate-spin-slow" />
                   <span>{formatTime(elapsedSeconds)}</span>
                 </div>
               </div>
@@ -684,12 +684,12 @@ export default function IngestModal({
 
                       {/* Trailing metadata */}
                       {isIngestDone && (
-                        <span className="crypto-mono text-[10px] text-slate-500 tabular-nums">
+                        <span className="crypto-mono text-[10px] text-slate-900 font-semibold tabular-nums">
                           {insertedCount.toLocaleString()} rows
                         </span>
                       )}
                       {isIngestRunning && (
-                        <span className="crypto-mono text-[10px] text-sky-600 font-semibold tabular-nums">
+                        <span className="crypto-mono text-[10px] text-slate-900 font-semibold tabular-nums">
                           {stage === "uploading"
                             ? "Uploading..."
                             : ingestProgressRows && ingestProgressRows.total > 0
@@ -750,12 +750,12 @@ export default function IngestModal({
 
                       {/* Trailing metadata */}
                       {isDone && count != null && (
-                        <span className="crypto-mono text-[10px] text-slate-500 tabular-nums">
+                        <span className="crypto-mono text-[10px] text-slate-900 font-semibold tabular-nums">
                           {count.toLocaleString()}
                         </span>
                       )}
                       {isRunning && (
-                        <span className="crypto-mono text-[10px] text-sky-600 font-semibold tabular-nums">
+                        <span className="crypto-mono text-[10px] text-slate-900 font-semibold tabular-nums">
                           {enrichProgress?.current != null &&
                           enrichProgress?.total != null &&
                           enrichProgress.total > 0
@@ -925,9 +925,9 @@ export default function IngestModal({
               onClick={handlePurgeData}
               disabled={isPurging}
               title="Purge all ingested transactions & graph nodes back to clean baseline"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider text-rose-700 bg-rose-50 hover:bg-rose-100/80 active:bg-rose-200/70 border border-rose-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(225,29,72,0.12)] active:translate-y-[0.5px] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase tracking-tight text-rose-700 bg-rose-50 hover:bg-rose-100 active:bg-rose-200/70 border border-rose-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(225,29,72,0.08)] active:translate-y-[0.5px] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
-              <Trash2 className={clsx("w-3 h-3 text-rose-600", isPurging && "animate-spin")} />
+              <Trash2 className="w-2.5 h-2.5 text-rose-600 shrink-0" />
               <span>{isPurging ? "Purging..." : "Del Ingest Data"}</span>
             </button>
           </div>

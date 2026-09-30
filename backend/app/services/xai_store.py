@@ -380,6 +380,11 @@ def force_reload() -> None:
     global _loaded
     with _store_lock:
         _loaded = False
+        _composite.clear()
+        _evidence.clear()
+        _shap.clear()
+        _attention.clear()
+        _subgraph.clear()
     load()
 
 

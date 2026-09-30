@@ -1,4 +1,4 @@
-﻿"""Tests for the ingest-scoped Louvain clustering stage.
+"""Tests for the ingest-scoped Louvain clustering stage.
 
 The regression these guard against: ``run_clustering`` used to project the WHOLE
 ``:Wallet`` + ``:CO_SPEND`` graph and call ``gds.louvain.write``. Louvain renumbers
@@ -75,9 +75,9 @@ class _FakeSession:
     def run(self, query: str, **params: Any) -> _Result:
         self._log.append((query, params))
         # The scoped write reports one count row per matched wallet.
-        if "SET w.cluster_id" in query:
+        if "SET w.cluster_id" in query or "SET w.seed_proximity" in query:
             batch = params.get("batch") or []
-            return _Result([_rec(cnt=1) for _ in batch])
+            return _Result([_rec(cnt=len(batch))])
         for marker, rows in self._routes.items():
             if marker in query:
                 return _Result(rows)
@@ -276,6 +276,117 @@ def test_scope_keeps_wallets_at_or_above_the_reserved_offset():
     assert resolve_ingested_wallet_scope(
         _FakeService(_FakeSession(routes, log)), ["t1"]
     ) == ["w1"]
+
+
+def test_write_seed_proximity_is_scoped():
+    """Seed proximity writes must only touch in-scope wallets when scope is passed."""
+    log: list[tuple[str, dict]] = []
+    routes = {
+        "UNWIND $seeds AS a": [_rec(addrs=["seed1"])],
+    }
+    svc = _FakeService(_FakeSession(routes, log))
+    res = enrich._write_seed_proximity(svc, scope_addresses=["w_scoped_1", "w_scoped_2"])
+    assert res["wallets_written"] == 2
+    # Verify the write batch only contained the scoped addresses
+    write_batches = [p["batch"] for q, p in log if "SET w.seed_proximity" in q]
+    written_addrs = [r["address"] for b in write_batches for r in b]
+    assert written_addrs == ["w_scoped_1", "w_scoped_2"]
+
+
+def test_write_risk_to_pg_scopes_update_query():
+    """_write_risk_to_pg must include AND t.txid = ANY(%s) when txids are supplied."""
+    from unittest.mock import MagicMock, patch
+
+    mock_cur = MagicMock()
+    mock_cur.rowcount = 1
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value.__enter__.return_value = mock_cur
+
+    with patch("psycopg2.connect", return_value=mock_conn):
+        rows = [{"address": "bc1q1", "risk_score": 0.75}]
+        enrich._write_risk_to_pg(rows, txids=["tx123"])
+
+        executed_queries = [call[0][0] for call in mock_cur.execute.call_args_list]
+        update_query = next(q for q in executed_queries if "UPDATE transactions t" in q)
+        assert "AND t.txid = ANY(%s)" in update_query
+        # Ensure txids was passed as parameter
+        params = next(call[0][1] for call in mock_cur.execute.call_args_list if "UPDATE transactions t" in call[0][0])
+        assert params == (["tx123"],)
+
+
+def test_write_clusters_to_pg_scopes_update_query():
+    """_write_clusters_to_pg must include AND t.txid = ANY(%s) when txids are supplied."""
+    from unittest.mock import MagicMock, patch
+
+    mock_cur = MagicMock()
+    mock_cur.rowcount = 1
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value.__enter__.return_value = mock_cur
+
+    with patch("psycopg2.connect", return_value=mock_conn):
+        rows = [{"address": "bc1q1", "cluster_id": 1000001}]
+        enrich._write_clusters_to_pg(rows, txids=["tx123"])
+
+        executed_queries = [call[0][0] for call in mock_cur.execute.call_args_list]
+        update_query = next(q for q in executed_queries if "UPDATE transactions t" in q)
+        assert "AND t.txid = ANY(%s)" in update_query
+        params = next(call[0][1] for call in mock_cur.execute.call_args_list if "UPDATE transactions t" in call[0][0])
+        assert params == (["tx123"],)
+
+
+def test_write_anomaly_to_pg_scopes_select_to_txids():
+    """_write_anomaly_to_pg must SELECT only WHERE txid = ANY(%s) when txids are supplied."""
+    from unittest.mock import MagicMock, patch
+
+    mock_cur = MagicMock()
+    mock_cur.description = [("id",), ("txid",), ("input_addresses",), ("output_addresses",),
+                            ("input_amounts",), ("output_amounts",), ("fee",), ("script_type",),
+                            ("geo_country",), ("asn",), ("ts",), ("risk_score",), ("anomaly_score",)]
+    mock_cur.fetchall.return_value = [
+        (1, "tx_scoped_1", ["w1"], ["w2"], [1.0], [0.99], 0.01, "P2WPKH", "US", 1234, 1000, 0.5, 0.01)
+    ]
+    mock_cur.rowcount = 1
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value.__enter__.return_value = mock_cur
+
+    with patch("psycopg2.connect", return_value=mock_conn), \
+         patch.object(enrich, "_score_per_transaction_anomaly", return_value={"tx_scoped_1": 0.05}), \
+         patch.object(enrich, "_mirror_anomaly_to_graph", return_value=1):
+
+        count = enrich._write_anomaly_to_pg(txids=["tx_scoped_1"])
+        assert count == 1
+
+        select_query = mock_cur.execute.call_args_list[0][0][0]
+        assert "WHERE txid = ANY(%s)" in select_query
+        select_params = mock_cur.execute.call_args_list[0][0][1]
+        assert select_params == (["tx_scoped_1"],)
+
+
+def test_load_tx_rows_by_wallet_scoped_to_txids_and_scope():
+    """_load_tx_rows_by_wallet must filter by txids and restrict returned wallets to scope."""
+    from unittest.mock import MagicMock, patch
+
+    mock_cur = MagicMock()
+    mock_cur.description = [("txid",), ("input_addresses",), ("output_addresses",),
+                            ("input_amounts",), ("output_amounts",), ("fee",), ("script_type",),
+                            ("geo_country",), ("asn",), ("ts",), ("risk_score",), ("anomaly_score",),
+                            ("cluster_id",), ("is_mixing",), ("chain_hops",)]
+    mock_cur.fetchall.return_value = [
+        ("tx1", ["w_new", "w_old"], ["w_out"], [1.0, 2.0], [2.99], 0.01, "P2WPKH", "US", 1234, 1000,
+         None, None, None, False, None)
+    ]
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value.__enter__.return_value = mock_cur
+
+    with patch("psycopg2.connect", return_value=mock_conn):
+        by_wallet = enrich._load_tx_rows_by_wallet(scope_addresses=["w_new"], txids=["tx1"])
+        # w_new is in scope, w_old is not -> by_wallet should only have w_new
+        assert "w_new" in by_wallet
+        assert "w_old" not in by_wallet
+        assert "w_out" not in by_wallet
+
+        select_query = mock_cur.execute.call_args_list[0][0][0]
+        assert "WHERE txid = ANY(%s)" in select_query
 
 
 # ---------------------------------------------------------------------------
