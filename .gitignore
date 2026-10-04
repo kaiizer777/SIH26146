@@ -6,6 +6,16 @@ env/
 .env.*
 !.env.example
 
+# Secrets
+# Enforced here because frontend/.gitignore only covers the frontend subtree.
+# Nothing in the repo matches these today; the point is that the next TLS cert
+# or private key dropped anywhere in the tree fails `git add` silently instead
+# of landing in a commit. .env/.env.* above already cover dotenv-style secrets.
+*.pem
+*.key
+*.pfx
+*.p12
+
 # Python
 __pycache__/
 *.pyc
@@ -44,11 +54,3 @@ dist/
 Thumbs.db
 .vscode/
 .idea/
-
-# Markdown tracking & workflow docs
-*.md
-**/*.md
-!README.md
-!26146.md
-!setup.md
-!**/README.md

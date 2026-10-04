@@ -88,6 +88,9 @@ class Settings(BaseSettings):
     # --- Phase 9: API Security ---
     # Static bearer token for dev/offline-demo use. Set via .env for production.
     api_dev_token: str = "dev-token-ntro-2026"
+    # Comma-separated browser origins allowed by CORSMiddleware (app/main.py).
+    # Empty = fall back to the localhost:3000 dev origins.
+    cors_origins: str = ""
 
     # --- Stage 3: Model Architecture Configuration ---
     # Tradeoffs (Canonical Ground Truth per data/models/BENCHMARK_TRUTH.json):

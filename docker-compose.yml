@@ -1,3 +1,61 @@
+# SIH26146 — full-stack offline bring-up (PostgreSQL + Neo4j/GDS + Redis +
+# FastAPI + Celery worker + Next.js).
+#
+#   docker compose up -d      # no .env required — every value has a default
+#   docker compose ps         # health status per service
+#   docker compose down       # stop, keep volumes
+#   docker compose down -v    # stop and destroy all data
+#
+# Every variable below is overridable from a .env file or the shell. The
+# defaults are local-demo values only; see .env.example for what to change.
+
+# ---------------------------------------------------------------------------
+# Reusable fragments
+# ---------------------------------------------------------------------------
+
+# The API and the worker run the exact same image and the exact same
+# configuration — one build, two entrypoints.
+x-backend-image: &backend-image
+  image: kaiizer777/sih26146-backend:latest
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+
+x-backend-environment: &backend-environment
+  # Root for every runtime artefact: uploads, model weights, XAI artifacts.
+  # Bind-mounted from ./data so ingested data survives a `docker compose down`.
+  DATA_ROOT: /app/data
+  # Service names on sih_network — never localhost.
+  DATABASE_URL: postgresql://${POSTGRES_USER:-sih_user}:${POSTGRES_PASSWORD:-sih_password}@postgres:5432/${POSTGRES_DB:-sih_bitcoin}
+  NEO4J_URI: bolt://neo4j:7687
+  NEO4J_USER: ${NEO4J_USER:-neo4j}
+  NEO4J_PASSWORD: ${NEO4J_PASSWORD:-password123}
+  NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/0
+  CELERY_RESULT_BACKEND: redis://redis:6379/0
+  # Static bearer token. frontend/src/lib/api.ts reads NEXT_PUBLIC_API_TOKEN;
+  # the frontend service below derives that from this same variable so the
+  # browser and the API can never disagree.
+  API_DEV_TOKEN: ${API_DEV_TOKEN:-dev-token-ntro-2026}
+  # Browser origins CORSMiddleware accepts (app/main.py -> settings.cors_origins).
+  # It MUST be set here rather than only in a host .env: the image ships no .env
+  # (.dockerignore excludes it) and app/config.py resolves env_file to /.env
+  # inside the container, so without this line CORS_ORIGINS is silently dropped.
+  # Keep it in sync with FRONTEND_PORT — if you move the frontend off 3000, add
+  # the new origin here or every browser call to the API is rejected.
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+  # Stage 3 model selection (see .env.example). Read by app/config.py.
+  USE_LEGACY_ANOMALY_MODEL: ${USE_LEGACY_ANOMALY_MODEL:-false}
+  USE_LEGACY_RISK_MODEL: ${USE_LEGACY_RISK_MODEL:-false}
+
+x-backend-volumes: &backend-volumes
+  - ./data:/app/data
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -8,7 +66,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sih_password}
       POSTGRES_DB: ${POSTGRES_DB:-sih_bitcoin}
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+      # Published on the host for psql/DBeaver access. Deliberately separate
+      # from the in-network port so changing it can never break the app.
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,25 +85,47 @@ services:
     container_name: sih26146-neo4j
     restart: unless-stopped
     environment:
-      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/password123}
+      # Derived from NEO4J_USER/NEO4J_PASSWORD so the server credentials and the
+      # credentials the backend/celery use can never drift apart.
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-password123}
+      # Graph Data Science is required: app/tasks/enrich.py calls
+      # gds.graph.project.cypher (:167) / gds.louvain.stream (:180) /
+      # gds.graph.drop (:130).
+      # The jar is downloaded into the neo4j_plugins volume on first boot,
+      # which needs outbound network access to the Neo4j plugin CDN once.
       NEO4J_PLUGINS: '["graph-data-science"]'
-      NEO4J_dbms_memory_heap_initial__size: 512m
-      NEO4J_dbms_memory_heap_max__size: 2g
-      NEO4J_dbms_memory_pagecache_size: 1g
+      # Neo4j 5.x setting names. The image's entrypoint strips the NEO4J_ prefix,
+      # maps '_' to '.' and '..' to '_', hence '__' wherever the setting name
+      # itself contains '_' (heap.max_size, heap.initial_size). The 4.x-era
+      # dbms.memory.* aliases still work but log a deprecation WARN on every boot
+      # ("Use of deprecated setting 'dbms.memory.heap.max_size'"), so use the
+      # server.memory.* names directly.
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL_SIZE:-512m}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX_SIZE:-2g}
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE_SIZE:-1g}
       NEO4J_dbms_security_procedures_unrestricted: gds.*
       NEO4J_dbms_security_procedures_allowlist: gds.*
     ports:
-      - "7474:7474"
-      - "7687:7687"
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
     volumes:
       - neo4j_data:/data
       - neo4j_plugins:/plugins
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 > /dev/null 2>&1 || exit 1"]
+      # cypher-shell proves the database is actually queryable, not just that
+      # the HTTP listener bound — the browser UI on :7474 answers before the
+      # store is ready to take Cypher from the backend.
+      test:
+        - CMD-SHELL
+        - >-
+          cypher-shell -a bolt://localhost:7687
+          -u "${NEO4J_USER:-neo4j}" -p "${NEO4J_PASSWORD:-password123}"
+          "RETURN 1" || exit 1
       interval: 15s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      # The GDS jar is ~200 MB and is downloaded on first boot.
+      start_period: 90s
     networks:
       - sih_network
 
@@ -52,7 +134,7 @@ services:
     container_name: sih26146-redis
     restart: unless-stopped
     ports:
-      - "${REDIS_PORT:-6380}:6379"
+      - "${REDIS_HOST_PORT:-6380}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -63,79 +145,83 @@ services:
     networks:
       - sih_network
 
+  # One-shot schema bootstrap. Runs `alembic upgrade head` to completion and
+  # exits 0; the API and the worker refuse to start until it has, so a failed
+  # migration surfaces as a single `Exited (1)` row here instead of an opaque
+  # uvicorn restart loop inside the API container.
+  migrate:
+    <<: *backend-image
+    container_name: sih26146-migrate
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    environment: *backend-environment
+    volumes: *backend-volumes
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sih_network
+
   fastapi:
-    image: kaiizer777/sih26146-backend:latest
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    <<: *backend-image
     container_name: sih26146-fastapi
     restart: unless-stopped
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
-    environment:
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      POSTGRES_USER: ${POSTGRES_USER:-sih_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sih_password}
-      POSTGRES_DB: ${POSTGRES_DB:-sih_bitcoin}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      DATABASE_URL: postgresql://${POSTGRES_USER:-sih_user}:${POSTGRES_PASSWORD:-sih_password}@postgres:5432/${POSTGRES_DB:-sih_bitcoin}
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USER: ${NEO4J_USER:-neo4j}
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-password123}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-      DATA_ROOT: /app/data
-      MAXMIND_ACCOUNT_ID: ${MAXMIND_ACCOUNT_ID:-}
-      MAXMIND_LICENSE_KEY: ${MAXMIND_LICENSE_KEY:-}
+    environment: *backend-environment
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes: *backend-volumes
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       neo4j:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - ./data:/app/data
+    healthcheck:
+      # GET /health (app/routers/health.py) — and it is exempt from the bearer
+      # middleware in app/main.py, so no token is needed here.
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # app lifespan parses ~50 MB of XAI artifacts before serving.
+      start_period: 90s
     networks:
       - sih_network
 
   celery-worker:
-    image: kaiizer777/sih26146-backend:latest
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    <<: *backend-image
     container_name: sih26146-celery
     restart: unless-stopped
-    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
-    environment:
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      POSTGRES_USER: ${POSTGRES_USER:-sih_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sih_password}
-      POSTGRES_DB: ${POSTGRES_DB:-sih_bitcoin}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      DATABASE_URL: postgresql://${POSTGRES_USER:-sih_user}:${POSTGRES_PASSWORD:-sih_password}@postgres:5432/${POSTGRES_DB:-sih_bitcoin}
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USER: ${NEO4J_USER:-neo4j}
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-password123}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-      DATA_ROOT: /app/data
-      MAXMIND_ACCOUNT_ID: ${MAXMIND_ACCOUNT_ID:-}
-      MAXMIND_LICENSE_KEY: ${MAXMIND_LICENSE_KEY:-}
+    # prefork: the ingest/enrich pipeline loads torch and writes to Neo4j.
+    init: true
+    command:
+      - celery
+      - -A
+      - app.celery_app
+      - worker
+      - --loglevel=info
+      - --concurrency=${CELERY_CONCURRENCY:-2}
+    environment: *backend-environment
+    volumes: *backend-volumes
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
+        condition: service_healthy
+      # enrich_ingested_transactions projects and clusters through GDS.
+      neo4j:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - ./data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping -d celery@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
     networks:
       - sih_network
 
@@ -144,20 +230,32 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # NEXT_PUBLIC_* is inlined into the client bundle by `next build`, so the
+      # build has to receive it — runtime `environment:` alone is not enough.
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_API_TOKEN: ${NEXT_PUBLIC_API_TOKEN:-${API_DEV_TOKEN:-dev-token-ntro-2026}}
     container_name: sih26146-frontend
     restart: unless-stopped
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-      NEXT_PUBLIC_API_TOKEN: ${NEXT_PUBLIC_API_TOKEN:-dev-token-ntro-2026}
-      # Internal URL for SSR/API routes within the Docker network
-      INTERNAL_API_URL: http://fastapi:8000
+      NEXT_PUBLIC_API_TOKEN: ${NEXT_PUBLIC_API_TOKEN:-${API_DEV_TOKEN:-dev-token-ntro-2026}}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       fastapi:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      # This app exposes no /health route (no route handler under
+      # frontend/src/app), so the shell document at / is the honest probe.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
     networks:
       - sih_network
 

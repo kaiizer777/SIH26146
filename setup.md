@@ -7,20 +7,71 @@
 ## Prerequisites
 
 - Git, Docker Desktop 4.x+ (running), Node.js 20+, Python 3.11
-- Minimum 8 GB RAM free for Docker (Neo4j heap alone is 2 GB)
-- Clone the repo: `git clone https://github.com/kaiizer777/SIH26146.git && cd SIH26146`
+- Minimum 8 GB RAM free for Docker (Neo4j's default heap + pagecache budget is ~3 GB)
+- Clone the repo:
+  ```powershell
+  git clone https://github.com/kaiizer777/SIH26146.git
+  Set-Location SIH26146
+  ```
+  ```bash
+  git clone https://github.com/kaiizer777/SIH26146.git
+  cd SIH26146
+  ```
 
 ---
 
-## Step 1 — Environment
+## Step 1 — Environment (optional)
+
+**You do not need a `.env` file.** `docker compose up -d` works on a clean clone
+with no `.env` at all — every value has a working default in
+`docker-compose.yml`. Copy the template only when you want to change something:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-The defaults in `.env.example` work out of the box for local Docker. No edits needed unless you have port conflicts.
+> **Port note:** published host ports are variables, kept deliberately separate
+> from the container ports so changing one can never break the stack's internal
+> wiring. Defaults: Postgres **5433** → container `5432`, Redis **6380** →
+> container `6379`, Neo4j **7474**/**7687**, API **8000**, dashboard **3000**.
+> If you connect from a GUI tool (DBeaver, etc.) or a Redis client, use
+> **5433** and **6380** — never `5432`/`6379`.
+> Naming is not uniform: only Postgres and Redis use the `_HOST_PORT` suffix.
+> `POSTGRES_PORT` survives in `.env.example` as host-side bookkeeping only and
+> does **not** drive the mapping; `REDIS_PORT` is gone entirely — use
+> **`REDIS_URL`.
+>
+> **CORS note (only needed off port 3000).** The backend reads `CORS_ORIGINS` as
+> a **comma-separated list of origins**; whitespace around each entry is trimmed
+> and empty entries are dropped. Unset or empty, it falls back to
+> `http://localhost:3000` and `http://127.0.0.1:3000`, so the default stack needs
+> nothing. Dashboard on a different port (`FRONTEND_PORT=3100`), in `.env`:
+> ```.env
+> CORS_ORIGINS=http://localhost:3100
+> ```
+> More than one origin:
+> ```.env
+> CORS_ORIGINS=http://localhost:3100,http://127.0.0.1:3100,https://ops.internal.example
+> ```
+> `FRONTEND_PORT` on its own is **not** sufficient — it republishes the container
+> port but does not change the `Origin` header the browser sends, and the
+> variable only takes effect once it is in the API container's environment
+> (`docker compose up -d fastapi`). And for LAN / remote access the backend
+> cannot infer anything: a browser on another machine sends
+> `Origin: http://<lan-ip>:3000`, which must be listed explicitly, e.g.
+> `CORS_ORIGINS=http://localhost:3000,http://192.168.1.50:3000`.
+> `curl` is unaffected — this is a browser-only restriction.
 
-> **Port note:** `.env.example` sets `POSTGRES_PORT=5432` (internal container port). Docker Compose maps this to **external port 5433** via `${POSTGRES_PORT:-5433}:5432`. If you connect from a GUI tool (DBeaver, etc.) use **5433**.
+> **`NEO4J_AUTH` is derived, not configured.** `docker-compose.yml` builds it
+> from `NEO4J_USER` + `NEO4J_PASSWORD`, so the server and the backend can never
+> drift apart. Change those two variables; setting `NEO4J_AUTH` yourself would
+> desynchronise them and cause auth failures.
+
+> **`SECRET_KEY`, `ENVIRONMENT` and `GROQ_API_KEY` are listed commented-out at
+> the bottom of `.env.example` because nothing reads them.** They are not
+> required, and uncommenting them has no effect. `CORS_ORIGINS` used to be in
+> that group — the backend reads it now, so uncommenting it **does** have an
+> effect (see the CORS note above and the troubleshooting table).
 
 > **MAXMIND keys are optional** — GeoIP enrichment falls back gracefully to `NULL` if not set. For full GeoIP, get a free MaxMind account and set `MAXMIND_ACCOUNT_ID` + `MAXMIND_LICENSE_KEY` in `.env`.
 
@@ -41,7 +92,7 @@ Test-Path data\xai\evidence_trails.json                 # 15,873 evidence dossie
 Test-Path data\xai\shap_attributions.json               # 4,839 SHAP XAI values
 Test-Path data\xai\gnn_subgraphs.json                   # 100 GNN subgraph explanations
 Test-Path data\xai\attention_matrices.json              # 4,839 attention heatmaps
-Test-Path data\ransomwhere_seeds.json                   # 3,449 known-illicit seed wallets
+Test-Path data\ransomwhere_seeds.json                   # 11,186 known-illicit seed wallets
 Test-Path data\geoip\GeoLite2-City.mmdb                 # GeoIP city DB
 Test-Path data\geoip\GeoLite2-ASN.mmdb                  # GeoIP ASN DB
 ```
@@ -58,75 +109,90 @@ python scripts\download_maxmind.py    # needs MAXMIND_ACCOUNT_ID + KEY in .env
 
 ## METHOD A — Docker (Primary, Recommended)
 
-Single command, all 6 services spin up together:
+Single command, all 7 services come up together:
 
 ```powershell
 docker compose up -d
 ```
 
-This pulls/builds and starts:
-| Container | Port | Purpose |
-| :--- | :--- | :--- |
-| `sih26146-postgres` | 5433 | Transaction + alert DB |
-| `sih26146-neo4j` | 7474 (UI), 7687 (Bolt) | Graph topology DB |
-| `sih26146-redis` | 6380 | Celery broker + cache |
-| `sih26146-fastapi` | 8000 | REST API (FastAPI) |
-| `sih26146-celery` | — | Background ingest worker |
-| `sih26146-frontend` | 3000 | Next.js surveillance dashboard |
+This builds/starts:
+
+| Compose service | Container | Published host port | Purpose |
+| :--- | :--- | :--- | :--- |
+| `postgres` | `sih26146-postgres` | 5433 → 5432 | Transaction + alert DB |
+| `neo4j` | `sih26146-neo4j` | 7474 (UI), 7687 (Bolt) | Graph topology DB |
+| `redis` | `sih26146-redis` | 6380 → 6379 | Celery broker + cache |
+| `migrate` | `sih26146-migrate` | — | One-shot `alembic upgrade head` |
+| `fastapi` | `sih26146-fastapi` | 8000 → 8000 | REST API (FastAPI) |
+| `celery-worker` | `sih26146-celery` | — | Background ingest worker |
+| `next-frontend` | `sih26146-frontend` | 3000 → 3000 | Next.js surveillance dashboard |
 
 ### Verify all services healthy:
 
 ```powershell
 docker compose ps
-# All services should show "healthy" or "running"
-
-curl.exe http://localhost:8000/health
-# Expected: {"status":"healthy","database":"connected","neo4j":"connected","redis":"connected"}
+# postgres / neo4j / redis / fastapi / celery-worker / next-frontend -> "healthy"
+# migrate -> "Exited (0)"   <-- THIS IS SUCCESS
 ```
+
+> **`migrate` showing `Exited (0)` is the expected, healthy outcome — not a
+> failure.** It is a one-shot job: it runs `alembic upgrade head` to completion
+> and exits. `fastapi` and `celery-worker` are gated behind it with
+> `service_completed_successfully`, so they cannot start until the schema is
+> ready. **There is no manual migration step to run.**
+> `Exited (1)` there is the only bad state — read `docker compose logs migrate`.
+
+```powershell
+curl.exe http://localhost:8000/health
+# Expected: {"status":"ok"}
+# NOTE: this is a liveness probe only — it returns a static payload and does
+# NOT report database/neo4j/redis connectivity. For a real dependency check,
+# hit an authenticated endpoint, e.g.:
+#   curl.exe http://localhost:8000/api/v1/alerts?limit=1 -H "Authorization: Bearer dev-token-ntro-2026"
+```
+
+> First boot is slow on purpose: the backend/frontend images build (torch is
+> ~700 MB of wheels), Neo4j downloads the ~200 MB Graph Data Science plugin, and
+> the API parses ~50 MB of XAI artefacts during startup. The compose healthcheck
+> `start_period` values are sized for that — give it a few minutes before
+> concluding anything is broken.
 
 ### Seed the database (CRITICAL — do this once):
 
-The Docker backend has an empty Postgres/Neo4j on first boot. Run the full seed pipeline inside the running container:
+The Docker backend has an empty Postgres/Neo4j on first boot. Populate it via the
+API, which dispatches the full Celery pipeline:
 
 ```powershell
-# 1. Run DB migrations
-docker exec sih26146-fastapi alembic upgrade head
-
-# 2. Ingest the 100,000-row synthetic dataset via the API
+# 1. Ingest the 100,000-row synthetic dataset via the API
 # Note: use curl.exe (not curl) in PowerShell — 'curl' is aliased to Invoke-WebRequest
 curl.exe -X POST http://localhost:8000/ingest `
   -H "Authorization: Bearer dev-token-ntro-2026" `
   -F "file=@data/synthetic_transactions.csv"
 # Returns: {"task_id": "<uuid>", "status": "PENDING"}
-# Poll until SUCCESS before running the next steps (replace YOUR_TASK_ID):
+# Poll until SUCCESS before reloading the dashboard (replace YOUR_TASK_ID):
 curl.exe http://localhost:8000/ingest/status/YOUR_TASK_ID `
   -H "Authorization: Bearer dev-token-ntro-2026"
-
-# 3. Build the Neo4j graph from Postgres data
-docker exec sih26146-fastapi python scripts/build_graph.py
-
-# 4. Run entity clustering (Louvain via GDS)
-docker exec sih26146-fastapi python scripts/cluster_wallets.py
-
-# 5. Sync risk scores to Postgres + Neo4j
-docker exec sih26146-fastapi python scripts/compute_composite_risk.py
-
-# 6. Detect peeling chains + mixing patterns
-docker exec sih26146-fastapi python scripts/detect_peeling_chains.py
-docker exec sih26146-fastapi python scripts/detect_coinjoin.py
 ```
 
-> Each script prints progress. Step 2 (ingest) takes the longest — wait for `SUCCESS` before proceeding. Total time on first run: ~15–25 minutes.
+> **Schema migrations are already done** — the `migrate` service ran
+> `alembic upgrade head` before `fastapi` was allowed to start. Do not run
+> alembic by hand. If you ever need to re-apply after a code change:
+> `docker compose run --rm migrate`
 
-> **⚠️ Unverified — steps 3-6 may now be redundant.** Ingestion was changed to
-> write to Neo4j directly and to auto-chain an enrichment pass (Louvain
+> **⚠️ The old `scripts/build_graph.py` → `detect_coinjoin.py` seed sequence
+> does not work under Docker.** `backend/scripts/` is not in the image — the
+> Dockerfile copies only `app/`, `alembic/` and `alembic.ini`, so
+> `docker exec sih26146-fastapi python scripts/...` fails with
+> "can't open file". Those scripts remain valid for the bare-metal route
+> (METHOD B) below. Under Docker, step 1 above is the whole seed: ingestion
+> writes to Neo4j directly and auto-chains an enrichment pass (Louvain
 > clustering, peel + CoinJoin detection, risk scoring, XAI publish) when the
-> ingest task completes. If that holds for the 100k seed too, steps 3-6 are
-> duplicating work the pipeline already did. This was validated against
-> `data/test_2000.csv` (2k rows) but **not** re-run from scratch on the 100k
-> file, so keep the steps until someone confirms. Watch
+> ingest task completes.
+> That auto-chain was validated against `data/test_2000.csv` (2k rows) but
+> **not** re-run from scratch on the 100k file. Watch
 > `docker compose logs celery-worker` for `publish: wrote N wallets` — if that
-> line appears after step 2, steps 3-6 are safe to drop.
+> line appears after step 1, the enrichment chain did the work the old steps
+> 3-6 used to do.
 
 ### Open the dashboard:
 
@@ -153,6 +219,13 @@ Use this if Docker Desktop has WSL2 issues, memory limits, or you need hot-reloa
 - PostgreSQL 16 running locally on port `5432` with user `sih_user`, password `sih_password`, DB `sih_bitcoin`
 - Neo4j 5.x with GDS plugin running on port `7687` / `7474`, auth `neo4j/password123`
 - Redis running on port `6379`
+
+> Running the backend on the host against the **Docker** datastores instead?
+> Use the published host ports — Postgres `5433`, Redis `6380`, Neo4j
+> `7687`/`7474`. The host-side `DATABASE_URL` / `REDIS_URL` / `NEO4J_URI` in
+> `.env.example` already point at exactly those, and `docker-compose.yml`
+> overrides them back to the service addresses for the containers. See
+> [`docs/dev-server.md`](docs/dev-server.md).
 
 ### Backend Python setup:
 
@@ -202,15 +275,23 @@ Once the dashboard is live with 15k+ wallets, demo the live ingest pipeline:
 
 ### ⚠️ Three things that WILL break the recording if you don't know them
 
-**1. Restart `fastapi` after the ingest, or the dashboard shows stale counts.**
+**1. After a raw `curl` ingest you must hot-reload the XAI store, or the dashboard shows stale counts.**
 The XAI store is loaded into memory at process start. New entities are written
 to disk during enrichment but the running API keeps serving the old snapshot.
-If you ingest and immediately film the dashboard, the entity count will not
-have moved. Wait for enrichment to finish, then:
+**Via the UI this is automatic** — `IngestModal` calls the reload endpoint for
+you once enrichment reports SUCCESS, so no restart is needed on the UI path.
+**Via curl there is no client to do it for you**, so trigger it yourself:
 ```powershell
+# Non-destructive: hot-reload the XAI store in the running API
+curl.exe -X POST http://localhost:8000/ingest/enrichment/YOUR_INGEST_TASK_ID/reload `
+  -H "Authorization: Bearer dev-token-ntro-2026"
+# Returns: {"status":"reloaded","composite_count":<N>}
+
+# Fallback (nukes connections, ~15s downtime) — restart the container instead
 docker compose restart fastapi
 # Wait ~15s, then reload http://localhost:3000
 ```
+Use the **ingest** task id (from `POST /ingest`), not the enrichment task id.
 
 **2. You can only click the demo dataset ONCE per 24 hours.**
 Uploads are deduplicated by SHA-256 in Redis with a 24h TTL. A second click
@@ -229,8 +310,10 @@ waterfall reads as a broken feature.
 `bc1p63703f584305ace011f791e2772a614e1d0fc1a4`), where it is genuine.
 
 ### Expected timing
-Ingest ~10s → enrichment ~6-7 min (Louvain, peel detection, CoinJoin, risk,
-publish). The alerts table only reflects new entities after the restart in (1).
+Ingest ~10s → enrichment ~6-7 min (7 stages: Louvain clustering, peel detection,
+CoinJoin, wallet attributes, schema contract, Postgres mirror, XAI publish). The
+alerts table reflects new entities immediately on the UI path (auto hot-reload);
+on the curl path, only after you trigger the reload in (1).
 
 ### What "success" looks like
 2,000 rows → 8,137 wallets → 3,887 Louvain communities, 126 qualifying peel
@@ -241,10 +324,10 @@ Cluster topology for an ingested cluster averages **~5-6 mean degree** across
 
 ### Via the UI:
 1. Open `http://localhost:3000`
-2. Click **"Upload"** / **"Ingest"** button in the top-nav
+2. Click the **"Ingest Batch"** button in the top-nav
 3. Click the built-in **sample dataset** tile (2,000 rows, 1.07 MB)
 4. Watch the modal progress bar reach 100%
-5. Wait ~6-7 min for enrichment, then `docker compose restart fastapi`
+5. Wait ~6-7 min for the 7 enrichment stages to finish — the modal hot-reloads the XAI store automatically
 6. Reload the dashboard — entity count rises and new wallets appear
 7. Click an ingested wallet → Entity Drawer opens with:
    - Attention heatmap ✅ (real 18×18)
@@ -270,8 +353,14 @@ curl.exe http://localhost:8000/ingest/status/YOUR_TASK_ID `
 #            cospend_created: 16537, parity: { missing: 0 } },
 #   enrichment: { status: "dispatched", task_id: "<uuid>" }
 
-# THEN: wait ~6-7 min for enrichment, and restart the API before filming
-docker compose restart fastapi
+# Optionally track enrichment progress:
+curl.exe http://localhost:8000/ingest/enrichment/YOUR_TASK_ID `
+  -H "Authorization: Bearer dev-token-ntro-2026"
+
+# THEN: wait ~6-7 min for enrichment, then hot-reload before filming
+curl.exe -X POST http://localhost:8000/ingest/enrichment/YOUR_TASK_ID/reload `
+  -H "Authorization: Bearer dev-token-ntro-2026"
+# Returns: {"status":"reloaded","composite_count":<N>}
 ```
 
 ---
@@ -297,30 +386,61 @@ the last round of fixes and the older numbers are wrong:
 
 ## Ports Reference
 
-| Service | URL |
-| :--- | :--- |
-| **Frontend Dashboard** | http://localhost:3000 |
-| **FastAPI Swagger** | http://localhost:8000/docs |
-| **FastAPI Health** | http://localhost:8000/health |
-| **Neo4j Browser** | http://localhost:7474 (user: `neo4j` / pass: `password123`) |
+Host ports published by the Docker stack, and the `*_HOST_PORT` variables that
+override them:
+
+| Service | URL | Override var |
+| :--- | :--- | :--- |
+| **Frontend Dashboard** | http://localhost:3000 | `FRONTEND_PORT` |
+| **FastAPI Swagger** | http://localhost:8000/docs | `BACKEND_PORT` |
+| **FastAPI Health** | http://localhost:8000/health | `BACKEND_PORT` |
+| **Neo4j Browser** | http://localhost:7474 (user: `neo4j` / pass: `password123`) | `NEO4J_HTTP_PORT` |
+| **Neo4j Bolt** | `bolt://localhost:7687` | `NEO4J_BOLT_PORT` |
+| **PostgreSQL** | `localhost:5433` (container `5432`) | `POSTGRES_HOST_PORT` |
+| **Redis** | `localhost:6380` (container `6379`) | `REDIS_HOST_PORT` |
+
+> **API auth:** every endpoint except `/health`, `/docs`, `/redoc` and
+> `/openapi.json` requires the header `Authorization: Bearer dev-token-ntro-2026`.
+> Without it you get `401`, not `404`. The default lives in `app/config.py`
+> (`api_dev_token`).
+>
+> **To change the token:** set `API_DEV_TOKEN` in `.env` — that is the single
+> source of truth. `docker-compose.yml` passes it to the backend *and* derives
+> the frontend's `NEXT_PUBLIC_API_TOKEN` build argument from the same variable,
+> so the two sides cannot disagree. Do not set `NEXT_PUBLIC_API_TOKEN` yourself.
+>
+> **A rebuild is mandatory**, because `NEXT_PUBLIC_*` is inlined into the
+> browser bundle by `next build`:
+> ```powershell
+> docker compose build
+> docker compose up -d
+> ```
 
 ---
 
 ## Troubleshooting
 
+Deeper Docker-specific diagnostics live in
+[`docker/README-docker.md`](docker/README-docker.md).
+
 | Symptom | Fix |
 | :--- | :--- |
-| Dashboard loads but table is empty | DB not seeded — run seed scripts above |
-| `docker compose up` fails on Neo4j memory | Edit `docker-compose.yml` → lower `NEO4J_dbms_memory_heap_max__size` to `1g` |
+| Dashboard loads but table is empty | DB not seeded — run the ingest step above |
+| `migrate` shows `Exited (1)`; API/worker never start | Migration failed. `docker compose logs migrate`. `Exited (0)` is the success state, not an error |
+| `docker compose up` fails on Neo4j memory | Neo4j defaults to ~3 GB (heap max `2g` + pagecache `1g`). Lower `NEO4J_HEAP_INITIAL_SIZE`, `NEO4J_HEAP_MAX_SIZE`, `NEO4J_PAGECACHE_SIZE` in `.env` |
+| Neo4j stays unhealthy for minutes on first boot | Downloading the ~200 MB GDS plugin. Needs outbound network once; `start_period` allows ~90s. See `docker/README-docker.md` §3 |
+| Browser CORS error / empty panels after changing `FRONTEND_PORT` | The browser's `Origin` is not in the backend allow-list. Set `CORS_ORIGINS` to match the port you actually serve the dashboard on — e.g. `CORS_ORIGINS=http://localhost:3100` for `FRONTEND_PORT=3100` — then `docker compose up -d fastapi` to recreate the API with it in its environment |
+| `401` from every API call | Token mismatch — `API_DEV_TOKEN` was changed but the frontend image was not rebuilt (`NEXT_PUBLIC_*` is inlined at `next build`). `docker compose build` then `up -d` |
 | Celery worker crashes on Windows (bare-metal) | Always use `--pool=solo` flag |
-| `Connection refused` on port 8000 | FastAPI container not healthy yet — wait 30s then retry |
-| `404` on `/entity/{address}/explain` | XAI store files missing from `data/xai/` — verify all 5 `.json` files exist |
-| Entity count doesn't move after ingesting | Expected — the XAI store is in-memory. `docker compose restart fastapi`, wait 15s, reload |
+| `Connection refused` on port 8000 | `fastapi` waits on the `migrate` job, Neo4j's GDS download and ~50 MB of XAI parsing. Give it up to ~90s, then `docker compose logs fastapi` |
+| `404` on `/api/v1/entity/{address}/explain` | Address not in the XAI index **and** no transaction rows in Postgres for it. Check `data/xai/` artifacts exist (all 5 `.json` files) |
+| Entity count doesn't move after ingesting | The XAI store is in-memory. UI path auto-reloads; on the curl path call `POST /ingest/enrichment/{ingest_task_id}/reload`, or `docker compose restart fastapi`, wait 15s, reload |
 | `409 Duplicate upload detected` | 24h SHA-256 dedup. Clear with the redis one-liner in Step 3, warning 2 |
-| New wallets ingested but 0 CRITICAL / 0 HIGH | Enrichment hasn't finished (takes 6-7 min) or `fastapi` wasn't restarted. Check `docker compose logs celery-worker` for `publish: wrote` |
+| New wallets ingested but 0 CRITICAL / 0 HIGH | Enrichment hasn't finished (takes 6-7 min) or the XAI store wasn't hot-reloaded. Check `docker compose logs celery-worker` for `publish: wrote` |
+| `docker exec sih26146-fastapi python scripts/...` fails | Expected — `backend/scripts/` is not copied into the image. Use the API ingest path for Docker, or run the scripts bare-metal (METHOD B) |
 | SHAP waterfall is flat / all zero | **Known limitation for ingested wallets**, not a setup error. Use a pre-loaded seeded address for the SHAP shot |
 | Cluster graph shows scattered isolated dots | Cluster rendering picks the 150 highest-degree + highest-severity wallets. Healthy clusters show mean degree ~5-6 |
-| Neo4j GDS plugin not found | Use exactly `neo4j:5.26-community` image tag; GDS is auto-downloaded via `NEO4J_PLUGINS` env var |
+| Neo4j GDS plugin not found | Use exactly `neo4j:5.26-community`; GDS is downloaded via `NEO4J_PLUGINS='["graph-data-science"]'` and is required by the enrich pipeline |
 | `torch` install times out | Use CPU wheel: `pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu` |
 
 ---
@@ -329,7 +449,9 @@ the last round of fixes and the older numbers are wrong:
 
 | File | Purpose |
 | :--- | :--- |
-| [`docker-compose.yml`](docker-compose.yml) | Full stack orchestration |
+| [`docker-compose.yml`](docker-compose.yml) | Full stack orchestration (7 services) |
+| [`docker/README-docker.md`](docker/README-docker.md) | Docker troubleshooting appendix — ports, GDS, migrations, rebuilds |
+| [`.env.example`](.env.example) | Optional env template (every value has a working default) |
 | [`docs/FLOW.md`](docs/FLOW.md) | Phase-by-phase build log (all verified) |
 | [`docs/dev-server.md`](docs/dev-server.md) | Detailed bare-metal server guide |
 | [`docs/WORK-3.md`](docs/WORK-3.md) | Latest change log + task completion tracker |

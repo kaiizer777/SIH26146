@@ -1,12 +1,27 @@
-venv
-__pycache__
+# Local virtualenv — the image installs its own dependencies.
+venv/
+.venv/
+
+# Byte-compiled / test caches — never belong in an image layer.
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
-htmlcov
-.git
+htmlcov/
+
+# VCS metadata.
+.git/
+
+# Secrets: the container gets every setting from docker-compose environment.
 .env
+.env.*
+
+# Local artefacts. /app/data is bind-mounted from the repo root at runtime, so
+# backend/data is never needed inside the image.
 data/
 *.mmdb
+*.pth

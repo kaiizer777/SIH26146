@@ -1,4 +1,12 @@
 {
+  "name": "sih26146",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tooling root for SIH26146: offline, air-gapped Bitcoin transaction monitoring and anti-money-laundering detection using Neo4j graph analytics and PyTorch/PyG machine learning, built for NTRO (Smart India Hackathon 2026).",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "pptxgenjs": "^4.0.1"
   }

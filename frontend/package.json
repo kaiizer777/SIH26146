@@ -1,7 +1,9 @@
 {
-  "name": "frontend",
+  "name": "sih26146-frontend",
   "version": "0.1.0",
   "private": true,
+  "description": "Tactical forensic command center for SIH26146: Next.js 16 dashboard rendering Bitcoin AML alert rankings, Neo4j graph subgraphs and SHAP explainability waterfalls.",
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -21,23 +21,25 @@ Bulk CSV/JSON/XML ──> FastAPI (/ingest) ──> Celery Queue (Redis)
                                                                 │
         ┌───────────────────────────────────────────────────────┴───────────────────────────────────────┐
         ▼                                                       ▼                                       ▼
- [ F1: Entity Clustering ]                           [ F2: Anomaly Detection ]              [ F3: Laundering Detection ]
- Louvain Community Detection                          PyTorch Autoencoder (18-feat)           Deterministic Cypher Rules
- Common-Input-Ownership (CIOH)                       Reconstruction Loss MSE                 Peeling Chains (≥5 hops, ≤5% peel)
- Top-20 Cluster Partitioning                         95th Percentile Dynamic Threshold       CoinJoin Mixers (equal outputs)
-        │                                                       │                                       │
-        └───────────────────────────────┬───────────────────────┴───────────────────────────────────────┘
-                                        ▼
+[ F1: Entity Clustering ]                           [ F2: Anomaly Detection ]              [ F3: Laundering Detection ]
+  Louvain Community Detection                          FT-Transformer (18-feat, active)        Deterministic Cypher Rules
+  Common-Input-Ownership (CIOH)                       Permutation-Explainer SHAP               Peeling Chains (≥5 hops, ≤5% peel)
+  Top-20 Cluster Partitioning                         Autoencoder fallback                     CoinJoin Mixers (equal outputs)
+                                                   (USE_LEGACY_ANOMALY_MODEL=true)
+         │                                                       │                                       │
+         └───────────────────────────────┬───────────────────────┴───────────────────────────────────────┘
+                                         ▼
                             [ F4: GNN Risk Scoring ]
-                       PyG GraphSAGE (SAGEConv, 3-Layer)
-                      Seeded from Ransomwhere Threat Intel
-                                        │
-                                        ▼
-                           [ Dual-Layer Explainability ]
-            • XAI-A: SHAP GradientExplainer (18-feature attribution waterfall)
-            • XAI-B: PyG GNNExplainer (subgraph masks & relational edge importance)
-            • XAI-C: Structured Forensic Evidence Trail JSON (15,873 dossiers)
-            • XAI-D: Composite Risk Calibration (CRITICAL, HIGH, MEDIUM, LOW)
+                   Relational Graph Transformer (active) · PyG TransformerConv
+                   GraphSAGE fallback (USE_LEGACY_RISK_MODEL=true)
+                       Seeded from Ransomwhere Threat Intel
+                                         │
+                                         ▼
+                            [ Dual-Layer Explainability ]
+             • XAI-A: shap.PermutationExplainer (18-feature attribution waterfall)
+             • XAI-B: PyG GNNExplainer (subgraph masks & relational edge importance)
+             • XAI-C: Structured Forensic Evidence Trail JSON (15,873 dossiers)
+             • XAI-D: Composite Risk Calibration (CRITICAL, HIGH, MEDIUM, LOW)
                                         │
                                         ▼
                 [ Tactical Forensic Command Center (Next.js 16) ]
@@ -73,7 +75,7 @@ Pinned and verified in Phase 0 audit and active builds:
 
 | Component Pairing | Pinned Version | Status / Notes |
 |---|---|---|
-| **PyTorch (CPU)** | `torch==2.4.1+cpu` | Verified against Python 3.11 Windows AMD64 |
+| **PyTorch (CPU)** | `torch==2.4.1` | Verified against Python 3.11 Windows AMD64; CPU wheel resolved via the `--index-url` in §6.7 |
 | **PyTorch Geometric** | `torch-geometric==2.6.1` | Compatible with PyTorch 2.4.x (replaces broken 2.8.0.post1 reference) |
 | **Neo4j Engine** | `neo4j:5.26-community` | Compatible LTS release |
 | **Neo4j GDS** | `gds:2.13.x` | Managed via official `NEO4J_PLUGINS='["graph-data-science"]'` |
@@ -85,7 +87,7 @@ Pinned and verified in Phase 0 audit and active builds:
 
 ## 4. Empirical Performance & Benchmark Results
 
-All figures represent verified measurements on the development machine (documented in `WORK-1.md` and `WORK-2.md`):
+All figures represent verified measurements on the development machine (documented in [`docs/WORK-1.md`](docs/WORK-1.md), [`WORK-2.md`](WORK-2.md) and [`docs/WORK-3.md`](docs/WORK-3.md)):
 
 | Pipeline Stage | Metric / Benchmark | Measured Value | Operational Status |
 |---|---|---|---|
@@ -108,11 +110,11 @@ All figures represent verified measurements on the development machine (document
 
 ## 5. UI/UX Tactical Command Center
 
-Built strictly according to the **High-Stakes Light-Theme Design System** (`WORK-2.md`):
+Built strictly according to the **High-Stakes Light-Theme Design System** ([`WORK-2.md`](WORK-2.md)):
 - **Monochrome-First Aesthetic:** Clean `#f8fafc` canvas, `#ffffff` panels, `#e2e8f0` structural borders, and high-contrast `#0f172a` typography. Zero dark-mode gaming clichés or blurry neon blobs.
-- **Master Alert Grid:** High-density 38px rows, monospace hash truncation with 1-click clipboard copy, and four severity tiers (`CRITICAL ≥ 0.80`, `HIGH ≥ 0.60`, `MEDIUM ≥ 0.40`, `LOW < 0.40`).
-- **Interactive D3 Force Graph:** Canvas rendering up to 250 bounded nodes, color-coded by composite risk, with visual illumination of GNNExplainer explanatory subgraphs.
-- **Forensic Dossier Drawer:** Slide-in inspection panel featuring the **SHAP Waterfall chart** (horizontal diverging bars), deterministic plain-English narrative (no LLM hallucinations), and 1-click JSON/PDF dossier export for NTRO intelligence briefings.
+- **Master Alert Grid:** High-density rows (Tailwind `py-2.5` cells), monospace hash truncation with 1-click clipboard copy, and four severity tiers (`CRITICAL ≥ 0.65`, `HIGH ≥ 0.60`, `MEDIUM ≥ 0.40`, `LOW < 0.40`) — the single canonical ladder in `backend/app/services/risk_thresholds.py`.
+- **Interactive D3 Force Graph:** Canvas rendering 150 bounded nodes per request (API hard ceiling 250 via `?max_nodes=`), color-coded by composite risk, with visual illumination of GNNExplainer explanatory subgraphs.
+- **Forensic Dossier Drawer:** Slide-in inspection panel featuring the **SHAP Waterfall chart** (horizontal diverging bars), deterministic plain-English narrative (no LLM hallucinations), 1-click JSON dossier export and a Section 65B certificate rendered to a printable window for PDF export.
 - **Air-Gapped Operation:** All font bundles (`Inter`, `JetBrains Mono`) and icon assets are packaged locally with zero external CDN egress.
 
 ---
@@ -120,24 +122,154 @@ Built strictly according to the **High-Stakes Light-Theme Design System** (`WORK
 ## 6. Quick Start & Verification
 
 ### 6.1 Prerequisites
-- Python 3.11+
-- Docker Engine & Docker Compose
-- Node.js LTS (v20+ or v24+)
+- **Docker Desktop** 4.x+ (running) with Compose v2 — the primary, judge-facing path.
+- ~8 GB free RAM (Neo4j alone defaults to a 3 GB heap + pagecache budget) and ~15 GB free disk.
+- Outbound network access **once**, for base images and the Neo4j GDS plugin.
+- Bare-metal route only (optional): Python 3.11+, Node.js 20+.
 
-### 6.2 Docker Stack Setup
-Validate configuration and start infrastructure:
+> **Seeding runbook: [`setup.md`](setup.md).**
+> **Docker troubleshooting appendix: [`docker/README-docker.md`](docker/README-docker.md).**
+> **Bare-metal (no Docker) runbook: [`docs/dev-server.md`](docs/dev-server.md).**
+
+### 6.2 Quick start for judges
+
 ```bash
-# Verify compose syntax and service topology
-docker compose config
-
-# Start all core services (PostgreSQL, Neo4j + GDS, Redis)
-docker compose up -d postgres neo4j redis
-
-# Or start the entire end-to-end stack including FastAPI, Celery, and Next.js:
+git clone https://github.com/kaiizer777/SIH26146.git
+cd SIH26146
+docker compose up -d
+```
+```powershell
+git clone https://github.com/kaiizer777/SIH26146.git
+Set-Location SIH26146
 docker compose up -d
 ```
 
-### 6.3 Local Backend Setup
+**There is no `.env` step.** Every value the stack needs has a working default compiled into `docker-compose.yml`, so a clean clone boots with no configuration at all.
+
+The first `up -d` takes a few minutes: the backend and frontend images build (torch alone is ~700 MB of wheels), then Neo4j downloads the ~200 MB Graph Data Science plugin into its volume.
+
+| Surface | URL |
+| :--- | :--- |
+| **Tactical dashboard** | http://localhost:3000 |
+| **API docs (Swagger UI)** | http://localhost:8000/docs |
+| **Liveness probe** | http://localhost:8000/health → `{"status":"ok"}` |
+| **Neo4j Browser** | http://localhost:7474 — user `neo4j`, password `password123` |
+
+Confirm every service came up:
+```bash
+docker compose ps
+```
+
+| Service | Expected | Published host port |
+| :--- | :--- | :--- |
+| `postgres` | `Up (healthy)` | `5433 -> 5432` |
+| `neo4j` | `Up (healthy)` | `7474`, `7687` |
+| `redis` | `Up (healthy)` | `6380 -> 6379` |
+| `migrate` | **`Exited (0)`** | — |
+| `fastapi` | `Up (healthy)` | `8000 -> 8000` |
+| `celery-worker` | `Up (healthy)` | — |
+| `next-frontend` | `Up (healthy)` | `3000 -> 3000` |
+
+> **`migrate` at `Exited (0)` is success, not failure.** It is a one-shot job that runs `alembic upgrade head` and exits; `fastapi` and `celery-worker` are gated behind it via `service_completed_successfully`. **There is no manual migration step.** `Exited (1)` is the only bad state there — read `docker compose logs migrate`.
+
+Prove the API is serving real data rather than just that the port is open (`/health` is a static payload and touches no database):
+```bash
+curl -H "Authorization: Bearer dev-token-ntro-2026" \
+  "http://localhost:8000/api/v1/alerts?limit=1"
+```
+```powershell
+curl.exe -H "Authorization: Bearer dev-token-ntro-2026" `
+  "http://localhost:8000/api/v1/alerts?limit=1"
+```
+
+> The dashboard renders immediately from the committed XAI artefacts in `data/xai/`, but **PostgreSQL and Neo4j start empty**. Populate them via the seed pipeline in [`setup.md`](setup.md) to exercise ingest, clustering and the graph views.
+
+Tear down:
+```bash
+docker compose down          # stop, keep volumes (data persists)
+docker compose down -v       # stop and destroy all data
+```
+
+### 6.3 Published ports
+
+Every published host port is a variable, deliberately kept **separate from the container ports** the services talk to each other on — changing one can never break the internal wiring.
+
+| Variable (set in `.env`) | Default | Maps to container port | Purpose |
+| :--- | :--- | :--- | :--- |
+| `POSTGRES_HOST_PORT` | `5433` | `5432` | Postgres — for `psql` / DBeaver |
+| `REDIS_HOST_PORT` | `6380` | `6379` | Redis |
+| `NEO4J_HTTP_PORT` | `7474` | `7474` | Neo4j Browser |
+| `NEO4J_BOLT_PORT` | `7687` | `7687` | Neo4j Bolt |
+| `BACKEND_PORT` | `8000` | `8000` | FastAPI |
+| `FRONTEND_PORT` | `3000` | `3000` | Next.js dashboard |
+
+> Postgres and Redis are deliberately **not** on `5432`/`6379` so a locally installed server cannot collide with the stack. From the host, connect to **5433** and **6380**. Override in `.env` or inline: `FRONTEND_PORT=3100 BACKEND_PORT=8100 docker compose up -d`.
+>
+> Changing `FRONTEND_PORT` also needs a matching `CORS_ORIGINS` entry, or the browser will refuse the dashboard's API calls — see §6.6.
+>
+> Note the naming is not uniform: only Postgres and Redis carry the `_HOST_PORT` suffix. `POSTGRES_PORT` still exists in `.env.example` but is **host-side bookkeeping only** — it does not drive the port mapping. `REDIS_PORT` is gone entirely; use `REDIS_URL`.
+
+### 6.4 API authentication
+
+Every endpoint except `/health`, `/docs`, `/redoc` and `/openapi.json` requires `Authorization: Bearer <API_DEV_TOKEN>` — without it you get `401`, not `404`. The default is `dev-token-ntro-2026` (`backend/app/config.py`).
+
+`API_DEV_TOKEN` is the **single source of truth for both sides**: `docker-compose.yml` hands it to the API *and* derives the frontend's `NEXT_PUBLIC_API_TOKEN` build argument from it, so the browser and the API cannot disagree. To change it, set `API_DEV_TOKEN` in `.env` once, then rebuild — `NEXT_PUBLIC_*` is inlined into the client bundle by `next build`, so a restart alone is not enough:
+```bash
+docker compose build
+docker compose up -d
+```
+
+> `NEO4J_AUTH` is likewise **derived** — `docker-compose.yml` builds it from `NEO4J_USER` + `NEO4J_PASSWORD`. Set those two; never set `NEO4J_AUTH` directly, or the server and the backend desynchronise and auth fails.
+
+### 6.5 Environment File (optional)
+
+`.env` is **not required** — the stack boots with no `.env` present. Copy the template only when you want to change something:
+```bash
+cp .env.example .env     # Windows PowerShell: Copy-Item .env.example .env
+```
+
+`.env` is gitignored — never commit real credentials (e.g. `MAXMIND_LICENSE_KEY`). What is worth changing: the `*_HOST_PORT` ports, the Postgres/Neo4j passwords, `API_DEV_TOKEN`, `MAXMIND_*`, and the `USE_LEGACY_ANOMALY_MODEL` / `USE_LEGACY_RISK_MODEL` architecture toggles (these change the risk scores the dashboard shows).
+
+> `SECRET_KEY`, `ENVIRONMENT` and `GROQ_API_KEY` sit **commented out** at the bottom of `.env.example` precisely because no code reads them. Uncommenting them changes nothing. `CORS_ORIGINS` used to be in that group; it is read now — see §6.6.
+
+### 6.6 Known limitations
+
+Documented rather than hidden:
+
+- **First boot needs the network once.** The Neo4j `graph-data-science` plugin (~200 MB) is fetched by `NEO4J_PLUGINS` into the `neo4j_plugins` volume, and GDS is mandatory — `app/tasks/enrich.py` calls `gds.graph.project.cypher`, `gds.ml.louvain.stream` and `gds.graph.drop`. Without it Neo4j either never reports healthy, or the enrich pipeline fails with `There is no procedure with the name gds.*`. Cached in the volume after the first success.
+- **Neo4j defaults to ~3 GB of RAM** (`NEO4J_HEAP_MAX_SIZE=2g` + `NEO4J_PAGECACHE_SIZE=1g`, initial heap `512m`). On a low-RAM machine Neo4j will refuse to start — lower `NEO4J_HEAP_INITIAL_SIZE`, `NEO4J_HEAP_MAX_SIZE` and `NEO4J_PAGECACHE_SIZE` in `.env`.
+- **No login and no user store.** `API_DEV_TOKEN` is a static offline-demo bearer token whose default is committed. It is not a credential system — do not expose this stack beyond localhost as-is.
+- **`backend/scripts/` is not in the Docker image** (the Dockerfile copies only `app/`, `alembic/`, `alembic.ini`). The Docker seed path is the HTTP ingest API, which auto-chains enrichment; the standalone scripts are bare-metal only.
+- **`frontend/package-lock.json` must be regenerated on Linux.** The Docker build uses `npm ci`, so the lock has to stay a superset that every platform accepts. npm 11 on Windows drops the bundled optional deps of `cpu: ["wasm32"]` packages (e.g. `@tailwindcss/oxide-wasm32-wasi`), which removes `@emnapi/core` / `@emnapi/runtime` from the lock and breaks the build. The image is a 3-stage `node:22-alpine` build (`deps` → `builder` → `runner`) that installs with `npm ci` and ships a production-only tree (`npm prune --omit=dev`). Rationale in [`docker/README-docker.md`](docker/README-docker.md).
+
+#### Browser origins (CORS)
+
+The backend builds its `CORSMiddleware` allow-list from `CORS_ORIGINS`, a **comma-separated list of origins**. Whitespace around each entry is trimmed and empty entries are dropped. When the variable is unset or empty the backend falls back to `http://localhost:3000` and `http://127.0.0.1:3000` — so a clean clone needs no CORS configuration at all.
+
+Dashboard on a non-default port (`FRONTEND_PORT=3100`), in `.env`:
+
+```.env
+CORS_ORIGINS=http://localhost:3100
+```
+
+Several origins at once:
+
+```.env
+CORS_ORIGINS=http://localhost:3100,http://127.0.0.1:3100,https://ops.internal.example
+```
+
+Two things this does **not** do:
+
+- **`FRONTEND_PORT` alone is not enough.** It only republishes the container port; it does not change what the browser puts in the `Origin` header, and the allow-list is a fixed set of strings, not a pattern. If you move the dashboard off port 3000 you must set `CORS_ORIGINS` to match. The variable has to be present in the API container's environment, so recreate that service (`docker compose up -d fastapi`) — editing `.env` alone changes nothing until it does.
+- **LAN / remote access is not inferable.** A browser on a second machine sends `Origin: http://<lan-ip>:3000` — the backend cannot guess your LAN address, so that origin is rejected unless you list it explicitly:
+
+  ```.env
+  CORS_ORIGINS=http://localhost:3000,http://192.168.1.50:3000
+  ```
+
+  `curl` is unaffected by all of this — it is a browser-only restriction. Keep `allow_origins` narrow: it is an explicit list by design, and there is no wildcard mode.
+
+### 6.7 Local Backend Setup (bare-metal only)
 ```bash
 cd backend
 
@@ -146,14 +278,18 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1   # Windows PowerShell
 # source venv/bin/activate     # Linux / macOS
 
-# Install pinned dependencies
-pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+# Install pinned dependencies (torch must resolve from the CPU wheel index first)
+pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
 
-# Run test suite
+# Apply DB migrations — required here; in Docker the `migrate` service does this
+alembic upgrade head
+
+# Run test suite (works from the repo root too: pytest backend/tests)
 pytest tests -v
 ```
 
-### 6.4 Local Frontend Setup
+### 6.8 Local Frontend Setup
 ```bash
 cd frontend
 

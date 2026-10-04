@@ -13,7 +13,8 @@ Middleware (execution order, outermost first):
      in application log output before they hit stdout/stderr.
   2. BearerAuthMiddleware — validates static bearer token; skips
      /health, /docs, /redoc, /openapi.json.
-  3. CORSMiddleware — restricted to localhost:3000.
+  3. CORSMiddleware — allow-list from CORS_ORIGINS (comma-separated), falling
+     back to localhost:3000 / 127.0.0.1:3000 when it is unset or empty.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
+import secrets
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -97,7 +99,13 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Missing or malformed Authorization header"},
             )
         token = auth_header[len("Bearer "):]
-        if token != settings.api_dev_token:
+        expected_token = settings.api_dev_token or ""
+        # Constant-time comparison on the utf-8 bytes: compare_digest() rejects
+        # non-ASCII str, and a malformed token must 401 rather than raise.
+        # An unset/empty configured token can never be matched by an empty one.
+        if not expected_token or not secrets.compare_digest(
+            expected_token.encode("utf-8"), token.encode("utf-8")
+        ):
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid bearer token"},
@@ -147,13 +155,33 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
+# CORS allow-list
+# ---------------------------------------------------------------------------
+
+# Fallback when CORS_ORIGINS is unset/empty: the documented dev/docker default
+# (FRONTEND_PORT=3000). An empty allow-list would break every browser call, so
+# the fallback is never dropped.
+_DEFAULT_CORS_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
+
+
+def _cors_origins() -> list[str]:
+    """Parse CORS_ORIGINS (comma-separated) into a CORSMiddleware allow-list.
+
+    Whitespace around each entry is trimmed and empty entries are dropped.
+    """
+    configured = (origin.strip() for origin in settings.cors_origins.split(","))
+    origins = [origin for origin in configured if origin]
+    return origins or list(_DEFAULT_CORS_ORIGINS)
+
+
+# ---------------------------------------------------------------------------
 # Middleware (registration order: last-added = outermost)
 # ---------------------------------------------------------------------------
 
 # 1. CORS — innermost (applied first on request, last on response)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=_cors_origins(),
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],

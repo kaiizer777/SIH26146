@@ -54,7 +54,14 @@ joblib>=1.4.0
 matplotlib>=3.9.0
 
 # Phase 8: Explainability Layer (XAI-A/B/C/D)
-# GradientExplainer is used instead of DeepExplainer: safer on torch 2.4.1
-# (DeepExplainer has known instability with in-place ops and modern PyTorch autograd)
+# DeepExplainer is never used: it has known instability with in-place ops on
+# torch 2.4.1. Two explainers from this one package ARE used, and they are
+# chosen per call site:
+#   * shap.PermutationExplainer (exact Shapley, Monte-Carlo permutation) —
+#     the live service: app/services/shap_service.py, because it is
+#     model-agnostic and additivity-guaranteed.
+#   * shap.GradientExplainer — the offline Phase 8 batch exporter
+#     backend/scripts/explain_autoencoder.py, which needs a differentiable
+#     torch model and exports per-feature attention matrices.
 # Installs 0.51.0 on Python 3.11.15 — verified via dry-run 2026-09-08
 shap>=0.46.0
