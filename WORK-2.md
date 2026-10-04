@@ -877,7 +877,7 @@ All containers were stopped afterwards with `docker compose down`; volumes
 
 ---
 
-## 17. Duplicate-doc pruning — one source of truth per document (2026-10-04)
+## 18. Duplicate-doc pruning — one source of truth per document (2026-10-04)
 
 Third wave of the 2026-10-04 hardening, following up §15.8, which audited the duplicate
 doc pairs but deliberately deleted nothing. This entry records the deletions that §15.8
@@ -888,7 +888,7 @@ Docs only — no application code, `docker-compose.yml`, `.env.example`, Dockerf
 **Verification provenance:** **[run]** executed, **[file]** read from source. Nothing was
 committed or pushed.
 
-### 17.1 `docs/FLOW.md` deleted — root `flow.md` survives
+### 18.1 `docs/FLOW.md` deleted — root `flow.md` survives
 
 `git diff --no-index flow.md docs/FLOW.md` returned 3 insertions / 5 deletions: the two
 files agreed from the title through the start of Phase 10.5, then `docs/FLOW.md` dropped
@@ -898,7 +898,7 @@ a stale trailing paragraph admitting it was a truncated copy. Root `flow.md` is 
 superset and is the file `AGENTS.md` names as authoritative, so `docs/FLOW.md` was
 removed. **[run]** — `git diff --no-index`, `Get-Content | Measure-Object -Line`.
 
-### 17.2 `docs/WORK-2.md` deleted — root `WORK-2.md` survives
+### 18.2 `docs/WORK-2.md` deleted — root `WORK-2.md` survives
 
 The two files were **not** byte-identical as §15.8 claimed, but they differed by exactly
 one line: the `**Context:**` header. Root `WORK-2.md` links `docs/WORK-1.md` and
@@ -908,7 +908,7 @@ loses zero content and removes two already-broken links. **[run]** —
 `git diff --no-index` reports `1 file changed, 1 insertion(+), 1 deletion(-)`; SHA-256
 `752F1899…` (root) vs `00611CE0…` (`docs/`).
 
-### 17.3 `docs/docs.md` deleted — it was a `/rag` blueprint, not a doc index
+### 18.3 `docs/docs.md` deleted — it was a `/rag` blueprint, not a doc index
 
 Despite the name, `docs/docs.md` was not an index of the documentation set. It was the
 "Master Execution Blueprint" for building a separate Next.js knowledge-base and RAG app
@@ -924,7 +924,7 @@ as a spec for dead code. The record of what was built stays in this log and in g
 at `d434f04^:docs/docs.md`. **[file]** — `Test-Path rag` is `False`;
 `git show --stat d434f04`.
 
-### 17.4 The two `PERFORMANCE_LOG.md` files were left in place
+### 18.4 The two `PERFORMANCE_LOG.md` files were left in place
 
 Re-verified as complementary, not duplicate. Root `PERFORMANCE_LOG.md` holds three newer
 runs dated 2026-09-23 — Phase 2 ingest 9.48 s / 10,544 rows·s⁻¹, Phase 3 graph build
@@ -939,7 +939,7 @@ orphaned — five scripts append to it on every run (`backend/scripts/bench_inge
 `train_autoencoder.py:66`). **[file]** — both logs read in full; `rg` for the append
 targets.
 
-### 17.5 Links repointed
+### 18.5 Links repointed
 
 | File:line | Old target | New target |
 | :--- | :--- | :--- |
