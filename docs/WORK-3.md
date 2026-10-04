@@ -5,7 +5,7 @@
 1. **Duplicate File Upload Hardening** (Defensive demo safety)
 2. **Phase 11 — Live Post-Ingest Online Inference `[STRETCH]`** (Provisional live scoring)
 
-Historical phases: Phases 0–8 in [`WORK-1.md`](file:///c:/Users/bari2/Desktop/SIH26146/WORK-1.md); Phase 9 & 9.5 in [`WORK-2.md`](file:///c:/Users/bari2/Desktop/SIH26146/WORK-2.md).
+Historical phases: Phases 0–8 in [`WORK-1.md`](WORK-1.md); Phase 9 & 9.5 in [`../WORK-2.md`](../WORK-2.md).
 
 ---
 
@@ -71,7 +71,7 @@ Follow this sequential order to avoid context switching or editing the same file
 
 ### DUP-1 — Backend: 409 on Duplicate File Hash
 
-**File:** [`backend/app/routers/ingest.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/routers/ingest.py)
+**File:** [`backend/app/routers/ingest.py`](../backend/app/routers/ingest.py)
 
 **Where to add:** In `post_ingest()`, after streaming the file to disk, before calling `process_ingest_file.delay(...)`.
 
@@ -97,7 +97,7 @@ Follow this sequential order to avoid context switching or editing the same file
 
 ### DUP-2 — Frontend: Clear Error Messaging for Duplicate Cases
 
-**File:** [`frontend/src/components/IngestModal.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/IngestModal.tsx)
+**File:** [`frontend/src/components/IngestModal.tsx`](../frontend/src/components/IngestModal.tsx)
 
 - **Case A — HTTP 409 from `POST /ingest`:**  
   Catch the 409 status code during upload:
@@ -136,7 +136,7 @@ The XAI store (`xai_store.py`) is loaded once at FastAPI startup. **Celery is a 
 
 ### 11.1 — `xai_store.py` Mutation API
 
-**File:** [`backend/app/services/xai_store.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/services/xai_store.py)
+**File:** [`backend/app/services/xai_store.py`](../backend/app/services/xai_store.py)
 
 Add thread-safe upsert functions. Existing `load()`, `get_composite()`, `get_evidence()`, `get_shap()`, `get_subgraph()` remain unchanged.
 
@@ -165,7 +165,7 @@ def upsert_evidence(address: str, record: dict[str, Any]) -> None:
 **File:** `backend/app/services/inline_scorer.py` *(new file)*
 
 **Implementation details:**
-- Reuses existing `FEATURE_DIM`, `FEATURE_NAMES`, and `extract_features_batch` from [`backend/app/services/feature_extractor.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/services/feature_extractor.py).
+- Reuses existing `FEATURE_DIM`, `FEATURE_NAMES`, and `extract_features_batch` from [`backend/app/services/feature_extractor.py`](../backend/app/services/feature_extractor.py).
 - At import / init: load `data/models/autoencoder_20260907.pt`, `data/models/scaler_20260907.pkl`, and `data/models/threshold_20260907.json`.
 - At import / init: load `data/ransomwhere_seeds.json` into a set for O(1) seed lookup.
 - Public function: `score_batch(rows: list[dict[str, Any]]) -> list[dict[str, Any]]`
@@ -207,7 +207,7 @@ evidence_record = {
 
 ### 11.3 — `POST /ingest/sync/{task_id}` Endpoint
 
-**File:** [`backend/app/routers/ingest.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/routers/ingest.py)
+**File:** [`backend/app/routers/ingest.py`](../backend/app/routers/ingest.py)
 
 **Endpoint spec:**
 ```
@@ -234,7 +234,7 @@ SELECT * FROM transactions WHERE ingested_at > NOW() - INTERVAL '2 minutes'
 
 ### 11.4 — Frontend: Auto-Call Sync After Ingest Success
 
-**File:** [`frontend/src/components/IngestModal.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/IngestModal.tsx)
+**File:** [`frontend/src/components/IngestModal.tsx`](../frontend/src/components/IngestModal.tsx)
 
 After polling confirms `status === 'SUCCESS'`, before calling `onSuccess()`, fire `POST /ingest/sync/{taskId}`. Accept 200 or 409. Fallback silently on any other error — pre-indexed wallets must never break.
 
@@ -260,7 +260,7 @@ onSuccess(); // always refresh alert table
 
 ### 11.5 — UI: Provisional Dossier Banner in EntityDrawer
 
-**File:** [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx)
+**File:** [`frontend/src/components/EntityDrawer.tsx`](../frontend/src/components/EntityDrawer.tsx)
 
 When `response.provisional === true`:
 - Show yellow alert banner at top: `bg-amber-50 border border-amber-200 text-amber-900` — Text: `"Provisional Analysis — This entity was ingested in the current session. SHAP waterfall and GNN subgraph are available only for pre-indexed entities. Anomaly score and rule detections are live."`
@@ -292,7 +292,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 
 ### ML-1 — Tabular FT-Transformer (Feature Tokenizer Transformer)
 
-**Files:** [`backend/app/ml/ft_transformer.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/ml/ft_transformer.py) (new architecture) & [`backend/scripts/train_autoencoder.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/train_autoencoder.py) / [`backend/scripts/explain_autoencoder.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/explain_autoencoder.py)
+**Files:** [`backend/app/ml/ft_transformer.py`](../backend/app/ml/ft_transformer.py) (new architecture) & [`backend/scripts/train_autoencoder.py`](../backend/scripts/train_autoencoder.py) / [`backend/scripts/explain_autoencoder.py`](../backend/scripts/explain_autoencoder.py)
 
 **Mathematical Formulation:**
 - **Feature Tokenization:** Each of the 18 tabular features $x_i$ is projected into embedding space $e_i = x_i W_i + b_i \in \mathbb{R}^{32}$.
@@ -314,7 +314,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 
 ### ML-2 — Multi-Head Relational Graph Transformer (`TransformerConv`)
 
-**Files:** [`backend/app/ml/graph_transformer.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/ml/graph_transformer.py) (new architecture) & [`backend/scripts/train_graph_transformer.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/train_graph_transformer.py) / [`backend/scripts/explain_graphsage.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/scripts/explain_graphsage.py)
+**Files:** [`backend/app/ml/graph_transformer.py`](../backend/app/ml/graph_transformer.py) (new architecture) & [`backend/scripts/train_graph_transformer.py`](../backend/scripts/train_graph_transformer.py) / [`backend/scripts/explain_graphsage.py`](../backend/scripts/explain_graphsage.py)
 
 **Relational Graph Attention Formulation:**
 - Replaces static neighbor aggregation with Multi-Head Self-Attention over graph topology using `torch_geometric.nn.TransformerConv`:
@@ -341,7 +341,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 
 ### ML-4 — End-to-End Naming Synchronization & Provenance Guard
 
-**Files:** [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx), [`frontend/src/app/layout.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/app/layout.tsx), [`backend/app/services/inline_scorer.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/services/inline_scorer.py), [`backend/app/routers/entity.py`](file:///c:/Users/bari2/Desktop/SIH26146/backend/app/routers/entity.py)
+**Files:** [`frontend/src/components/EntityDrawer.tsx`](../frontend/src/components/EntityDrawer.tsx), [`frontend/src/app/layout.tsx`](../frontend/src/app/layout.tsx), [`backend/app/services/inline_scorer.py`](../backend/app/services/inline_scorer.py), [`backend/app/routers/entity.py`](../backend/app/routers/entity.py)
 
 - **UI Naming Parity:** Replace hardcoded `"Autoencoder Reconstruction"` title in `EntityDrawer.tsx` with dynamic/explicit `"FT-Transformer Tabular Anomaly"` (and MSE reconstruction metrics).
 - **Metadata Parity:** Update `layout.tsx` metadata and `EvidenceTrail` description strings to cite `"FT-Transformer anomaly detection and Relational Graph Transformer risk scoring"`.
@@ -365,7 +365,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 
 ### FLEX-1 — Interactive Feature-to-Feature Attention Matrix Heatmap
 
-**File:** [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx) & [`frontend/src/components/AttentionHeatmap.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/AttentionHeatmap.tsx)
+**File:** [`frontend/src/components/EntityDrawer.tsx`](../frontend/src/components/EntityDrawer.tsx) & [`frontend/src/components/AttentionHeatmap.tsx`](../frontend/src/components/AttentionHeatmap.tsx)
 
 - Add segmented toggle tab in EntityDrawer: `[ 📊 SHAP Waterfall | 🧠 Transformer Attention Matrix ]`.
 - Render an interactive $18 \times 18$ grid heatmap visualizing FT-Transformer cross-feature self-attention weights ($\alpha_{i,j}$).
@@ -380,7 +380,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 
 ### FLEX-2 — Multi-Head Relational Attention Edge Glow & HUD Inspector
 
-**File:** [`frontend/src/components/GraphCanvas.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/GraphCanvas.tsx)
+**File:** [`frontend/src/components/GraphCanvas.tsx`](../frontend/src/components/GraphCanvas.tsx)
 
 - Scale D3 edge stroke opacity and luminous cyan glow dynamically via `link.attention_score ?? (link.is_explanatory ? 0.85 : 0.45)`.
 - When an edge or node is pinned in GraphCanvas, the Inspector HUD displays a multi-head attention breakdown:
@@ -397,7 +397,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 
 ### FLEX-3 — Model Architecture Provenance & Live Telemetry Badge
 
-**File:** [`frontend/src/components/TopNav.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/TopNav.tsx) & [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx)
+**File:** [`frontend/src/components/TopNav.tsx`](../frontend/src/components/TopNav.tsx) & [`frontend/src/components/EntityDrawer.tsx`](../frontend/src/components/EntityDrawer.tsx)
 
 - Add tactile forensic badge in TopNav and EntityDrawer header:
   `⚡ Dual Transformer Engine (FT-Trans + RGT 4-Head) • 4.8ms CPU`
@@ -412,7 +412,7 @@ Check must be `response.provisional === true` strictly. All 17,020 pre-indexed w
 
 ### FLEX-4 — Court-Admissible Section 65B Forensic Dossier Export
 
-**File:** [`frontend/src/components/EntityDrawer.tsx`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/components/EntityDrawer.tsx) & [`frontend/src/lib/dossierExport.ts`](file:///c:/Users/bari2/Desktop/SIH26146/frontend/src/lib/dossierExport.ts)
+**File:** [`frontend/src/components/EntityDrawer.tsx`](../frontend/src/components/EntityDrawer.tsx) & [`frontend/src/lib/dossierExport.ts`](../frontend/src/lib/dossierExport.ts)
 
 - Add "Export Certified Legal Dossier" button in EntityDrawer.
 - Generates a court-admissible forensic certificate complying with **Section 65B Indian Evidence Act / BSA 2023**:

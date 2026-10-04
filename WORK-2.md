@@ -874,3 +874,89 @@ Neo4j deprecation WARNs, `docker compose logs neo4j | grep -i deprecat`:
 All containers were stopped afterwards with `docker compose down`; volumes
 (`sih26146_postgres_data`, `sih26146_neo4j_data`, `sih26146_neo4j_plugins`,
 `sih26146_redis_data`) were left intact. Nothing was staged or committed.
+
+---
+
+## 17. Duplicate-doc pruning — one source of truth per document (2026-10-04)
+
+Third wave of the 2026-10-04 hardening, following up §15.8, which audited the duplicate
+doc pairs but deliberately deleted nothing. This entry records the deletions that §15.8
+left open, the evidence behind each survivor, and the links that were repointed.
+Docs only — no application code, `docker-compose.yml`, `.env.example`, Dockerfile or
+`.gitignore` was touched.
+
+**Verification provenance:** **[run]** executed, **[file]** read from source. Nothing was
+committed or pushed.
+
+### 17.1 `docs/FLOW.md` deleted — root `flow.md` survives
+
+`git diff --no-index flow.md docs/FLOW.md` returned 3 insertions / 5 deletions: the two
+files agreed from the title through the start of Phase 10.5, then `docs/FLOW.md` dropped
+the last two Phase 10.5 bullets (the P3b ingested-wallet SHAP write-through engine and
+the Cluster Topology toggle fix), kept the older pre-P3b checkpoint sentence, and carried
+a stale trailing paragraph admitting it was a truncated copy. Root `flow.md` is the
+superset and is the file `AGENTS.md` names as authoritative, so `docs/FLOW.md` was
+removed. **[run]** — `git diff --no-index`, `Get-Content | Measure-Object -Line`.
+
+### 17.2 `docs/WORK-2.md` deleted — root `WORK-2.md` survives
+
+The two files were **not** byte-identical as §15.8 claimed, but they differed by exactly
+one line: the `**Context:**` header. Root `WORK-2.md` links `docs/WORK-1.md` and
+`docs/WORK-3.md` (correct from the repo root); the `docs/` copy linked `WORK-1.md` and
+`WORK-3.md`, which resolve to nothing inside `docs/`. Deleting the `docs/` copy therefore
+loses zero content and removes two already-broken links. **[run]** —
+`git diff --no-index` reports `1 file changed, 1 insertion(+), 1 deletion(-)`; SHA-256
+`752F1899…` (root) vs `00611CE0…` (`docs/`).
+
+### 17.3 `docs/docs.md` deleted — it was a `/rag` blueprint, not a doc index
+
+Despite the name, `docs/docs.md` was not an index of the documentation set. It was the
+"Master Execution Blueprint" for building a separate Next.js knowledge-base and RAG app
+inside `/rag`, and all 9 of its modules pointed at `/rag/src/app/docs/…` paths. `/rag` was
+deleted wholesale in commit `d434f04` (`rag/src/app/docs/ch1…ch8`,
+`rag/src/app/assistant/page.tsx`, `rag/src/app/api/ask/route.ts`,
+`rag/src/lib/ragEngine.ts`, `rag/src/data/project_knowledge.json`,
+`rag/src/components/FloatingAssistant.tsx` and the rest of that app). None of those files
+exist now, and nothing in the repo links to `docs/docs.md` as a live index — the only
+mentions are this log's historical notes on the absolute-`file:///` link fix. The
+blueprint described a component that no longer exists, so it was removed rather than left
+as a spec for dead code. The record of what was built stays in this log and in git history
+at `d434f04^:docs/docs.md`. **[file]** — `Test-Path rag` is `False`;
+`git show --stat d434f04`.
+
+### 17.4 The two `PERFORMANCE_LOG.md` files were left in place
+
+Re-verified as complementary, not duplicate. Root `PERFORMANCE_LOG.md` holds three newer
+runs dated 2026-09-23 — Phase 2 ingest 9.48 s / 10,544 rows·s⁻¹, Phase 3 graph build
+217.83 s, Phase 4 Louvain 9,794 communities @ modularity 0.461001.
+`docs/PERFORMANCE_LOG.md` holds the 2026-09-08 ingest unit-test verification, eight runs
+dated 2026-09-07 (3× ingest, 1× graph build, 4× Louvain), the Phase 5 autoencoder
+training run and the Phase 7 GraphSAGE run. No two entries describe the same run, so no
+measured value in one file contradicts the other; the differing figures for
+identically-named phases are different runs on different dates. The root file is also not
+orphaned — five scripts append to it on every run (`backend/scripts/bench_ingest.py:29`,
+`build_graph.py:370`, `cluster_wallets.py:58`, `train_graphsage.py:107`,
+`train_autoencoder.py:66`). **[file]** — both logs read in full; `rg` for the append
+targets.
+
+### 17.5 Links repointed
+
+| File:line | Old target | New target |
+| :--- | :--- | :--- |
+| `setup.md:455` | `docs/FLOW.md` | `flow.md` |
+| `docs/WORK-1.md:5` | `WORK-2.md` (from inside `docs/`, dead) | `../WORK-2.md` |
+| `docs/WORK-3.md:8` | `file:///c:/Users/bari2/Desktop/SIH26146/WORK-1.md` | `WORK-1.md` |
+| `docs/WORK-3.md:8` | `file:///c:/Users/bari2/Desktop/SIH26146/WORK-2.md` | `../WORK-2.md` |
+| `AGENTS.md:19` | `docs/WORK-*.md` (no longer covers the Phase 9+ log) | explicit per-phase log list |
+| `AGENTS.md:34` | `WORK-1.md` (dead at repo root) | `docs/WORK-1.md` |
+| `AGENTS.md:4` | `docs/WORK-1.md` / `WORK-2.md` | added `docs/WORK-3.md` |
+
+`flow.md` and `README.md` needed no change: `flow.md` links `WORK-2.md` and
+`docs/WORK-1.md`, and `README.md:90` links `docs/WORK-1.md`, `WORK-2.md` and
+`docs/WORK-3.md` — all still resolve. **`docs/WORK-1.md` and `docs/WORK-3.md` stay put**;
+they are the only copies of their content.
+
+The two numbers §15.7 flagged as unsettled are still open and were not touched here:
+`flow.md`'s Phase 3 `:CO_SPEND` count of 39,620 versus the 45,516 both logs record, and
+its 3.43 s Phase 4 Postgres sync versus `docs/PERFORMANCE_LOG.md:166`'s 4.33 s. Both need
+a live re-measure or an explicit decision, not a doc edit.

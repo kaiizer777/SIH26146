@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic (NTRO)  
 **Status:** **100% COMPLETE & VERIFIED**  
-**Context:** Archival record of foundational data, pipeline, and ML engine phases (Phases 0–8). For Phase 9/9.5 dashboard and topology fixes, see [`WORK-2.md`](WORK-2.md). For Phase 11 live inference and model upgrades, see [`WORK-3.md`](WORK-3.md).
+**Context:** Archival record of foundational data, pipeline, and ML engine phases (Phases 0–8). For Phase 9/9.5 dashboard and topology fixes, see [`../WORK-2.md`](../WORK-2.md). For Phase 11 live inference and model upgrades, see [`WORK-3.md`](WORK-3.md).
 
 ---
 
