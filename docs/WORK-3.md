@@ -5,7 +5,7 @@
 1. **Duplicate File Upload Hardening** (Defensive demo safety)
 2. **Phase 11 — Live Post-Ingest Online Inference `[STRETCH]`** (Provisional live scoring)
 
-Historical phases: Phases 0–8 in [`WORK-1.md`](WORK-1.md); Phase 9 & 9.5 in [`../WORK-2.md`](../WORK-2.md).
+Historical phases: Phases 0–8 in [`WORK-1.md`](WORK-1.md); Phase 9 & 9.5 in [`WORK-2.md`](WORK-2.md).
 
 ---
 

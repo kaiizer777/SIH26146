@@ -2,7 +2,7 @@
 
 **Project:** AI-Powered Monitoring & Analysis of Bitcoin Transaction Traffic (NTRO)  
 **Status:** **100% COMPLETE & VERIFIED**  
-**Context:** Record of Phase 9 forensic API, Next.js surveillance dashboard, Phase 9.5 integration fixes, and graph topology router hardening. For foundational Phases 0–8, see [`docs/WORK-1.md`](docs/WORK-1.md). For Phase 11 online inference and model upgrades, see [`docs/WORK-3.md`](docs/WORK-3.md).
+**Context:** Record of Phase 9 forensic API, Next.js surveillance dashboard, Phase 9.5 integration fixes, and graph topology router hardening. For foundational Phases 0–8, see [`WORK-1.md`](WORK-1.md). For Phase 11 online inference and model upgrades, see [`WORK-3.md`](WORK-3.md).
 
 ---
 
@@ -960,3 +960,69 @@ The two numbers §15.7 flagged as unsettled are still open and were not touched 
 `flow.md`'s Phase 3 `:CO_SPEND` count of 39,620 versus the 45,516 both logs record, and
 its 3.43 s Phase 4 Postgres sync versus `docs/PERFORMANCE_LOG.md:166`'s 4.33 s. Both need
 a live re-measure or an explicit decision, not a doc edit.
+
+## 19. `flow.md` and `WORK-2.md` relocated into `docs/` (2026-10-04)
+
+Docs-only housekeeping. Both files now sit beside `WORK-1.md` and `WORK-3.md` so the whole
+planning plus execution record lives in one directory. §18 pruned duplicate *copies* out of
+`docs/`; this entry consolidates the surviving originals into it, which is why the §18
+headings "root `flow.md` survives" and "root `WORK-2.md` survives" are now history rather
+than current state. No application code, `docker-compose.yml`, `.env`, `Dockerfile`,
+`package.json` or `.gitignore` was touched.
+
+**Verification provenance:** **[run]** executed, **[file]** read from source.
+
+### 19.1 The move
+
+| Old path | New path |
+| :--- | :--- |
+| `flow.md` | `docs/flow.md` |
+| `WORK-2.md` | `docs/WORK-2.md` |
+
+`git mv` on both, so git records a rename and history is preserved instead of the change
+reading as a delete plus an unrelated add. **[run]** — `git mv`; `Test-Path flow.md` and
+`Test-Path WORK-2.md` both return `False`, `Test-Path docs/flow.md` and
+`Test-Path docs/WORK-2.md` both return `True`.
+
+### 19.2 Links the move required
+
+Both moved files shifted one directory deeper, so links crossing the root/`docs/` boundary
+had to collapse by one level, and links pointing at them from outside had to grow a `docs/`
+prefix.
+
+| File:line | Old target | New target | Why |
+| :--- | :--- | :--- | :--- |
+| `docs/flow.md:3` | `docs/WORK-1.md` | `WORK-1.md` | both endpoints now in `docs/` |
+| `docs/flow.md:189` | `docs/WORK-1.md` | `WORK-1.md` | both endpoints now in `docs/` |
+| `docs/WORK-2.md:5` | `docs/WORK-1.md` | `WORK-1.md` | both endpoints now in `docs/` |
+| `docs/WORK-2.md:5` | `docs/WORK-3.md` | `WORK-3.md` | both endpoints now in `docs/` |
+| `docs/WORK-1.md:5` | `../WORK-2.md` | `WORK-2.md` | sibling in `docs/`, no longer the parent |
+| `docs/WORK-3.md:8` | `../WORK-2.md` | `WORK-2.md` | sibling in `docs/`, no longer the parent |
+| `setup.md:455` | `flow.md` | `docs/flow.md` | target moved into `docs/` |
+| `README.md:90` | `WORK-2.md` | `docs/WORK-2.md` | target moved into `docs/` |
+| `README.md:113` | `WORK-2.md` | `docs/WORK-2.md` | target moved into `docs/` |
+
+`docs/flow.md:189`'s pre-existing `WORK-2.md` link needed no edit — it already pointed at a
+future sibling and only became correct once the file moved. Neither moved file contains a
+`../backend/...` or `../frontend/...` link, so the extra directory level leaves no
+root-relative source or frontend path to rebase.
+
+### 19.3 Prose references corrected
+
+`AGENTS.md` names both files as authoritative and states paths inline, so its prose had to
+follow the move: lines 4, 19, 20, 21, 33 and 34 now read `docs/flow.md` and
+`docs/WORK-2.md`. Bare-filename mentions inside source comments —
+`backend/scripts/verify_phase6.py:266`, `frontend/src/app/layout.tsx:37` and
+`frontend/src/app/globals.css:6` — claim no location, so they were left untouched rather
+than widening this diff into application code.
+
+### 19.4 Verification
+
+Every markdown link target in every `.md` file in the repo was extracted and `Test-Path`-ed
+**relative to the directory of the file that contains it**, not relative to the repo root —
+a link that resolves from the root but not from `docs/` is exactly the bug this move can
+introduce. 20 `.md` files, 73 link targets, 56 local paths checked, **0 broken**, matching
+the pre-move baseline. Fenced-code markers in the moved files are unchanged at 2 for
+`docs/flow.md` and 18 for `docs/WORK-2.md`, both balanced, as expected given that only link
+targets were edited. `rg` for `flow.md` and `WORK-2.md` across the repo shows no remaining
+link to a root-level copy. **[run]** — link-resolution script, `rg`, fence count.

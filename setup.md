@@ -452,7 +452,7 @@ Deeper Docker-specific diagnostics live in
 | [`docker-compose.yml`](docker-compose.yml) | Full stack orchestration (7 services) |
 | [`docker/README-docker.md`](docker/README-docker.md) | Docker troubleshooting appendix — ports, GDS, migrations, rebuilds |
 | [`.env.example`](.env.example) | Optional env template (every value has a working default) |
-| [`flow.md`](flow.md) | Phase-by-phase build plan (all verified) |
+| [`flow.md`](docs/flow.md) | Phase-by-phase build plan (all verified) |
 | [`docs/dev-server.md`](docs/dev-server.md) | Detailed bare-metal server guide |
 | [`docs/WORK-3.md`](docs/WORK-3.md) | Latest change log + task completion tracker |
 | [`backend/app/main.py`](backend/app/main.py) | FastAPI entrypoint |

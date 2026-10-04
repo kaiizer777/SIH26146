@@ -1,6 +1,6 @@
 # SIH26146 — End-to-End Build Workflow
 
-Quick-reference map of the whole project, 0 → working prototype. Use this to orient yourself; each step's field spec, difficulty rating and acceptance target is captured inline below, with the execution record in [`docs/WORK-1.md`](docs/WORK-1.md).
+Quick-reference map of the whole project, 0 → working prototype. Use this to orient yourself; each step's field spec, difficulty rating and acceptance target is captured inline below, with the execution record in [`WORK-1.md`](WORK-1.md).
 
 ---
 
@@ -186,4 +186,4 @@ Four focus areas to hit: **F1 Entity Clustering · F2 Anomaly Detection · F3 Pe
 
 ---
 
-*Execution record: [`WORK-2.md`](WORK-2.md) (Phase 9+) and [`docs/WORK-1.md`](docs/WORK-1.md) (Phase 0–8). There is no master reference PDF committed to this repo — this document plus those two logs is the authoritative phase spec.*
+*Execution record: [`WORK-2.md`](WORK-2.md) (Phase 9+) and [`WORK-1.md`](WORK-1.md) (Phase 0–8). There is no master reference PDF committed to this repo — this document plus those two logs is the authoritative phase spec.*

@@ -87,7 +87,7 @@ Pinned and verified in Phase 0 audit and active builds:
 
 ## 4. Empirical Performance & Benchmark Results
 
-All figures represent verified measurements on the development machine (documented in [`docs/WORK-1.md`](docs/WORK-1.md), [`WORK-2.md`](WORK-2.md) and [`docs/WORK-3.md`](docs/WORK-3.md)):
+All figures represent verified measurements on the development machine (documented in [`docs/WORK-1.md`](docs/WORK-1.md), [`docs/WORK-2.md`](docs/WORK-2.md) and [`docs/WORK-3.md`](docs/WORK-3.md)):
 
 | Pipeline Stage | Metric / Benchmark | Measured Value | Operational Status |
 |---|---|---|---|
@@ -110,7 +110,7 @@ All figures represent verified measurements on the development machine (document
 
 ## 5. UI/UX Tactical Command Center
 
-Built strictly according to the **High-Stakes Light-Theme Design System** ([`WORK-2.md`](WORK-2.md)):
+Built strictly according to the **High-Stakes Light-Theme Design System** ([`docs/WORK-2.md`](docs/WORK-2.md)):
 - **Monochrome-First Aesthetic:** Clean `#f8fafc` canvas, `#ffffff` panels, `#e2e8f0` structural borders, and high-contrast `#0f172a` typography. Zero dark-mode gaming clichés or blurry neon blobs.
 - **Master Alert Grid:** High-density rows (Tailwind `py-2.5` cells), monospace hash truncation with 1-click clipboard copy, and four severity tiers (`CRITICAL ≥ 0.65`, `HIGH ≥ 0.60`, `MEDIUM ≥ 0.40`, `LOW < 0.40`) — the single canonical ladder in `backend/app/services/risk_thresholds.py`.
 - **Interactive D3 Force Graph:** Canvas rendering 150 bounded nodes per request (API hard ceiling 250 via `?max_nodes=`), color-coded by composite risk, with visual illumination of GNNExplainer explanatory subgraphs.

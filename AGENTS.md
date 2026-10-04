@@ -1,7 +1,7 @@
 # AGENTS.md — SIH26146
 
 ## What This Is
-AI-powered offline system to monitor Bitcoin transaction traffic and flag money-laundering activity for NTRO (SIH 2026). Ingests bulk CSV/JSON/XML transaction+network data, correlates network-layer (IP/ASN) with blockchain-layer (wallet/TXID) data, and applies ML to cluster entities, detect anomalies, catch peeling-chains/mixing, and score risk — with full explainability. Stack: FastAPI + Celery/Redis + PostgreSQL + Neo4j(GDS) + PyTorch/PyG + Next.js. No master reference PDF is committed to this repo; `flow.md` is the authoritative phase-by-phase plan and `docs/WORK-1.md` / `WORK-2.md` / `docs/WORK-3.md` are the execution record.
+AI-powered offline system to monitor Bitcoin transaction traffic and flag money-laundering activity for NTRO (SIH 2026). Ingests bulk CSV/JSON/XML transaction+network data, correlates network-layer (IP/ASN) with blockchain-layer (wallet/TXID) data, and applies ML to cluster entities, detect anomalies, catch peeling-chains/mixing, and score risk — with full explainability. Stack: FastAPI + Celery/Redis + PostgreSQL + Neo4j(GDS) + PyTorch/PyG + Next.js. No master reference PDF is committed to this repo; `docs/flow.md` is the authoritative phase-by-phase plan and `docs/WORK-1.md` / `docs/WORK-2.md` / `docs/WORK-3.md` are the execution record.
 
 
 ## Instructions for AI Agents Working on This Repo
@@ -16,9 +16,9 @@ Don't make branches when working on this repo as this repo is exception to the b
 
 1. **Plan before you touch code.** For any non-trivial task, write out your approach (what files change, what the interface/schema looks like, what could break) before writing implementation. Do not start coding mid-thought.
 2. **No shortcuts, no bad practices.** No hardcoded secrets/credentials — use env vars. No silent `except: pass`. No copy-pasted duplicate logic — extract shared code. No magic numbers without a named constant/comment. No skipping input validation on API boundaries (Pydantic models, not raw dicts).
-3. **Match the existing architecture.** Don't introduce a new library, pattern, or service without checking `flow.md` and the matching work log first (`docs/WORK-1.md` for Phases 0–8, `WORK-2.md` for Phase 9+, `docs/WORK-3.md` for Phase 11 / model upgrades). If you think the spec is wrong, flag it — don't silently deviate.
-4. **Version discipline.** Use only the corrected, pinned versions already agreed (see flow.md's "Fixes to Apply" table). Never upgrade/downgrade a core dependency without saying so explicitly.
-5. **Test before declaring done.** Every checkpoint in flow.md has a defined "done" condition — actually verify it (run it, check output, inspect data) before marking complete. Don't assume it works because it compiled.
+3. **Match the existing architecture.** Don't introduce a new library, pattern, or service without checking `docs/flow.md` and the matching work log first (`docs/WORK-1.md` for Phases 0–8, `docs/WORK-2.md` for Phase 9+, `docs/WORK-3.md` for Phase 11 / model upgrades). If you think the spec is wrong, flag it — don't silently deviate.
+4. **Version discipline.** Use only the corrected, pinned versions already agreed (see `docs/flow.md`'s "Fixes to Apply" table). Never upgrade/downgrade a core dependency without saying so explicitly.
+5. **Test before declaring done.** Every checkpoint in `docs/flow.md` has a defined "done" condition — actually verify it (run it, check output, inspect data) before marking complete. Don't assume it works because it compiled.
 6. **Full seriousness, no filler work.** No placeholder/TODO code passed off as finished. No decorative features not in scope. If blocked, say what's blocking you — don't paper over it with a stub.
 7. **Keep changes scoped.** Touch only what the current task requires. Don't refactor unrelated code, rename things, or "clean up" outside the task without flagging it first.
 8. **Ask when genuinely ambiguous.** If a requirement is unclear or two phases conflict, ask rather than guessing silently and moving on.
@@ -30,7 +30,7 @@ When the user asks to "spin up dev server", "start dev server", or run the proje
 
 ## Task Completion Rule
 When a task/checkpoint is genuinely done and verified:
-- Mark it `[x]` in **`flow.md`** under the relevant phase.
-- Log it in **`WORK-2.md`** (or `docs/WORK-1.md` for historical Phase 0-8 items, `docs/WORK-3.md` for Phase 11 / model upgrades) with: date, what was done, how it was verified.
+- Mark it `[x]` in **`docs/flow.md`** under the relevant phase.
+- Log it in **`docs/WORK-2.md`** (or `docs/WORK-1.md` for historical Phase 0-8 items, `docs/WORK-3.md` for Phase 11 / model upgrades) with: date, what was done, how it was verified.
 
 Never mark something done that hasn't been actually tested/verified.
